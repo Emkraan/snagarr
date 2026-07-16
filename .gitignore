@@ -1,0 +1,21 @@
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# Environment
+.env
+.env.*
+.venv/
+
+# Local data volume (a local ./config dir is never committed)
+config/
+
+# Terraform state and cache
+*.tfstate*
+terraform/.terraform/
+
+# Build artifacts
+dist/
+*.egg-info/

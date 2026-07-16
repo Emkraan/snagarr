@@ -1,0 +1,33 @@
+# Version control and CI (not needed in the runtime image)
+.git
+.gitignore
+.github
+
+# Docs and markdown (VERSION has no extension and is kept; templates/static live under frontend/)
+*.md
+
+# Python caches and bytecode
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# OS cruft
+.DS_Store
+
+# Infrastructure, tests, and local envs
+terraform/
+tests/
+.venv/
+venv/
+.env
+
+# Editor / backup artifacts
+*.bak
+
+# Build metadata (not needed inside the image)
+Dockerfile
+.dockerignore
+docker-compose.yml

@@ -1,0 +1,19 @@
+# Snagarr Python dependencies (Linux/Docker target).
+# Version floors on security-critical packages are documented inline.
+
+Flask==3.1.1
+# CVE-2024-34069 (<3.0.3 debugger RCE), CVE-2024-49766/49767 (<3.0.6 path traversal / multipart DoS).
+# Flask 3.1 also requires Werkzeug 3.1.x, which is well above the CVE floor.
+Werkzeug>=3.1.3
+# CVE-2024-35195 (Session verify=False persistence, <2.32.0) and CVE-2024-47081 (.netrc leak, <2.32.4).
+requests>=2.32.4
+# CVE-2024-49768 (request smuggling) and CVE-2024-49769 (DoS) affect waitress <=3.0.0.
+waitress>=3.0.2
+# Modern bcrypt for password hashing (kept in the 4.x line).
+bcrypt>=4.3.0,<5
+pyotp>=2.9.0
+qrcode[pil]>=7.4.2
+# CVE-2024-28219 (<10.3.0 buffer overflow) plus older Pillow CVEs; pin to the 11.x line.
+Pillow>=11.0
+# OIDC / OAuth2 client support (SSO phase). >=1.3.1 clears CVE-2024-37568 (JWS alg confusion).
+Authlib>=1.4.0
