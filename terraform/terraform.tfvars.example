@@ -1,0 +1,9 @@
+# Copy to terraform.tfvars (gitignored) and fill in your values.
+# tenant_id is not a secret, but keep deployment specifics out of version control.
+
+tenant_id = "00000000-0000-0000-0000-000000000000"
+
+redirect_uris = [
+  "https://snagarr.example.com/auth/callback",
+  "http://localhost:9705/auth/callback",
+]
