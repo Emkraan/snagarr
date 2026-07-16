@@ -277,6 +277,14 @@
                     <i class="fas fa-sign-in-alt"></i> Log In
                 </button>
             </form>
+            {% if oidc_enabled %}
+            <div class="oidc-divider" style="display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--text-tertiary,#727C8A);font-size:12px;">
+                <span style="flex:1;height:1px;background:var(--border-default,#262A31);"></span>OR<span style="flex:1;height:1px;background:var(--border-default,#262A31);"></span>
+            </div>
+            <a href="/auth/login" class="login-button oidc-button" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;background:var(--bg-elevated,#1C1F25);border:1px solid var(--border-default,#262A31);">
+                <i class="fab fa-microsoft"></i> Sign in with Microsoft
+            </a>
+            {% endif %}
         </div>
     </div>
 

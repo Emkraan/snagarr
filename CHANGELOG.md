@@ -17,7 +17,11 @@ Entra OIDC sign-in, and the versioned configuration API.
 
 - Snagarr project foundation forked from Huntarr v6.6.3 (via elfhosted/newtarr),
   distributed under GPL-3.0 with upstream attribution (LICENSE + NOTICE).
-- Unit tests covering the state-engine behavior.
+- Microsoft Entra ID sign-in via in-app OIDC (Authlib), as an alternative to the
+  local login. Client credentials are read from mounted secret files, and access
+  can be restricted to configured Entra groups.
+- Unit tests covering the state engine, password hashing/migration, and OIDC
+  configuration.
 
 ### Fixed
 
@@ -37,5 +41,12 @@ Entra OIDC sign-in, and the versioned configuration API.
 - Hardened on-disk state persistence: atomic writes (so a crash mid-write cannot
   wipe the tracker), collision-resistant per-instance filenames, and a lock that
   prevents a reset from racing a concurrent write.
+- Hardened authentication: passwords are now hashed with bcrypt (existing
+  SHA-256 hashes verify and are upgraded transparently on next login), the
+  session signing key is generated once and persisted instead of a weak default,
+  and reverse-proxy headers are trusted for one hop so HTTPS callbacks are built
+  correctly.
+- Secure by default: a fresh install now requires setup and login rather than
+  shipping with authentication bypassed.
 
 [0.1.0]: https://github.com/Emkraan/snagarr/releases/tag/v0.1.0

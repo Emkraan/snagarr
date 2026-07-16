@@ -10,6 +10,7 @@ import json
 import hashlib
 import secrets
 import time
+import bcrypt
 import pathlib
 import base64
 import io
@@ -20,17 +21,46 @@ from typing import Dict, Any, Optional, Tuple
 from flask import request, redirect, url_for, session
 from .utils.logger import logger # Ensure logger is imported
 
-# User directory setup
-USER_DIR = pathlib.Path("/config/user")
+# User directory setup (env-overridable, mainly for tests; default unchanged)
+USER_DIR = pathlib.Path(os.getenv("SNAGARR_USER_DIR", "/config/user"))
 USER_DIR.mkdir(parents=True, exist_ok=True)
 USER_FILE = USER_DIR / "credentials.json"
 
 # Session settings
 SESSION_EXPIRY = 60 * 60 * 24 * 7  # 1 week in seconds
-SESSION_COOKIE_NAME = "huntarr_session"
+SESSION_COOKIE_NAME = "snagarr_session"
+
+# Persisted Flask secret key (signs the session cookie; also backs Authlib's
+# OAuth state/nonce). A generated-and-persisted key replaces the old weak
+# hardcoded default so sessions survive restarts and are not forgeable.
+SECRET_KEY_FILE = USER_DIR / "secret_key"
 
 # Store active sessions
 active_sessions = {}
+
+
+def get_or_create_secret_key() -> str:
+    """Return the Flask secret key: env override, else a persisted random key."""
+    env_key = os.environ.get("SECRET_KEY")
+    if env_key:
+        return env_key
+    try:
+        if SECRET_KEY_FILE.exists():
+            existing = SECRET_KEY_FILE.read_text().strip()
+            if existing:
+                return existing
+        key = secrets.token_hex(32)
+        USER_DIR.mkdir(parents=True, exist_ok=True)
+        SECRET_KEY_FILE.write_text(key)
+        try:
+            os.chmod(SECRET_KEY_FILE, 0o600)
+        except Exception:
+            pass
+        logger.info("Generated and persisted a new session secret key.")
+        return key
+    except Exception as e:
+        logger.error(f"Could not persist secret key ({e}); using an ephemeral key for this process.")
+        return secrets.token_hex(32)
 
 # --- Add Helper functions for user data ---
 def get_user_data() -> Dict[str, Any]:
@@ -73,18 +103,22 @@ def save_user_data(user_data: Dict[str, Any]) -> bool:
 # --- End Helper functions ---
 
 def hash_password(password: str) -> str:
-    """Hash a password for storage"""
-    # Use SHA-256 with a salt
-    salt = secrets.token_hex(16)
-    pw_hash = hashlib.sha256((password + salt).encode()).hexdigest()
-    return f"{salt}:{pw_hash}"
+    """Hash a password for storage using bcrypt."""
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+def is_legacy_password_hash(stored_password: str) -> bool:
+    """True if the stored hash is the old SHA-256 'salt:hash' format (not bcrypt)."""
+    return ":" in stored_password and not stored_password.startswith("$2")
 
 def verify_password(stored_password: str, provided_password: str) -> bool:
-    """Verify a password against its hash"""
+    """Verify a password against its stored hash (bcrypt, or legacy SHA-256)."""
     try:
-        salt, pw_hash = stored_password.split(':', 1)
-        verify_hash = hashlib.sha256((provided_password + salt).encode()).hexdigest()
-        return secrets.compare_digest(verify_hash, pw_hash)
+        if is_legacy_password_hash(stored_password):
+            # Legacy SHA-256 with hex salt: "salt:sha256(pw+salt)".
+            salt, pw_hash = stored_password.split(':', 1)
+            verify_hash = hashlib.sha256((provided_password + salt).encode()).hexdigest()
+            return secrets.compare_digest(verify_hash, pw_hash)
+        return bcrypt.checkpw(provided_password.encode("utf-8"), stored_password.encode("utf-8"))
     except Exception as e:
         logger.error(f"Error verifying password hash: {e}", exc_info=True)
         return False
@@ -178,7 +212,16 @@ def verify_user(username: str, password: str, otp_code: str = None) -> Tuple[boo
         
         # Compare username and verify password
         if user_data.get("username") == username_hash:
-            if verify_password(user_data.get("password", ""), password):
+            stored_pw = user_data.get("password", "")
+            if verify_password(stored_pw, password):
+                # Transparently upgrade a legacy SHA-256 hash to bcrypt on login.
+                if is_legacy_password_hash(stored_pw):
+                    try:
+                        user_data["password"] = hash_password(password)
+                        save_user_data(user_data)
+                        logger.info(f"Upgraded password hash to bcrypt for user '{username}'.")
+                    except Exception as e:
+                        logger.warning(f"Could not upgrade password hash for '{username}': {e}")
                 # Check if 2FA is enabled
                 two_fa_enabled = user_data.get("2fa_enabled", False)
                 logger.debug(f"2FA enabled for user '{username}': {two_fa_enabled}")
@@ -295,8 +338,10 @@ def authenticate_request():
     api_setup_path = f"{script_root}/api/setup"
     favicon_path = f"{script_root}/favicon.ico"
     health_check_path = f"{script_root}/api/health"
+    ping_path = f"{script_root}/ping"
+    auth_prefix = f"{script_root}/auth/"  # OIDC login / callback / logout
 
-    if request.path.startswith((static_path, login_path, api_login_path, setup_path, api_setup_path)) or request.path in (favicon_path, health_check_path):
+    if request.path.startswith((static_path, login_path, api_login_path, setup_path, api_setup_path, auth_prefix)) or request.path in (favicon_path, health_check_path, ping_path):
         return None
 
     # Load general settings for local_access_bypass
@@ -373,19 +418,33 @@ def authenticate_request():
     if session_id and verify_session(session_id):
         return None
     
-    # No valid session, redirect to login
+    # No valid session.
     script_root = request.script_root
-    login_path = f"{script_root}/login"
     api_path = f"{script_root}/api/"
-    
-    if request.path != login_path and not request.path.startswith(api_path):
-        return redirect(login_path)
-    
-    # For API calls, return 401 Unauthorized
-    if request.path.startswith("/api/"):
-        return {"error": "Unauthorized"}, 401
-    
-    return None
+
+    # In OIDC mode, send the browser to the in-app OIDC initiator rather than the
+    # local login form. OIDC counts as enabled if the setting is on OR the client
+    # credentials are provided via mounted secret files.
+    oidc_on = False
+    try:
+        from src.primary.settings_manager import load_settings
+        oidc_on = load_settings("general").get("oidc_enabled", False)
+    except Exception:
+        pass
+    if not oidc_on:
+        try:
+            from src.primary.routes.oidc import oidc_configured
+            oidc_on = oidc_configured()
+        except Exception:
+            pass
+
+    login_target = f"{script_root}/auth/login" if oidc_on else f"{script_root}/login"
+
+    if not request.path.startswith(api_path):
+        return redirect(login_target)
+
+    # For API calls, return 401 Unauthorized (never a 302 to a login page).
+    return {"error": "Unauthorized"}, 401
 
 def logout(session_id: str):
     """Log out the current user by invalidating their session"""
