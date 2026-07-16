@@ -97,7 +97,19 @@ def login_route():
              logger.info("No user exists, redirecting to setup.")
              return redirect(url_for('common.setup_route'))
         logger.debug("Displaying login page.")
-        return render_template('login.html')
+        oidc_on = False
+        try:
+            from src.primary.settings_manager import load_settings
+            oidc_on = load_settings("general").get("oidc_enabled", False)
+        except Exception:
+            pass
+        if not oidc_on:
+            try:
+                from src.primary.routes.oidc import oidc_configured
+                oidc_on = oidc_configured()
+            except Exception:
+                pass
+        return render_template('login.html', oidc_enabled=oidc_on)
 
 @common_bp.route('/logout', methods=['POST'])
 def logout_route():

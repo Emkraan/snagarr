@@ -32,10 +32,13 @@ from src.primary.utils.logger import setup_main_logger, get_logger, LOG_DIR, upd
 from src.primary.auth import (
     authenticate_request, user_exists, create_user, verify_user, create_session,
     logout, SESSION_COOKIE_NAME, is_2fa_enabled, generate_2fa_secret,
-    verify_2fa_code, disable_2fa, change_username, change_password
+    verify_2fa_code, disable_2fa, change_username, change_password,
+    get_or_create_secret_key
 )
 # Import blueprint for common routes
 from src.primary.routes.common import common_bp
+# Import in-app OIDC (Entra) sign-in
+from src.primary.routes.oidc import oidc_bp, init_oidc
 
 # Import blueprints for each app from the centralized blueprints module
 from src.primary.apps.blueprints import sonarr_bp, radarr_bp, lidarr_bp, readarr_bp, whisparr_bp, swaparr_bp, eros_bp
@@ -91,6 +94,12 @@ app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 print(f"Flask app created with template_folder: {app.template_folder}")
 print(f"Flask app created with static_folder: {app.static_folder}")
 
+# Trust one hop of reverse-proxy headers so url_for(_external=True) builds correct
+# https callback URLs (required for the OIDC redirect URI to match the Entra
+# registration) and so client IP / scheme are accurate behind Traefik/nginx.
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
 # Add debug logging for template rendering
 def debug_template_rendering():
     """Additional logging for Flask template rendering"""
@@ -117,10 +126,14 @@ def debug_template_rendering():
     
 debug_template_rendering()
 
-app.secret_key = os.environ.get('SECRET_KEY', 'dev_key_for_sessions')
+app.secret_key = get_or_create_secret_key()
+
+# Initialize OIDC (Authlib) before registering routes / the auth hook.
+init_oidc(app)
 
 # Register blueprints
 app.register_blueprint(common_bp)
+app.register_blueprint(oidc_bp)
 app.register_blueprint(sonarr_bp, url_prefix='/api/sonarr')
 app.register_blueprint(radarr_bp, url_prefix='/api/radarr')
 app.register_blueprint(lidarr_bp, url_prefix='/api/lidarr')
