@@ -27,6 +27,7 @@ logger = setup_main_logger()
 from src.primary import config, settings_manager
 # Removed keys_manager import as settings_manager handles API details
 from src.primary.state import check_state_reset, calculate_reset_time
+from src.primary.stateful_manager import check_expiration
 from src.primary.stats_manager import check_hourly_cap_exceeded
 from src.primary.utils.instance_list_generator import generate_instance_list
 from src.primary.scheduler_engine import start_scheduler, stop_scheduler
@@ -155,7 +156,13 @@ def app_specific_loop(app_type: str) -> None:
             continue
 
         # --- State Reset Check --- #
+        # Legacy per-app state files (kept for back-compat; not read by the hunt dedup).
         check_state_reset(app_type)
+        # Real dedup store: expire processed_ids once the retention window passes so
+        # still-missing items become eligible to be searched again. This is the
+        # auto-reset that makes stateful_management_hours actually take effect;
+        # it is idempotent and global (first thread to see expiry resets all apps).
+        check_expiration()
 
         app_logger.info(f"=== Starting {app_type.upper()} cycle ===")
 
