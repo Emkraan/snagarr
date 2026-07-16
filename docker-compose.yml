@@ -1,0 +1,26 @@
+services:
+  snagarr:
+    image: ghcr.io/emkraan/snagarr:latest
+    container_name: snagarr
+    ports:
+      - "9705:9705"
+    volumes:
+      # The container runs as uid:gid 1000:1000. Ensure the host ./config
+      # directory is owned to match: `chown -R 1000:1000 ./config`.
+      - ./config:/config
+    environment:
+      - TZ=UTC
+      # PUID/PGID document the runtime user (uid/gid 1000). Keep the host
+      # ./config ownership in sync with these values.
+      - PUID=1000
+      - PGID=1000
+      # Set a long random value, e.g.:
+      #   python3 -c "import secrets; print(secrets.token_hex(32))"
+      - SECRET_KEY=change-me-to-a-long-random-secret
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import sys,urllib.request; r=urllib.request.urlopen('http://127.0.0.1:9705/ping', timeout=4); sys.exit(0 if r.status < 400 else 1)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3

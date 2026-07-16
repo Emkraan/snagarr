@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NewtArr Login</title>
+    <!-- Inline script to prevent theme flashing -->
+    <script>
+        // Check theme preference immediately before any rendering
+        (function() {
+            var prefersDarkMode = localStorage.getItem('huntarr-dark-mode') === 'true';
+            if (prefersDarkMode || window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.classList.add('dark-theme');
+                // Add inline styles to prevent flash
+                document.write('<style>body, html { background-color: #1a1d24 !important; color: #f8f9fa !important; } .login-container { background-color: #252a34 !important; } .login-header { background-color: #121212 !important; }</style>');
+            }
+        })();
+    </script>
+    <!-- Logo is now a FontAwesome icon, no preload needed -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- ElfHosted brand overrides -->
+    <link rel="stylesheet" href="/static/css/variables.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦎</text></svg>" type="image/svg+xml">
+    <!-- Preload script to prevent flashing -->
+    <script src="/static/js/theme-preload.js"></script>
+    <!-- Modern login styles -->
+    <style>
+        .login-page {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #13171f 0%, #1c2230 100%);
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .login-container {
+            width: 400px;
+            max-width: 90%;
+            background: linear-gradient(180deg, rgba(22, 26, 34, 0.98), rgba(18, 22, 30, 0.95));
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            border: 1px solid rgba(90, 109, 137, 0.15);
+        }
+        
+        .login-header {
+            background: linear-gradient(180deg, rgba(18, 22, 30, 0.98), rgba(24, 28, 37, 0.95));
+            padding: 30px 0;
+            text-align: center;
+            border-bottom: 1px solid rgba(90, 109, 137, 0.15);
+        }
+        
+        @keyframes logo-glow {
+            0%   { box-shadow: 0 0 15px #50762E, 0 0 5px rgba(80, 118, 46, 0.4); }
+            25%  { box-shadow: 0 0 15px #8D9E40, 0 0 5px rgba(141, 158, 64, 0.4); }
+            50%  { box-shadow: 0 0 15px #36511F, 0 0 5px rgba(54, 81, 31, 0.4); }
+            75%  { box-shadow: 0 0 15px #8D9E40, 0 0 5px rgba(141, 158, 64, 0.4); }
+            100% { box-shadow: 0 0 15px #50762E, 0 0 5px rgba(80, 118, 46, 0.4); }
+        }
+
+        .login-logo {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 10px;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+            transition: transform 0.3s ease, opacity 0.2s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: auto;
+            margin-right: auto;
+            border-radius: 50%;
+            background: rgba(20, 30, 45, 0.6);
+            animation: logo-glow 10s infinite ease-in-out;
+        }
+
+        .login-logo i {
+            font-size: 36px;
+            color: #e0e6ed;
+            filter: drop-shadow(0 0 4px rgba(80, 118, 46, 0.5));
+        }
+
+        .login-logo.loaded {
+            opacity: 1;
+        }
+
+        .login-logo:hover {
+            transform: scale(1.05);
+        }
+        
+        .login-header h1 {
+            margin: 0;
+            color: #fff;
+            font-size: 24px;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .login-form {
+            padding: 30px;
+        }
+        
+        .login-form h2 {
+            margin: 0 0 25px;
+            text-align: center;
+            font-size: 20px;
+            color: #fff;
+            font-weight: 500;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .form-group label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+        }
+        
+        .form-group label i {
+            margin-right: 8px;
+            color: rgba(80, 118, 46, 0.9);
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid rgba(90, 109, 137, 0.2);
+            border-radius: 8px;
+            background-color: rgba(28, 36, 54, 0.6);
+            color: #fff;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            border-color: rgba(80, 118, 46, 0.6);
+            box-shadow: 0 0 0 3px rgba(80, 118, 46, 0.2);
+            outline: none;
+        }
+        
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 40px;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.6);
+            z-index: 10;
+        }
+        
+        .toggle-password:hover {
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+        }
+        
+        .form-check {
+            display: flex;
+            align-items: center;
+        }
+        
+        .login-button {
+            background: linear-gradient(135deg, #50762E 0%, #6a8e3a 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+            box-shadow: 0 4px 10px rgba(80, 118, 46, 0.3);
+        }
+
+        .login-button:hover {
+            background: linear-gradient(135deg, #6a8e3a 0%, #8D9E40 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(80, 118, 46, 0.4);
+        }
+
+        .login-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(80, 118, 46, 0.3);
+        }
+        
+        .additional-options {
+            text-align: center;
+            margin-top: 25px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+        }
+        
+        .error-message {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: #ff6b6b;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            border-left: 4px solid #dc3545;
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .login-container {
+                width: 95%;
+            }
+            
+            .login-form {
+                padding: 20px;
+            }
+            
+            .login-header {
+                padding: 20px 0;
+            }
+            
+            .login-logo {
+                width: 60px;
+                height: 60px;
+            }
+        }
+    </style>
+</head>
+<body class="login-page">
+    <div class="login-container">
+        <div class="login-header">
+            <span class="login-logo loaded" aria-label="NewtArr"><i class="fas fa-dragon"></i></span>
+            <h1>NewtArr</h1>
+            <p style="margin: 5px 0 0; color: rgba(255,255,255,0.4); font-size: 12px; font-style: italic;">a neutered fork of Huntarr v6.6.3, from simpler times, maintained by <a href="https://store.elfhosted.com" target="_blank" rel="noopener" style="color: #8D9E40;">ElfHosted</a></p>
+        </div>
+        <div class="login-form">
+            <h2>Log in to your account</h2>
+            <div id="errorMessage" class="error-message"></div>
+            <form action="/login" method="POST" id="loginForm">
+                <div class="form-group">
+                    <label for="username">
+                        <i class="fas fa-user"></i>
+                        <span>Username</span>
+                    </label>
+                    <input type="text" id="username" name="username" required autofocus>
+                </div>
+                <div class="form-group">
+                    <label for="password">
+                        <i class="fas fa-lock"></i>
+                        <span>Password</span>
+                    </label>
+                    <input type="password" id="password" name="password" required>
+                    <i class="toggle-password fas fa-eye" id="togglePassword"></i>
+                </div>
+                <!-- 2FA field will be inserted here when needed -->
+                <div id="twoFactorContainer"></div>
+                <div class="form-actions">
+                    <div class="form-check">
+                        <input type="checkbox" id="rememberMe" name="rememberMe">
+                        <label for="rememberMe" style="margin-left: 5px;">Remember me</label>
+                    </div>
+                </div>
+                <button type="submit" class="login-button" id="loginButton">
+                    <i class="fas fa-sign-in-alt"></i> Log In
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const errorMessage = document.getElementById('errorMessage');
+        const togglePassword = document.getElementById('togglePassword');
+        const twoFactorContainer = document.getElementById('twoFactorContainer');
+        let otpInput = null;
+        let twoFactorMode = false;
+        
+        // Toggle password visibility
+        togglePassword.addEventListener('click', function() {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            this.classList.toggle('fa-eye');
+            this.classList.toggle('fa-eye-slash');
+        });
+        
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Clear previous errors
+            errorMessage.style.display = 'none';
+            errorMessage.textContent = '';
+            
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+            
+            if (!username || !password) {
+                showError('Please enter both username and password.');
+                return;
+            }
+            
+            // Check if we're in 2FA mode and validate the 2FA code
+            if (twoFactorMode && otpInput) {
+                const otpCode = otpInput.value.trim();
+                if (!otpCode) {
+                    showError('Please enter your two-factor authentication code.');
+                    return;
+                }
+                
+                if (otpCode.length !== 6 || !/^\d+$/.test(otpCode)) {
+                    showError('Two-factor code must be 6 digits.');
+                    return;
+                }
+            }
+            
+            // Show loading state on button
+            const loginButton = document.getElementById('loginButton');
+            const originalText = loginButton.innerHTML;
+            loginButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+            loginButton.disabled = true;
+            
+            // Prepare login data
+            const loginData = {
+                username: username,
+                password: password,
+                rememberMe: document.getElementById('rememberMe').checked
+            };
+            
+            // Add 2FA code if we're in 2FA mode
+            if (twoFactorMode && otpInput) {
+                loginData.twoFactorCode = otpInput.value.trim();
+            }
+            
+            // Submit the form data
+            fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(loginData)
+            })
+            .then(response => response.json().then(data => ({ status: response.status, body: data })))
+            .then(({ status, body }) => {
+                console.log('Login response:', status, body);
+                
+                // Check for 2FA requirement
+                const requires2FA = body.requires_2fa || body.requiresTwoFactor || body.requires2fa || body.requireTwoFactor || false;
+                
+                if (status === 200 && body.success) {
+                    // Login successful
+                    window.location.href = body.redirect || '/';
+                } else if (status === 401 && requires2FA) {
+                    // 2FA is required
+                    console.log('2FA required, showing 2FA input field');
+                    twoFactorMode = true;
+                    
+                    // Add 2FA field
+                    twoFactorContainer.innerHTML = `
+                    <div class="form-group" id="twoFactorGroup">
+                        <label for="twoFactorCode">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Two-Factor Code</span>
+                        </label>
+                        <input type="text" id="twoFactorCode" name="twoFactorCode" 
+                               placeholder="Enter your 6-digit code" maxlength="6"
+                               style="width: 100%; padding: 12px 15px; border: 1px solid rgba(90, 109, 137, 0.2); 
+                                      border-radius: 8px; background-color: rgba(28, 36, 54, 0.6); 
+                                      color: #fff; font-size: 16px;">
+                    </div>`;
+                    
+                    // Update reference to the new input
+                    otpInput = document.getElementById('twoFactorCode');
+                    if (otpInput) {
+                        otpInput.focus();
+                        
+                        // Add input validation
+                        otpInput.addEventListener('input', function() {
+                            // Only allow digits
+                            this.value = this.value.replace(/[^0-9]/g, '');
+                        });
+                    }
+                    
+                    // Reset button
+                    loginButton.innerHTML = originalText;
+                    loginButton.disabled = false;
+                    
+                    // Show message
+                    showError('Please enter your two-factor authentication code.');
+                } else {
+                    // Show error message
+                    showError(body.error || 'Invalid username or password.');
+                    
+                    // Reset button
+                    loginButton.innerHTML = originalText;
+                    loginButton.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Login error:', error);
+                showError('An error occurred during login. Please try again.');
+                
+                // Reset button
+                loginButton.innerHTML = originalText;
+                loginButton.disabled = false;
+            });
+        });
+        
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+Snagarr
+=======
+
+Snagarr is a self-hosted tool that continuously hunts Sonarr, Radarr, Lidarr,
+Readarr, and Whisparr for missing and upgradable media and triggers searches on
+a schedule, with Swaparr stalled-download culling.
+
+Source repository: https://github.com/Emkraan/snagarr
+
+
+Attribution and origin
+----------------------
+
+Snagarr is a derivative work ("work based on the Program") of Huntarr.
+
+  Original work:  Huntarr
+  Copyright (C)   PlexGuide
+  Upstream:       https://github.com/plexguide/Huntarr.io
+
+Snagarr is derived from Huntarr by way of the elfhosted/newtarr fork of Huntarr
+v6.6.3. The original copyright notices and license notices of the upstream
+Huntarr project are retained as required by the GNU General Public License,
+version 3 (GPL-3.0), sections 4 and 5.
+
+  Modifications:  Copyright (C) 2026 Emkraan
+
+
+Modifications
+-------------
+
+The Snagarr fork began in 2026, based on the elfhosted/newtarr fork of Huntarr
+v6.6.3. Relative to that baseline, the modifications include the following. This
+section is provided to satisfy GPL-3.0 section 5(a), which requires a modified
+work to carry prominent notices stating that it was changed and giving a
+relevant date.
+
+  - Fixed the stateful auto-reset behavior so scheduled hunting no longer resets
+    its processed-item tracking prematurely.
+  - Hardened state persistence to protect the on-disk processed-item state
+    against corruption and loss across restarts.
+  - Rebranded the user interface and application identity from the upstream
+    project to Snagarr.
+  - Added Microsoft Entra OIDC authentication as a sign-in option.
+  - Added a versioned configuration API.
+  - Modernized the container image and the Python dependency set (updated the
+    Python runtime and refreshed pinned libraries).
+
+Relevant date: fork initiated 2026; see CHANGELOG.md for the release baseline
+and https://github.com/Emkraan/snagarr for the complete revision history.
+
+
+Third-party components
+----------------------
+
+Snagarr bundles and depends on the following third-party open-source components.
+Each remains the property of its respective authors and is distributed under its
+own license:
+
+  - Flask         (Pallets)               BSD-3-Clause
+  - Waitress      (Pylons Project)        ZPL-2.1
+  - Authlib                               BSD-3-Clause
+  - bcrypt        (pyca)                   Apache-2.0
+  - pyotp                                  MIT
+  - qrcode                                 BSD-3-Clause
+  - Pillow                                 MIT-CMU (HPND)
+  - requests      (Python Software        Apache-2.0
+                   Foundation and
+                   contributors)
+
+The Sonarr, Radarr, Lidarr, Readarr, and Whisparr application icons and marks
+displayed in the Snagarr user interface remain the property of their respective
+projects and are used only to identify those applications.
+
+
+Licensing
+---------
+
+Snagarr as a whole is distributed under the GNU General Public License,
+version 3 (GPL-3.0). Because Snagarr contains and is based on GPL-3.0 code from
+the upstream Huntarr project, the combined work, including files added by the
+Snagarr fork, is licensed as a whole under the GPL-3.0. It cannot be relicensed
+under a more permissive license.
+
+The full text of the license is in the LICENSE file that accompanies this
+software. This program is distributed WITHOUT ANY WARRANTY; without even the
+implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+Corresponding Source, as required by GPL-3.0 section 6, is available from the
+public source repository at https://github.com/Emkraan/snagarr.
