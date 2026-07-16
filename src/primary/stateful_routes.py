@@ -90,10 +90,11 @@ def update_expiration():
             info = get_stateful_management_info()
             # Add CORS headers to allow access from frontend
             response_data = {
-                "success": True, 
+                "success": True,
                 "message": f"Expiration updated to {hours} hours",
-                "expires_at": info.get("expires_at"),
-                "expires_date": info.get("expires_date")
+                "created_at_ts": info.get("created_at_ts"),
+                "expires_at_ts": info.get("expires_at_ts"),
+                "interval_hours": info.get("interval_hours")
             }
             response = Response(json.dumps(response_data))
             response.headers['Content-Type'] = 'application/json'

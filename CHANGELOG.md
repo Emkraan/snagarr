@@ -7,31 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.0] - Unreleased
 
-Initial Snagarr release. This is the fork baseline: Snagarr is forked from
-Huntarr v6.6.3 by way of the elfhosted/newtarr fork, and this entry covers the
-foundation work plus build modernization carried out to stand the project up as
-Snagarr. It intentionally does not carry any upstream changelog history.
+Fork baseline. Snagarr is forked from Huntarr v6.6.3 by way of the
+elfhosted/newtarr fork. This entry covers the foundation, build modernization,
+and the state-engine fixes that motivated the fork. It intentionally does not
+carry any upstream changelog history. Later entries will add the UI rebrand,
+Entra OIDC sign-in, and the versioned configuration API.
 
 ### Added
 
 - Snagarr project foundation forked from Huntarr v6.6.3 (via elfhosted/newtarr),
-  distributed under GPL-3.0 with upstream attribution.
-- Microsoft Entra OIDC as a sign-in option.
-- Versioned configuration API.
-- NOTICE file documenting attribution, the fork modifications, and bundled
-  third-party components.
-
-### Changed
-
-- Rebranded the user interface and application identity to Snagarr.
-- Modernized the container image to a Python 3.12 base and refreshed the pinned
-  Python dependency set.
-- Hardened on-disk state persistence against corruption and loss across
-  restarts.
+  distributed under GPL-3.0 with upstream attribution (LICENSE + NOTICE).
+- Unit tests covering the state-engine behavior.
 
 ### Fixed
 
-- Corrected the stateful auto-reset behavior so scheduled hunting no longer
-  resets its processed-item tracking prematurely.
+- Scheduled hunting no longer goes idle: the stateful auto-reset that clears the
+  processed-item tracker when the retention window passes was never invoked, so
+  once the backlog drained, still-missing items were never searched again. It is
+  now run on every hunt cycle, so `stateful_management_hours` takes effect.
+- Lowering the retention interval no longer places the expiry in the past (the
+  window is now anchored to the moment of the change), and a process restart
+  preserves the running window instead of re-anchoring it.
+
+### Changed
+
+- Modernized the container image to a Python 3.12 base, dropped Windows-only
+  packaging, and refreshed the pinned Python dependency set for current security
+  fixes.
+- Hardened on-disk state persistence: atomic writes (so a crash mid-write cannot
+  wipe the tracker), collision-resistant per-instance filenames, and a lock that
+  prevents a reset from racing a concurrent write.
 
 [0.1.0]: https://github.com/Emkraan/snagarr/releases/tag/v0.1.0

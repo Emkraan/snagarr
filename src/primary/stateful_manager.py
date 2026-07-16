@@ -1,16 +1,31 @@
 #!/usr/bin/env python3
 """
-Stateful Manager for Huntarr
-Handles storing and retrieving processed media IDs to prevent reprocessing
+Stateful manager.
+
+Stores the set of processed media IDs per app+instance so that items are not
+re-hunted every cycle. The store auto-expires after ``stateful_management_hours``:
+once the window passes, every processed ID is cleared and still-missing items
+become eligible to be searched again.
+
+Persistence hardening in this module:
+- All JSON writes are atomic (temp file + os.replace) so a crash mid-write can
+  never truncate a file and silently wipe dedup state.
+- Per-instance filenames carry a short hash of the raw instance name so two
+  instances whose names differ only in punctuation cannot collide on one file.
+- A single reentrant lock guards every read/write/reset so a reset cannot race a
+  concurrent add across the hunt threads.
 """
 
 import os
 import json
 import time
+import hashlib
 import pathlib
 import datetime
 import logging
-from typing import Dict, Any, List, Optional, Set
+import tempfile
+import threading
+from typing import Dict, Any, Set
 
 # Create logger for stateful_manager
 stateful_logger = logging.getLogger("stateful_manager")
@@ -19,6 +34,10 @@ stateful_logger = logging.getLogger("stateful_manager")
 STATEFUL_DIR = pathlib.Path(os.getenv("STATEFUL_DIR", "/config/stateful"))
 LOCK_FILE = STATEFUL_DIR / "lock.json"
 DEFAULT_HOURS = 168  # Default 7 days (168 hours)
+
+# One reentrant lock serializes all state mutations across the Waitress and hunt
+# threads. Reentrant so a public helper can call another while already holding it.
+_LOCK = threading.RLock()
 
 # Ensure the stateful directory exists
 try:
@@ -35,292 +54,273 @@ for app_type in APP_TYPES:
 # Add import for get_advanced_setting
 from src.primary.settings_manager import get_advanced_setting
 
+
+def _atomic_write_json(path: pathlib.Path, obj: Any) -> None:
+    """Write JSON to ``path`` atomically (temp file in the same dir + os.replace).
+
+    os.replace is atomic on the same filesystem, so readers always see either the
+    old complete file or the new complete file, never a truncated one.
+    """
+    path = pathlib.Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=path.name + ".", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(obj, f, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def _sanitize(instance_name: str) -> str:
+    return "".join(c if c.isalnum() else "_" for c in instance_name) or "default"
+
+
+def _instance_filename(instance_name: str) -> str:
+    """Collision-resistant per-instance filename.
+
+    Appends a short hash of the raw name so "My Server", "My-Server" and
+    "My.Server" get distinct files instead of all mapping to "My_Server.json".
+    """
+    digest = hashlib.sha1(instance_name.encode("utf-8")).hexdigest()[:8]
+    return f"{_sanitize(instance_name)}_{digest}.json"
+
+
+def _instance_path(app_type: str, instance_name: str) -> pathlib.Path:
+    """Resolve the per-instance state file, migrating a legacy (hash-less) file once.
+
+    Older builds stored ``{sanitized}.json``. If that legacy file exists and the
+    new hashed file does not, rename it in place so existing processed state
+    carries forward across the upgrade instead of forcing a full re-hunt.
+    """
+    new_path = STATEFUL_DIR / app_type / _instance_filename(instance_name)
+    if not new_path.exists():
+        legacy = STATEFUL_DIR / app_type / f"{_sanitize(instance_name)}.json"
+        if legacy.exists() and legacy != new_path:
+            try:
+                os.replace(legacy, new_path)
+                stateful_logger.info(f"Migrated legacy stateful file {legacy.name} -> {new_path.name}")
+            except Exception as e:
+                stateful_logger.error(f"Failed migrating legacy stateful file {legacy}: {e}")
+    return new_path
+
+
+def _read_ids(file_path: pathlib.Path) -> Set[str]:
+    """Read the processed-ID set from a resolved file path. Missing/corrupt -> empty set."""
+    if not file_path.exists():
+        return set()
+    try:
+        with open(file_path, "r") as f:
+            data = json.load(f)
+        return set(str(x) for x in data.get("processed_ids", []))
+    except Exception as e:
+        stateful_logger.error(f"Error reading processed IDs from {file_path}: {e}")
+        return set()
+
+
 def initialize_lock_file() -> None:
-    """Initialize the lock file with the current timestamp if it doesn't exist."""
-    # Ensure directory exists - we don't need to log this again
+    """Create the lock file with a fresh window if it does not already exist.
+
+    A no-op when the file exists, so process restarts preserve the running window.
+    """
     try:
         STATEFUL_DIR.mkdir(parents=True, exist_ok=True)
     except Exception as e:
         stateful_logger.error(f"Error creating stateful directory: {e}")
-        
-    if not LOCK_FILE.exists():
-        try:
-            current_time = int(time.time())
-            # Get the expiration hours setting
-            expiration_hours = get_advanced_setting("stateful_management_hours", DEFAULT_HOURS)
-            
-            expires_at = current_time + (expiration_hours * 3600)
-            
-            with open(LOCK_FILE, 'w') as f:
-                json.dump({
+
+    with _LOCK:
+        if not LOCK_FILE.exists():
+            try:
+                current_time = int(time.time())
+                expiration_hours = get_advanced_setting("stateful_management_hours", DEFAULT_HOURS)
+                _atomic_write_json(LOCK_FILE, {
                     "created_at": current_time,
-                    "expires_at": expires_at
-                }, f, indent=2)
-            stateful_logger.info(f"Initialized lock file at {LOCK_FILE} with expiration in {expiration_hours} hours")
-        except Exception as e:
-            stateful_logger.error(f"Error initializing lock file: {e}")
-            
+                    "expires_at": current_time + (expiration_hours * 3600),
+                })
+                stateful_logger.info(f"Initialized lock file at {LOCK_FILE} with expiration in {expiration_hours} hours")
+            except Exception as e:
+                stateful_logger.error(f"Error initializing lock file: {e}")
+
+
 def get_lock_info() -> Dict[str, Any]:
-    """Get the current lock information."""
+    """Return the current lock info, self-healing missing fields."""
     initialize_lock_file()
-    try:
-        with open(LOCK_FILE, 'r') as f:
-            lock_info = json.load(f)
-        
-        # Validate the structure and ensure required fields exist
-        if not isinstance(lock_info, dict):
-            raise ValueError("Lock info is not a dictionary")
-            
-        if "created_at" not in lock_info:
-            lock_info["created_at"] = int(time.time())
-            
-        if "expires_at" not in lock_info or lock_info["expires_at"] is None:
-            # Recalculate expiration if missing
+    with _LOCK:
+        try:
+            with open(LOCK_FILE, "r") as f:
+                lock_info = json.load(f)
+
+            if not isinstance(lock_info, dict):
+                raise ValueError("Lock info is not a dictionary")
+
+            if "created_at" not in lock_info:
+                lock_info["created_at"] = int(time.time())
+
+            if "expires_at" not in lock_info or lock_info["expires_at"] is None:
+                expiration_hours = get_advanced_setting("stateful_management_hours", DEFAULT_HOURS)
+                lock_info["expires_at"] = lock_info["created_at"] + (expiration_hours * 3600)
+                _atomic_write_json(LOCK_FILE, lock_info)
+
+            return lock_info
+        except Exception as e:
+            stateful_logger.error(f"Error reading lock file: {e}")
+            current_time = int(time.time())
             expiration_hours = get_advanced_setting("stateful_management_hours", DEFAULT_HOURS)
-            lock_info["expires_at"] = lock_info["created_at"] + (expiration_hours * 3600)
-            
-            # Save the updated info
-            with open(LOCK_FILE, 'w') as f:
-                json.dump(lock_info, f, indent=2)
-            
-        return lock_info
-    except Exception as e:
-        stateful_logger.error(f"Error reading lock file: {e}")
-        # Return default values if there's an error
-        current_time = int(time.time())
-        expiration_hours = get_advanced_setting("stateful_management_hours", DEFAULT_HOURS)
-        expires_at = current_time + (expiration_hours * 3600)
-        
-        return {
-            "created_at": current_time,
-            "expires_at": expires_at
-        }
+            return {
+                "created_at": current_time,
+                "expires_at": current_time + (expiration_hours * 3600),
+            }
+
 
 def update_lock_expiration(hours: int = None) -> bool:
-    """Update the lock expiration based on the hours setting."""
-    if hours is None:
-        expiration_hours = get_advanced_setting("stateful_management_hours", DEFAULT_HOURS)
-    else:
-        expiration_hours = hours
-    
-    lock_info = get_lock_info()
-    created_at = lock_info.get("created_at", int(time.time()))
-    expires_at = created_at + (expiration_hours * 3600)
-    
-    lock_info["expires_at"] = expires_at
-    
-    try:
-        with open(LOCK_FILE, 'w') as f:
-            json.dump(lock_info, f, indent=2)
-        stateful_logger.info(f"Updated lock expiration to {datetime.datetime.fromtimestamp(expires_at)}")
-        return True
-    except Exception as e:
-        stateful_logger.error(f"Error updating lock expiration: {e}")
-        return False
+    """(Re)anchor the retention window to now.
+
+    Called when the operator changes ``stateful_management_hours``. Anchors BOTH
+    created_at and expires_at to the current time so the new window always lands
+    in the future. (The previous behavior recomputed expires_at from the original
+    created_at, which put expiry in the past whenever the interval was lowered.)
+    """
+    expiration_hours = hours if hours is not None else get_advanced_setting("stateful_management_hours", DEFAULT_HOURS)
+    with _LOCK:
+        now = int(time.time())
+        expires_at = now + (expiration_hours * 3600)
+        try:
+            _atomic_write_json(LOCK_FILE, {"created_at": now, "expires_at": expires_at})
+            stateful_logger.info(f"Updated stateful window: expires {datetime.datetime.fromtimestamp(expires_at)}")
+            return True
+        except Exception as e:
+            stateful_logger.error(f"Error updating lock expiration: {e}")
+            return False
+
 
 def reset_stateful_management() -> bool:
-    """
-    Reset the stateful management system.
+    """Clear all processed IDs and start a fresh retention window.
 
-    This involves:
-    1. Creating a new lock file with the current timestamp and a calculated expiration time
-       based on the 'stateful_management_hours' setting.
-    2. Deleting all stored processed ID files (*.json) within each app-specific
-       subdirectory under the STATEFUL_DIR.
-
-    Returns:
-        bool: True if the reset was successful, False otherwise.
+    Writes a new lock file (created_at/expires_at = now + interval) and deletes
+    every per-instance state file under each app directory.
     """
-    try:
-        # Get the expiration hours setting BEFORE writing the lock file
-        expiration_hours = get_advanced_setting("stateful_management_hours", DEFAULT_HOURS)
-        
-        # Create new lock file with calculated expiration
-        current_time = int(time.time())
-        expires_at = current_time + (expiration_hours * 3600)
-        
-        with open(LOCK_FILE, 'w') as f:
-            json.dump({
-                "created_at": current_time,
-                "expires_at": expires_at # Write the calculated expiration time directly
-            }, f, indent=2)
-        
-        # Delete all stored IDs
-        for app_type in APP_TYPES:
-            app_dir = STATEFUL_DIR / app_type
-            if app_dir.exists():
-                for json_file in app_dir.glob("*.json"):
-                    try:
-                        json_file.unlink()
-                        stateful_logger.debug(f"Deleted {json_file}")
-                    except Exception as e:
-                        stateful_logger.error(f"Error deleting {json_file}: {e}")
-        
-        # No need to call update_lock_expiration() again as we wrote it directly
-        stateful_logger.info(f"Successfully reset stateful management. New expiration: {datetime.datetime.fromtimestamp(expires_at)}")
-        return True
-    except Exception as e:
-        stateful_logger.error(f"Error resetting stateful management: {e}")
-        return False
+    with _LOCK:
+        try:
+            expiration_hours = get_advanced_setting("stateful_management_hours", DEFAULT_HOURS)
+            current_time = int(time.time())
+            expires_at = current_time + (expiration_hours * 3600)
+
+            _atomic_write_json(LOCK_FILE, {"created_at": current_time, "expires_at": expires_at})
+
+            for app_type in APP_TYPES:
+                app_dir = STATEFUL_DIR / app_type
+                if app_dir.exists():
+                    for json_file in app_dir.glob("*.json"):
+                        try:
+                            json_file.unlink()
+                            stateful_logger.debug(f"Deleted {json_file}")
+                        except Exception as e:
+                            stateful_logger.error(f"Error deleting {json_file}: {e}")
+
+            stateful_logger.info(f"Reset stateful management. New expiration: {datetime.datetime.fromtimestamp(expires_at)}")
+            return True
+        except Exception as e:
+            stateful_logger.error(f"Error resetting stateful management: {e}")
+            return False
+
 
 def check_expiration() -> bool:
+    """If the retention window has passed, reset the store. Returns True if it reset.
+
+    This is the auto-expiry driver. It MUST be called on the periodic hunt path
+    (see background.app_specific_loop) or the store would only ever clear on a
+    manual reset, and still-missing items would never be re-searched.
     """
-    Check if the stateful management has expired.
-    
-    Returns:
-        bool: True if expired, False otherwise
-    """
-    lock_info = get_lock_info()
-    expires_at = lock_info.get("expires_at")
-    
-    # If expires_at is None, update it based on settings
-    if expires_at is None:
-        update_lock_expiration()
+    with _LOCK:
         lock_info = get_lock_info()
         expires_at = lock_info.get("expires_at")
-    
-    current_time = int(time.time())
-    
-    if current_time >= expires_at:
-        stateful_logger.info("Stateful management has expired, resetting...")
-        reset_stateful_management()
-        return True
-    
+
+        if expires_at is None:
+            update_lock_expiration()
+            expires_at = get_lock_info().get("expires_at")
+
+        if expires_at is None:
+            stateful_logger.warning("Could not determine stateful expiry; skipping auto-reset this cycle.")
+            return False
+
+        if int(time.time()) >= int(expires_at):
+            stateful_logger.info("Stateful window expired; clearing processed IDs and starting a new window.")
+            reset_stateful_management()
+            return True
+
     return False
 
+
 def get_processed_ids(app_type: str, instance_name: str) -> Set[str]:
-    """
-    Get the set of processed media IDs for a specific app instance.
-    
-    Args:
-        app_type: The type of app (sonarr, radarr, etc.)
-        instance_name: The name of the instance
-        
-    Returns:
-        Set[str]: Set of processed media IDs
-    """
+    """Return the set of processed media IDs for an app+instance."""
     if app_type not in APP_TYPES:
         stateful_logger.warning(f"Unknown app type: {app_type}")
         return set()
-    
-    # Create safe filename from instance name
-    safe_instance_name = "".join([c if c.isalnum() else "_" for c in instance_name])
-    
-    file_path = STATEFUL_DIR / app_type / f"{safe_instance_name}.json"
-    stateful_logger.debug(f"[get_processed_ids] Checking file: {file_path} for {app_type}/{instance_name}") # DEBUG LOG
-    
-    if not file_path.exists():
-        stateful_logger.debug(f"[get_processed_ids] File not found: {file_path}") # DEBUG LOG
-        return set()
-    
-    try:
-        with open(file_path, 'r') as f:
-            data = json.load(f)
-            processed_ids_set = set(data.get("processed_ids", [])) # Convert list to set
-            stateful_logger.debug(f"[get_processed_ids] Read {len(processed_ids_set)} IDs from {file_path}: {processed_ids_set}") # DEBUG LOG
-            return processed_ids_set
-    except Exception as e:
-        stateful_logger.error(f"Error reading processed IDs for {instance_name} from {file_path}: {e}") # Updated log
-        return set()
+    with _LOCK:
+        return _read_ids(_instance_path(app_type, instance_name))
+
 
 def add_processed_id(app_type: str, instance_name: str, media_id: str) -> bool:
-    """
-    Add a media ID to the processed list for a specific app instance.
-    
-    Args:
-        app_type: The type of app (sonarr, radarr, etc.)
-        instance_name: The name of the instance
-        media_id: The ID of the processed media
-        
-    Returns:
-        bool: True if successful, False otherwise
-    """
+    """Record a media ID as processed for an app+instance (read-modify-write under lock)."""
     if app_type not in APP_TYPES:
         stateful_logger.warning(f"Unknown app type: {app_type}")
         return False
-    
-    # Create safe filename from instance name
-    safe_instance_name = "".join([c if c.isalnum() else "_" for c in instance_name])
-    
-    file_path = STATEFUL_DIR / app_type / f"{safe_instance_name}.json"
-    
-    # Get existing processed IDs using the get function (which includes logging)
-    current_processed_ids_set = get_processed_ids(app_type, instance_name)
-    
-    # Convert set back to list for appending and saving
-    processed_ids_list = list(current_processed_ids_set)
-    
-    # Add the new ID if it's not already there
-    if media_id not in current_processed_ids_set:
-        processed_ids_list.append(media_id)
-        stateful_logger.debug(f"[add_processed_id] Adding ID {media_id} to list for {app_type}/{instance_name}") # DEBUG LOG
-    else:
-        stateful_logger.debug(f"[add_processed_id] ID {media_id} already in list for {app_type}/{instance_name}") # DEBUG LOG
-        # No need to write if the ID is already present
-        return True
-        
-    # Write the updated list back to the file
-    stateful_logger.debug(f"[add_processed_id] Writing {len(processed_ids_list)} IDs to {file_path}: {processed_ids_list}") # DEBUG LOG
-    try:
-        with open(file_path, 'w') as f:
-            json.dump({
-                "processed_ids": processed_ids_list,
-                "last_updated": int(time.time())
-            }, f, indent=2)
-        # Removed redundant log here, previous debug log is sufficient
-        return True
-    except Exception as e:
-        stateful_logger.error(f"Error adding media ID {media_id} to {file_path}: {e}")
-        return False
+
+    media_id = str(media_id)
+    with _LOCK:
+        file_path = _instance_path(app_type, instance_name)
+        ids = _read_ids(file_path)
+        if media_id in ids:
+            return True
+        ids.add(media_id)
+        try:
+            _atomic_write_json(file_path, {
+                "processed_ids": sorted(ids),
+                "last_updated": int(time.time()),
+            })
+            return True
+        except Exception as e:
+            stateful_logger.error(f"Error adding media ID {media_id} to {file_path}: {e}")
+            return False
+
 
 def is_processed(app_type: str, instance_name: str, media_id: str) -> bool:
-    """
-    Check if a media ID has already been processed.
-    
-    Args:
-        app_type: The type of app (sonarr, radarr, etc.)
-        instance_name: The name of the instance
-        media_id: The ID of the media to check
-        
-    Returns:
-        bool: True if already processed, False otherwise
-    """
-    # Create safe filename for logging
-    safe_instance = "".join([c if c.isalnum() else "_" for c in instance_name])
-    file_path = STATEFUL_DIR / app_type / f"{safe_instance}.json"
-    
-    # Get processed IDs for this app/instance
-    processed_ids = get_processed_ids(app_type, instance_name)
-    
-    # Log what we're checking and the result
-    # Converting media_id to string since some callers might pass an integer
-    media_id_str = str(media_id)
-    is_in_set = media_id_str in processed_ids
-    
-    stateful_logger.info(f"is_processed check: {app_type}/{instance_name}, ID:{media_id_str}, Found:{is_in_set}, File:{file_path}, Total IDs:{len(processed_ids)}")
-    
-    return is_in_set
+    """Return True if a media ID has already been processed for an app+instance."""
+    if app_type not in APP_TYPES:
+        return False
+    with _LOCK:
+        ids = _read_ids(_instance_path(app_type, instance_name))
+    result = str(media_id) in ids
+    stateful_logger.debug(f"is_processed {app_type}/{instance_name} id={media_id} -> {result} (total {len(ids)})")
+    return result
+
 
 def get_stateful_management_info() -> Dict[str, Any]:
-    """Get information about the stateful management system."""
+    """Return created/expiry timestamps and the configured interval for the UI/API."""
     lock_info = get_lock_info()
-    created_at_ts = lock_info.get("created_at")
-    expires_at_ts = lock_info.get("expires_at")
-    
-    # Get the interval setting
-    expiration_hours = get_advanced_setting("stateful_management_hours", DEFAULT_HOURS)
-
     return {
-        "created_at_ts": created_at_ts,
-        "expires_at_ts": expires_at_ts,
-        "interval_hours": expiration_hours
+        "created_at_ts": lock_info.get("created_at"),
+        "expires_at_ts": lock_info.get("expires_at"),
+        "interval_hours": get_advanced_setting("stateful_management_hours", DEFAULT_HOURS),
     }
 
+
 def initialize_stateful_system():
-    """Perform a complete initialization of the stateful management system."""
+    """Initialize directories and the lock file on startup.
+
+    Deliberately does NOT re-anchor the window on every start: it only creates the
+    lock file if absent, so restarts preserve the running retention window. The
+    window is (re)anchored only on first init or when the operator changes the
+    interval (via update_lock_expiration).
+    """
     stateful_logger.info("Initializing stateful management system")
-    
-    # Ensure all required directories exist
+
     try:
         STATEFUL_DIR.mkdir(parents=True, exist_ok=True)
         for app_type in APP_TYPES:
@@ -328,34 +328,26 @@ def initialize_stateful_system():
         stateful_logger.info(f"Stateful directory structure created at {STATEFUL_DIR}")
     except Exception as e:
         stateful_logger.error(f"Failed to create stateful directories: {e}")
-    
-    # Initialize the lock file with proper expiration
+
     try:
         initialize_lock_file()
-        # Update expiration time
-        expiration_hours = get_advanced_setting("stateful_management_hours", DEFAULT_HOURS)
-        update_lock_expiration(expiration_hours)
-        stateful_logger.info(f"Stateful lock file initialized with {expiration_hours} hour expiration")
+        info = get_stateful_management_info()
+        stateful_logger.info(f"Stateful window active: interval {info['interval_hours']}h, expires_at {info['expires_at_ts']}")
     except Exception as e:
         stateful_logger.error(f"Failed to initialize lock file: {e}")
-    
-    # Check for existing processed IDs
+
     try:
-        total_ids = 0
+        total_files = 0
         for app_type in APP_TYPES:
             app_dir = STATEFUL_DIR / app_type
             if app_dir.exists():
-                files = list(app_dir.glob("*.json"))
-                total_ids += len(files)
-        
-        if total_ids > 0:
-            stateful_logger.info(f"Found {total_ids} existing processed ID files")
-        else:
-            stateful_logger.info("No existing processed ID files found")
+                total_files += len(list(app_dir.glob("*.json")))
+        stateful_logger.info(f"Found {total_files} existing processed-ID files" if total_files else "No existing processed-ID files found")
     except Exception as e:
         stateful_logger.error(f"Failed to check for existing processed IDs: {e}")
-    
+
     stateful_logger.info("Stateful management system initialization complete")
+
 
 # Initialize the stateful system on module import
 initialize_stateful_system()
