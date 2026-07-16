@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NewtArr Login</title>
+    <meta name="color-scheme" content="dark">
+    <meta name="theme-color" content="#070809">
+    <title>Snagarr Login</title>
     <!-- Inline script to prevent theme flashing -->
     <script>
         // Check theme preference immediately before any rendering
         (function() {
-            var prefersDarkMode = localStorage.getItem('huntarr-dark-mode') === 'true';
+            var prefersDarkMode = localStorage.getItem('snagarr-dark-mode') === 'true';
             if (prefersDarkMode || window.matchMedia('(prefers-color-scheme: dark)').matches) {
                 document.documentElement.classList.add('dark-theme');
                 // Add inline styles to prevent flash
@@ -19,9 +21,8 @@
     <!-- Logo is now a FontAwesome icon, no preload needed -->
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- ElfHosted brand overrides -->
     <link rel="stylesheet" href="/static/css/variables.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦎</text></svg>" type="image/svg+xml">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23070809'/%3E%3Ctext x='16' y='23' font-family='Sora,Segoe UI,sans-serif' font-size='21' font-weight='700' text-anchor='middle' fill='%232486B9'%3ES%3C/text%3E%3C/svg%3E">
     <!-- Preload script to prevent flashing -->
     <script src="/static/js/theme-preload.js"></script>
     <!-- Modern login styles -->
@@ -54,11 +55,11 @@
         }
         
         @keyframes logo-glow {
-            0%   { box-shadow: 0 0 15px #50762E, 0 0 5px rgba(80, 118, 46, 0.4); }
-            25%  { box-shadow: 0 0 15px #8D9E40, 0 0 5px rgba(141, 158, 64, 0.4); }
-            50%  { box-shadow: 0 0 15px #36511F, 0 0 5px rgba(54, 81, 31, 0.4); }
-            75%  { box-shadow: 0 0 15px #8D9E40, 0 0 5px rgba(141, 158, 64, 0.4); }
-            100% { box-shadow: 0 0 15px #50762E, 0 0 5px rgba(80, 118, 46, 0.4); }
+            0%   { box-shadow: 0 0 15px #1B6FB8, 0 0 5px rgba(27, 111, 184, 0.4); }
+            25%  { box-shadow: 0 0 15px #2486B9, 0 0 5px rgba(36, 134, 185, 0.4); }
+            50%  { box-shadow: 0 0 15px #155A95, 0 0 5px rgba(21, 90, 149, 0.4); }
+            75%  { box-shadow: 0 0 15px #2486B9, 0 0 5px rgba(36, 134, 185, 0.4); }
+            100% { box-shadow: 0 0 15px #1B6FB8, 0 0 5px rgba(27, 111, 184, 0.4); }
         }
 
         .login-logo {
@@ -80,7 +81,7 @@
         .login-logo i {
             font-size: 36px;
             color: #e0e6ed;
-            filter: drop-shadow(0 0 4px rgba(80, 118, 46, 0.5));
+            filter: drop-shadow(0 0 4px rgba(27, 111, 184, 0.5));
         }
 
         .login-logo.loaded {
@@ -126,7 +127,7 @@
         
         .form-group label i {
             margin-right: 8px;
-            color: rgba(80, 118, 46, 0.9);
+            color: rgba(27, 111, 184, 0.9);
         }
         
         .form-group input {
@@ -141,8 +142,8 @@
         }
         
         .form-group input:focus {
-            border-color: rgba(80, 118, 46, 0.6);
-            box-shadow: 0 0 0 3px rgba(80, 118, 46, 0.2);
+            border-color: rgba(27, 111, 184, 0.6);
+            box-shadow: 0 0 0 3px rgba(27, 111, 184, 0.2);
             outline: none;
         }
         
@@ -172,7 +173,7 @@
         }
         
         .login-button {
-            background: linear-gradient(135deg, #50762E 0%, #6a8e3a 100%);
+            background: linear-gradient(135deg, #1B6FB8 0%, #2384C2 100%);
             color: white;
             border: none;
             padding: 12px 24px;
@@ -183,18 +184,18 @@
             transition: all 0.3s ease;
             width: 100%;
             margin-top: 10px;
-            box-shadow: 0 4px 10px rgba(80, 118, 46, 0.3);
+            box-shadow: 0 4px 10px rgba(27, 111, 184, 0.3);
         }
 
         .login-button:hover {
-            background: linear-gradient(135deg, #6a8e3a 0%, #8D9E40 100%);
+            background: linear-gradient(135deg, #2384C2 0%, #2486B9 100%);
             transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(80, 118, 46, 0.4);
+            box-shadow: 0 6px 15px rgba(27, 111, 184, 0.4);
         }
 
         .login-button:active {
             transform: translateY(0);
-            box-shadow: 0 2px 8px rgba(80, 118, 46, 0.3);
+            box-shadow: 0 2px 8px rgba(27, 111, 184, 0.3);
         }
         
         .additional-options {
@@ -234,13 +235,16 @@
             }
         }
     </style>
+    <!-- Snagarr Cobalt theme - loaded last so it wins specificity -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+    <link rel="stylesheet" href="/static/css/cobalt.css">
 </head>
 <body class="login-page">
     <div class="login-container">
         <div class="login-header">
-            <span class="login-logo loaded" aria-label="NewtArr"><i class="fas fa-dragon"></i></span>
-            <h1>NewtArr</h1>
-            <p style="margin: 5px 0 0; color: rgba(255,255,255,0.4); font-size: 12px; font-style: italic;">a neutered fork of Huntarr v6.6.3, from simpler times, maintained by <a href="https://store.elfhosted.com" target="_blank" rel="noopener" style="color: #8D9E40;">ElfHosted</a></p>
+            <span class="login-logo loaded" aria-label="Snagarr"><i class="fas fa-dragon"></i></span>
+            <h1>Snagarr</h1>
+            <p style="margin: 5px 0 0; color: rgba(255,255,255,0.4); font-size: 12px; font-style: italic;">Missing and upgrade automation for the *arr apps</p>
         </div>
         <div class="login-form">
             <h2>Log in to your account</h2>

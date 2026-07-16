@@ -1,0 +1,221 @@
+/*
+ * Snagarr - Emkraan Cobalt v2 theme
+ *
+ * Authoritative retheme layer. Linked LAST in <head> so it wins the cascade.
+ * Defines the full Cobalt v2 token palette, then re-points every legacy app
+ * CSS custom property at those tokens so the existing templates recolor to
+ * Cobalt blue on the dark surface ramp without any template rewrites.
+ *
+ * Committed single dark theme: no light variant, no prefers-color-scheme
+ * light block. The per-arr brand accent colors (Sonarr, Radarr, Lidarr,
+ * Readarr, Whisparr, etc.) are intentionally left untouched; they live in the
+ * other stylesheets and are the arr apps' own identities.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+/* =========================================================================
+   1. Cobalt v2 palette tokens
+   ========================================================================= */
+:root {
+  color-scheme: dark;
+
+  /* ---- Surface ramp (cool near-black, slight blue bias) ---- */
+  --bg-base:      #070809;  /* app canvas / deepest */
+  --bg-surface:   #0E0F12;  /* primary panel surface */
+  --bg-raised:    #15171B;  /* cards, sidebar */
+  --bg-elevated:  #1C1F25;  /* popovers, KPI tiles, table rows */
+  --bg-hover:     #272C34;  /* row/item hover */
+  --bg-input:     #101319;  /* form field fill */
+
+  /* ---- Borders ---- */
+  --border-subtle:  #16181D;
+  --border-default: #262A31;
+  --border:         var(--border-default);
+  --border-strong:  #394049;
+  --border-accent:  #1F5C97;  /* focused/active edge, logo blue dimmed */
+
+  /* ---- Text ---- */
+  --text-primary:    #F7F9FB;  /* 18.2:1 on --bg-surface */
+  --text-secondary:  #AEB6C2;  /* 9.37:1 */
+  --text-tertiary:   #727C8A;  /* 4.53:1, meta/timestamps */
+  --text-muted:      var(--text-tertiary);
+  --text-quaternary: #5E6773;  /* disabled glyphs / separators only */
+  --text-dim:        var(--text-quaternary);
+  --text-inverse:    #061018;  /* on bright accent fills */
+
+  /* ---- PRIMARY accent ramp, Emkraan logo blue ---- */
+  --accent-50:   #E8F1FB;
+  --accent-100:  #C6DEF5;
+  --accent-200:  #93C2EC;
+  --accent-300:  #5FA4E0;  /* hover-bright UI text */
+  --accent-400:  #4A9FE0;  /* default accent UI text/icon, 6.69:1 */
+  --accent-500:  #2486B9;  /* sampled logo peak */
+  --accent-600:  #1B6FB8;  /* brand token, fill / gradient end */
+  --accent-700:  #155A95;  /* pressed */
+  --accent-800:  #114B7C;
+  --accent:        var(--accent-600);
+  --accent-bright: var(--accent-300);
+  --accent-hover:  var(--accent-400);
+
+  /* ---- Accent transparencies (all from #1B6FB8 / #2486B9) ---- */
+  --accent-glow: rgba(36, 134, 185, 0.34);
+  --accent-soft: rgba(27, 111, 184, 0.16);
+  --accent-dim:  var(--accent-soft);
+  --accent-veil: rgba(27, 111, 184, 0.10);
+
+  /* ---- Signature primary gradient ---- */
+  --accent-grad: linear-gradient(180deg, #1F78B0 0%, #1B6FB8 100%);
+
+  /* ---- Status, mapped to brand inks ---- */
+  --success:        #34C759;  --success-dim:    #0E2A18;  --success-border: #1B5C30;
+  --warning:        #E8A317;  --warning-dim:    #2A2008;  --warning-border: #6B520F;
+  --danger:         #EB5860;  --danger-dim:     #2A1011;  --danger-border:  #7A2326;
+  --danger-700:     #C9282F;  /* danger button fill top */
+  --danger-800:     #B4232A;  /* danger button fill base */
+  --danger-900:     #811D22;  /* danger pressed */
+  --info:           #4A9FE0;  --info-dim:       #0A2236;  --info-border:    #1F5C97;
+
+  /* ---- Radii ---- */
+  --radius-xs: 5px; --radius-sm: 7px; --radius-md: 9px;
+  --radius-lg: 12px; --radius-xl: 16px; --radius-pill: 999px;
+
+  /* ---- Focus ring (logo blue) ---- */
+  --focus-ring: 0 0 0 2px var(--bg-surface), 0 0 0 4px rgba(36,134,185,0.65);
+
+  /* ---- Signature shadows ---- */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.40);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.02) inset;
+  --shadow-lg: 0 24px 48px -12px rgba(0,0,0,0.70);
+  --shadow-inset-top: inset 0 1px 0 rgba(255,255,255,0.03);
+  --shadow-accent: 0 6px 20px -4px var(--accent-glow), 0 1px 0 rgba(255,255,255,0.08) inset;
+
+  /* ---- Body ambient wash, faint cobalt from the logo blue ---- */
+  --body-wash: radial-gradient(1200px 600px at 18% -10%, rgba(27,111,184,0.10), transparent 60%),
+               radial-gradient(900px 500px at 100% 0%, rgba(36,134,185,0.06), transparent 55%),
+               var(--bg-base);
+
+  /* ---- Motion ---- */
+  --ease:        cubic-bezier(0.4, 0, 0.2, 1);      /* default state toggles */
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);     /* entrances + lifts */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* one tasteful overshoot */
+  --ease-in:     cubic-bezier(0.4, 0, 1, 1);        /* exits */
+  --t-fast: 120ms; --t: 180ms; --t-slow: 260ms;
+
+  /* ---- Typography ---- */
+  --font-display: 'Sora', 'Segoe UI', system-ui, sans-serif;
+  --font-sans:    'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono:    'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
+}
+
+/* =========================================================================
+   2. Legacy app variable overrides
+   Every custom property the original theme declared is re-pointed here at a
+   Cobalt token. The selector list carries higher specificity than the app's
+   own .dark-theme blocks so the retheme wins regardless of which theme class
+   is applied (the app is now a committed dark theme either way).
+   ========================================================================= */
+:root,
+:root.dark-theme,
+.dark-theme,
+html.dark-theme,
+body.dark-theme {
+  /* Surfaces */
+  --bg-primary:   var(--bg-base);
+  --bg-secondary: var(--bg-surface);
+  --bg-tertiary:  var(--bg-elevated);
+  --card-bg:      var(--bg-raised);
+  --topbar-bg:    var(--bg-surface);
+  --sidebar-bg:   var(--bg-surface);
+  --log-bg:       var(--bg-input);
+
+  /* Text (primary/secondary are literal; they share the Cobalt token name) */
+  --text-primary:   #F7F9FB;
+  --text-secondary: #AEB6C2;
+  --text-muted:     var(--text-tertiary);
+  --sidebar-text:   var(--text-secondary);
+
+  /* Borders */
+  --border-color: var(--border-default);
+  --log-border:   var(--border-default);
+
+  /* Sidebar interactive states */
+  --sidebar-item-hover:  var(--bg-hover);
+  --sidebar-item-active: var(--accent-600);
+
+  /* Accents (old green/blue accent -> Cobalt blue) */
+  --accent-color: var(--accent-600);
+  --accent-hover: var(--accent-400);
+  --accent-light: var(--accent-300);
+
+  /* Status colors */
+  --success-color:        var(--success);
+  --warning-color:        var(--warning);
+  --error-color:          var(--danger);
+  --info-color:           var(--info);
+  --debug-color:          var(--text-tertiary);
+  --status-connected:     var(--success);
+  --status-not-connected: var(--danger);
+
+  /* Switch / toggle */
+  --switch-bg:     var(--bg-elevated);
+  --switch-active: var(--accent-600);
+
+  /* Buttons */
+  --button-primary-bg:    var(--accent-600);
+  --button-primary-text:  #ffffff;
+  --button-primary-hover: var(--accent-500);
+  --button-danger-bg:     var(--danger-800);
+  --button-danger-hover:  var(--danger-700);
+  --button-success-bg:    var(--success);
+  --button-success-hover: #2AA745; /* derived darker green, no success-700 token */
+}
+
+/* =========================================================================
+   3. Typography + body shell
+   ========================================================================= */
+body {
+  font-family: var(--font-sans);
+  background: var(--body-wash);
+  color: var(--text-primary);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+}
+
+code, pre, kbd, samp, .mono {
+  font-family: var(--font-mono);
+}
+
+/* keyboard focus is the cobalt halo, never the UA outline */
+*:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* premium thin scrollbar */
+* { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: var(--radius-pill);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background var(--t) var(--ease);
+}
+*::-webkit-scrollbar-thumb:hover { background: var(--border-accent); }
+
+/* =========================================================================
+   4. Reduced motion (mandatory)
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .hover-lift:hover { transform: none; }
+  .btn:active:not(:disabled) { transform: none !important; }
+}

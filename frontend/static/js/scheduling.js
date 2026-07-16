@@ -480,8 +480,8 @@ function saveSchedules() {
                 if (data.success) {
                     console.debug('Schedules saved successfully');
                     // Show success toast notification
-                    if (window.huntarrUI && typeof window.huntarrUI.showNotification === 'function') {
-                        huntarrUI.showNotification('Schedules saved successfully!', 'success');
+                    if (window.snagarrUI && typeof window.snagarrUI.showNotification === 'function') {
+                        snagarrUI.showNotification('Schedules saved successfully!', 'success');
                     } else {
                         alert('Schedules saved successfully!'); // Fallback
                     }
@@ -734,8 +734,8 @@ function addSchedule() {
     
     // Validate form inputs (basic validation)
     if (isNaN(hour) || isNaN(minute)) {
-        if (window.huntarrUI && typeof window.huntarrUI.showNotification === 'function') {
-            huntarrUI.showNotification('Please enter a valid hour and minute.', 'error');
+        if (window.snagarrUI && typeof window.snagarrUI.showNotification === 'function') {
+            snagarrUI.showNotification('Please enter a valid hour and minute.', 'error');
         } else {
             alert('Please enter a valid hour and minute.'); // Fallback
         }
@@ -743,9 +743,9 @@ function addSchedule() {
     }
     
     if (!anyDaySelected) {
-        // Assuming huntarrUI is globally available
-        if (window.huntarrUI && typeof window.huntarrUI.showNotification === 'function') {
-            huntarrUI.showNotification('Please select at least one day to save the schedule.', 'error');
+        // Assuming snagarrUI is globally available
+        if (window.snagarrUI && typeof window.snagarrUI.showNotification === 'function') {
+            snagarrUI.showNotification('Please select at least one day to save the schedule.', 'error');
         } else {
             alert('Please select at least one day to save the schedule.'); // Fallback
         }

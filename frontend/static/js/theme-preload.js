@@ -1,6 +1,6 @@
 (function() {
     // Store logo URL consistently across the app - use local path instead of GitHub
-    const LOGO_URL = '/static/logo/256.png';
+    const LOGO_URL = '/static/logo/snagarr.svg';
     
     // Create and preload image with local path
     const preloadImg = new Image();
@@ -8,7 +8,7 @@
     
     // Always enforce dark theme
     document.documentElement.classList.add('dark-theme');
-    localStorage.setItem('huntarr-dark-mode', 'true');
+    localStorage.setItem('snagarr-dark-mode', 'true');
     
     // Add inline style to immediately set background color
     // This prevents flash before the CSS files load
@@ -34,11 +34,11 @@
     document.head.appendChild(style);
     
     // Store the logo URL in localStorage for persistence across page loads
-    localStorage.setItem('huntarr-logo-url', LOGO_URL);
+    localStorage.setItem('snagarr-logo-url', LOGO_URL);
     
     // Create a global function to apply the logo to all logo elements
     window.applyLogoToAllElements = function() {
-        const logoUrl = localStorage.getItem('huntarr-logo-url') || LOGO_URL;
+        const logoUrl = localStorage.getItem('snagarr-logo-url') || LOGO_URL;
         const logoElements = document.querySelectorAll('.logo, .login-logo');
         
         logoElements.forEach(img => {
@@ -56,8 +56,8 @@
                 img.onerror = function() {
                     // Fallback if local path fails
                     console.warn('Logo failed to load, trying alternate source');
-                    if (this.src !== '/logo/256.png') {
-                        this.src = '/logo/256.png';
+                    if (this.src !== LOGO_URL) {
+                        this.src = LOGO_URL;
                     }
                 };
             }

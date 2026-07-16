@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src'
 # Basic logging to capture early errors during import or setup
 log_level = logging.DEBUG if os.environ.get('DEBUG', 'false').lower() == 'true' else logging.INFO
 logging.basicConfig(level=log_level, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-root_logger = logging.getLogger("HuntarrRoot") # Specific logger for this entry point
+root_logger = logging.getLogger("SnagarrRoot") # Specific logger for this entry point
 root_logger.info("--- Huntarr Main Process Starting ---")
 root_logger.info(f"Python sys.path: {sys.path}")
 
@@ -82,7 +82,7 @@ try:
     # Import the Flask app instance
     from primary.web_server import app
     # Import the background task starter function and shutdown helpers from the renamed file
-    from primary.background import start_huntarr, stop_event, shutdown_threads
+    from primary.background import start_snagarr, stop_event, shutdown_threads
     # Configure logging first
     import logging
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
@@ -104,10 +104,10 @@ _waitress_server = None  # Handle to Waitress server for graceful shutdown
 
 def run_background_tasks():
     """Runs the Huntarr background processing."""
-    bg_logger = get_logger("HuntarrBackground") # Use app's logger
+    bg_logger = get_logger("SnagarrBackground") # Use app's logger
     try:
         bg_logger.info("Starting Huntarr background tasks...")
-        start_huntarr() # This function contains the main loop and shutdown logic
+        start_snagarr() # This function contains the main loop and shutdown logic
     except Exception as e:
         bg_logger.exception(f"Critical error in Huntarr background tasks: {e}")
     finally:
@@ -176,7 +176,7 @@ if __name__ == '__main__':
         # Start background tasks in a daemon thread
         # Daemon threads exit automatically if the main thread exits unexpectedly,
         # but we'll try to join() them for a graceful shutdown.
-        background_thread = threading.Thread(target=run_background_tasks, name="HuntarrBackground", daemon=True)
+        background_thread = threading.Thread(target=run_background_tasks, name="SnagarrBackground", daemon=True)
         background_thread.start()
 
         # Start the web server in the main thread (blocking)
@@ -213,7 +213,7 @@ if __name__ == '__main__':
              huntarr_logger.info("Background thread was not started.")
 
         # Call the shutdown_threads function from primary.main (if it does more than just join)
-        # This might be redundant if start_huntarr handles its own cleanup via stop_event
+        # This might be redundant if start_snagarr handles its own cleanup via stop_event
         # huntarr_logger.info("Calling shutdown_threads()...")
         # shutdown_threads() # Uncomment if primary.main.shutdown_threads() does more cleanup
 

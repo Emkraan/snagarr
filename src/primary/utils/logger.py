@@ -15,7 +15,7 @@ LOG_DIR = pathlib.Path("/config/logs") # Changed path
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 # Default log file for general messages
-MAIN_LOG_FILE = LOG_DIR / "huntarr.log"
+MAIN_LOG_FILE = LOG_DIR / "snagarr.log"
 
 # App-specific log files
 APP_LOG_FILES = {
@@ -105,7 +105,7 @@ def get_logger(app_type: str) -> logging.Logger:
         assert logger is not None
         return logger
 
-    log_name = f"huntarr.{app_type}"
+    log_name = f"snagarr.{app_type}"
     if log_name in app_loggers:
         # Return cached logger instance
         return app_loggers[log_name]
@@ -140,7 +140,7 @@ def get_logger(app_type: str) -> logging.Logger:
     file_handler.setLevel(logging.DEBUG if debug_mode else logging.INFO)
     
     # Set a distinct format for this app log
-    log_format = f"%(asctime)s - huntarr.{app_type} - %(levelname)s - %(message)s"
+    log_format = f"%(asctime)s - snagarr.{app_type} - %(levelname)s - %(message)s"
     formatter = logging.Formatter(log_format, datefmt="%Y-%m-%d %H:%M:%S")
     
     console_handler.setFormatter(formatter)

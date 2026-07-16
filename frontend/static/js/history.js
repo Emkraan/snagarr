@@ -21,7 +21,7 @@ const historyModule = {
         this.setupEventListeners();
         
         // Initial load if history is active section
-        if (huntarrUI && huntarrUI.currentSection === 'history') {
+        if (snagarrUI && snagarrUI.currentSection === 'history') {
             this.loadHistory();
         }
     },
@@ -414,9 +414,9 @@ const historyModule = {
     
     // Show error
     showError: function(message) {
-        // Use huntarrUI's notification system if available
-        if (typeof huntarrUI !== 'undefined' && typeof huntarrUI.showNotification === 'function') {
-            huntarrUI.showNotification(message, 'error');
+        // Use snagarrUI's notification system if available
+        if (typeof snagarrUI !== 'undefined' && typeof snagarrUI.showNotification === 'function') {
+            snagarrUI.showNotification(message, 'error');
         } else {
             alert(message);
         }
@@ -469,18 +469,18 @@ const historyModule = {
     }
 };
 
-// Initialize when huntarrUI is ready
+// Initialize when snagarrUI is ready
 document.addEventListener('DOMContentLoaded', () => {
     historyModule.init();
     
     // Connect with main app
-    if (typeof huntarrUI !== 'undefined') {
+    if (typeof snagarrUI !== 'undefined') {
         // Add loadHistory to the section switch handler
-        const originalSwitchSection = huntarrUI.switchSection;
+        const originalSwitchSection = snagarrUI.switchSection;
         
-        huntarrUI.switchSection = function(section) {
+        snagarrUI.switchSection = function(section) {
             // Call original function
-            originalSwitchSection.call(huntarrUI, section);
+            originalSwitchSection.call(snagarrUI, section);
             
             // Load history data when switching to history section
             if (section === 'history') {

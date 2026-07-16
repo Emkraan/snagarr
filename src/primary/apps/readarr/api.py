@@ -44,7 +44,7 @@ def check_connection(api_url: str, api_key: str, api_timeout: int) -> bool:
         # Add User-Agent header to identify Huntarr
         headers = {
             "X-Api-Key": api_key,
-            "User-Agent": "Huntarr/1.0 (https://github.com/plexguide/Huntarr.io)"
+            "User-Agent": "Snagarr/0.1.0 (https://github.com/Emkraan/snagarr)"
         }
         logger.debug(f"Using User-Agent: {headers['User-Agent']}")
         
@@ -187,7 +187,7 @@ def arr_request(endpoint: str, method: str = "GET", data: Dict = None, app_type:
     headers = {
         "X-Api-Key": key,
         "Content-Type": "application/json",
-        "User-Agent": f"Huntarr/1.0 ({app_type})"
+        "User-Agent": f"Snagarr/0.1.0 ({app_type})"
     }
     
     # Get SSL verification setting
@@ -295,7 +295,7 @@ def get_wanted_missing_books(api_url: str, api_key: str, api_timeout: int, monit
     # Add User-Agent header to identify Huntarr
     headers = {
         "X-Api-Key": api_key,
-        "User-Agent": "Huntarr/1.0 (https://github.com/plexguide/Huntarr.io)",
+        "User-Agent": "Snagarr/0.1.0 (https://github.com/Emkraan/snagarr)",
         "Content-Type": "application/json"
     }
     logger.debug(f"Using User-Agent: {headers['User-Agent']}")
