@@ -55,11 +55,18 @@ for app_type in APP_TYPES:
 from src.primary.settings_manager import get_advanced_setting
 
 
-def _atomic_write_json(path: pathlib.Path, obj: Any) -> None:
+def _atomic_write_json(path: pathlib.Path, obj: Any, fsync: bool = True) -> None:
     """Write JSON to ``path`` atomically (temp file in the same dir + os.replace).
 
     os.replace is atomic on the same filesystem, so readers always see either the
     old complete file or the new complete file, never a truncated one.
+
+    ``fsync`` forces the bytes to disk before the rename. It is worth the cost for
+    the small, infrequent lock file, but is skipped for the per-instance ID caches:
+    those are written once per processed item in tight loops, and blocking every
+    hunt thread on an fsync (which can stall on a network mount) is not worth it.
+    Losing the last few IDs on a hard crash only re-hunts a few items, which is
+    self-healing.
     """
     path = pathlib.Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -68,7 +75,8 @@ def _atomic_write_json(path: pathlib.Path, obj: Any) -> None:
         with os.fdopen(fd, "w") as f:
             json.dump(obj, f, indent=2)
             f.flush()
-            os.fsync(f.fileno())
+            if fsync:
+                os.fsync(f.fileno())
         os.replace(tmp, path)
     except Exception:
         try:
@@ -105,7 +113,10 @@ def _instance_path(app_type: str, instance_name: str) -> pathlib.Path:
         if legacy.exists() and legacy != new_path:
             try:
                 os.replace(legacy, new_path)
-                stateful_logger.info(f"Migrated legacy stateful file {legacy.name} -> {new_path.name}")
+                # If two old instances sanitized to this same legacy name, only the
+                # first resolved here claims it; the other starts empty and re-hunts.
+                stateful_logger.info(f"Migrated legacy stateful file {legacy.name} -> {new_path.name} "
+                                     f"(if instance names collided pre-upgrade, run one manual reset).")
             except Exception as e:
                 stateful_logger.error(f"Failed migrating legacy stateful file {legacy}: {e}")
     return new_path
@@ -238,18 +249,24 @@ def check_expiration() -> bool:
     manual reset, and still-missing items would never be re-searched.
     """
     with _LOCK:
-        lock_info = get_lock_info()
-        expires_at = lock_info.get("expires_at")
+        try:
+            lock_info = get_lock_info()
+            expires_at = lock_info.get("expires_at")
 
-        if expires_at is None:
+            if expires_at is None:
+                update_lock_expiration()
+                expires_at = get_lock_info().get("expires_at")
+
+            expires_at = int(expires_at)
+        except (TypeError, ValueError) as e:
+            # Corrupt / hand-edited lock.json. Do not let this kill the hunt
+            # thread (it would restart-loop and silently stop hunting). Re-anchor
+            # a fresh window and skip the reset this cycle.
+            stateful_logger.warning(f"Unreadable stateful expiry ({e}); re-anchoring window, no reset this cycle.")
             update_lock_expiration()
-            expires_at = get_lock_info().get("expires_at")
-
-        if expires_at is None:
-            stateful_logger.warning("Could not determine stateful expiry; skipping auto-reset this cycle.")
             return False
 
-        if int(time.time()) >= int(expires_at):
+        if int(time.time()) >= expires_at:
             stateful_logger.info("Stateful window expired; clearing processed IDs and starting a new window.")
             reset_stateful_management()
             return True
@@ -280,10 +297,11 @@ def add_processed_id(app_type: str, instance_name: str, media_id: str) -> bool:
             return True
         ids.add(media_id)
         try:
+            # Cache data written per-item in tight loops: skip fsync (see helper).
             _atomic_write_json(file_path, {
                 "processed_ids": sorted(ids),
                 "last_updated": int(time.time()),
-            })
+            }, fsync=False)
             return True
         except Exception as e:
             stateful_logger.error(f"Error adding media ID {media_id} to {file_path}: {e}")
@@ -331,6 +349,22 @@ def initialize_stateful_system():
 
     try:
         initialize_lock_file()
+        # Startup grace: if the on-disk window is ALREADY expired (a stale lock
+        # from an older build, or downtime longer than the interval), re-anchor it
+        # to a fresh window at startup instead of letting the first hunt cycle
+        # immediately reset and wipe the (just-migrated) processed IDs. Re-hunts
+        # then happen on the intended cadence, not in a burst on every restart.
+        # A still-valid window is left untouched, so a normal restart preserves it.
+        with _LOCK:
+            info = get_lock_info()
+            expires_at = info.get("expires_at")
+            try:
+                already_expired = expires_at is None or int(time.time()) >= int(expires_at)
+            except (TypeError, ValueError):
+                already_expired = True
+            if already_expired:
+                stateful_logger.info("Stateful window was expired at startup; re-anchoring a fresh window (processed IDs preserved).")
+                update_lock_expiration()
         info = get_stateful_management_info()
         stateful_logger.info(f"Stateful window active: interval {info['interval_hours']}h, expires_at {info['expires_at_ts']}")
     except Exception as e:

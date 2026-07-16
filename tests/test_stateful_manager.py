@@ -143,3 +143,69 @@ def test_legacy_instance_file_migrates(tmp_path):
 
     assert sm.get_processed_ids("sonarr", "Main") == {"100", "200"}
     assert not legacy.exists(), "legacy file should have been renamed to the hashed name"
+
+
+def test_startup_grace_reanchors_expired_window_without_wiping(tmp_path):
+    # Review finding #1: an expired lock at startup must be re-anchored (grace),
+    # NOT reset, so migrated/processed IDs survive the first post-upgrade start.
+    sm = load_sm(tmp_path, hours=24)
+    sm.add_processed_id("sonarr", "Main", "42")
+    now = int(time.time())
+    with open(sm.LOCK_FILE, "w") as f:
+        json.dump({"created_at": now - 200 * 3600, "expires_at": now - 3600}, f)
+
+    sm.initialize_stateful_system()  # the restart path
+
+    assert sm.is_processed("sonarr", "Main", "42") is True, "grace start must not wipe IDs"
+    assert sm.get_lock_info()["expires_at"] > now, "window must be re-anchored to the future"
+
+
+def test_check_expiration_survives_corrupt_lock(tmp_path):
+    # Review finding #4: a non-numeric expires_at must not raise (which would kill
+    # the hunt thread); it should re-anchor and skip the reset this cycle.
+    sm = load_sm(tmp_path)
+    sm.add_processed_id("sonarr", "Main", "1")
+    with open(sm.LOCK_FILE, "w") as f:
+        json.dump({"created_at": "oops", "expires_at": "not-a-number"}, f)
+
+    assert sm.check_expiration() is False
+    assert sm.is_processed("sonarr", "Main", "1") is True
+    assert sm.get_lock_info()["expires_at"] > int(time.time())
+
+
+def test_concurrent_add_and_reset_stay_consistent(tmp_path):
+    # The reentrant lock exists for exactly this: many writers plus resets must
+    # never crash or leave a torn (unparseable) file.
+    import threading
+
+    sm = load_sm(tmp_path)
+    errors = []
+
+    def adder(start):
+        try:
+            for i in range(start, start + 200):
+                sm.add_processed_id("sonarr", "Main", i)
+        except Exception as e:  # noqa: BLE001
+            errors.append(e)
+
+    def resetter():
+        try:
+            for _ in range(10):
+                sm.reset_stateful_management()
+                time.sleep(0.005)
+        except Exception as e:  # noqa: BLE001
+            errors.append(e)
+
+    threads = [threading.Thread(target=adder, args=(i * 1000,)) for i in range(4)]
+    threads.append(threading.Thread(target=resetter))
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert not errors, f"concurrent access raised: {errors}"
+    # Final on-disk file (if present) must still be valid JSON, never torn.
+    path = sm._instance_path("sonarr", "Main")
+    if path.exists():
+        with open(path) as f:
+            json.load(f)
