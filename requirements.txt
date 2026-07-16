@@ -10,7 +10,7 @@ requests>=2.32.4
 # CVE-2024-49768 (request smuggling) and CVE-2024-49769 (DoS) affect waitress <=3.0.0.
 waitress>=3.0.2
 # Modern bcrypt for password hashing (kept in the 4.x line).
-bcrypt>=4.3.0,<5
+bcrypt>=5.0.0,<6
 pyotp>=2.9.0
 qrcode[pil]>=7.4.2
 # CVE-2024-28219 (<10.3.0 buffer overflow) plus older Pillow CVEs; pin to the 11.x line.
