@@ -1,0 +1,23 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Snagarr">
+  <defs>
+    <linearGradient id="snagarrCobalt" x1="150" y1="110" x2="362" y2="402" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2486B9"/>
+      <stop offset="1" stop-color="#1B6FB8"/>
+    </linearGradient>
+    <linearGradient id="snagarrTile" x1="80" y1="60" x2="440" y2="470" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0A0B10"/>
+      <stop offset="1" stop-color="#050507"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded square tile -->
+  <rect x="8" y="8" width="496" height="496" rx="112" fill="url(#snagarrTile)"/>
+  <rect x="9" y="9" width="494" height="494" rx="111" fill="none" stroke="#171922" stroke-width="2"/>
+
+  <!-- Snagarr mark: bold geometric "S" formed from two arcs, with a hook barb -->
+  <g fill="none" stroke="url(#snagarrCobalt)" stroke-width="46" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 322 190 A 66 66 0 1 0 256 256 A 66 66 0 1 1 190 322"/>
+    <!-- hook barb at the lower terminal: the 'snag' -->
+    <path d="M 190 322 L 224 300"/>
+  </g>
+</svg>

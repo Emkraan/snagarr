@@ -141,9 +141,9 @@ window.lastStatefulHoursValue = null;
     }
     
     // Add a global interceptor for the notification system
-    const originalShowNotification = window.huntarrUI && window.huntarrUI.showNotification;
+    const originalShowNotification = window.snagarrUI && window.snagarrUI.showNotification;
     if (originalShowNotification) {
-        window.huntarrUI.showNotification = function(message, type) {
+        window.snagarrUI.showNotification = function(message, type) {
             // If we just completed a reset and this is an expiration update notification, don't show it
             if (window.justCompletedStatefulReset && message.includes('Updated expiration to')) {
                 console.log('Suppressing expiration update notification after reset');

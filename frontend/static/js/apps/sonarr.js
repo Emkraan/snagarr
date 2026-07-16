@@ -79,4 +79,4 @@
     // Add the Sonarr module to the app for reference if needed elsewhere
     app.sonarrModule = sonarrModule;
 
-})(window.huntarrUI); // Use the new global object name
+})(window.snagarrUI); // Use the new global object name

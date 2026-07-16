@@ -28,7 +28,7 @@
         
         // Apply dark mode
         document.body.classList.add('dark-theme');
-        localStorage.setItem('huntarr-dark-mode', 'true');
+        localStorage.setItem('snagarr-dark-mode', 'true');
         
         // Fetch user data
         fetchUserInfo();

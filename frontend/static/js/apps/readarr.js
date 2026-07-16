@@ -72,4 +72,4 @@
         }
     });
 
-})(window.huntarrUI); // Pass the global UI object
+})(window.snagarrUI); // Pass the global UI object

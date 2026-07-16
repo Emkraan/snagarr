@@ -3,13 +3,13 @@
     <div class="top-color-line"></div>
     <div class="topbar-section left">
         <div class="page-title" id="currentPageTitle"></div>
-        <span class="topbar-tagline">a neutered fork of Huntarr v6.6.3, from simpler times, maintained by <a href="https://store.elfhosted.com" target="_blank" rel="noopener">ElfHosted</a></span>
+        <span class="topbar-tagline">Missing and upgrade automation for the *arr apps</span>
     </div>
     <div class="topbar-section center">
         <div class="version-bar">
             <div class="version-item">
                 <i class="fas fa-code-branch version-icon"></i>
-                <span>Version <span id="version-value">6.6.3</span></span>
+                <span id="app-version">v0.1.0</span>
             </div>
         </div>
     </div>
@@ -105,7 +105,7 @@
         white-space: nowrap;
     }
     .topbar-tagline a {
-        color: #8D9E40;
+        color: #2486B9;
         text-decoration: none;
     }
     .topbar-tagline a:hover {
@@ -145,7 +145,7 @@
     }
     
     .version-icon {
-        color: #8D9E40;
+        color: #2486B9;
         font-size: 13px;
         filter: drop-shadow(0 0 2px rgba(80, 118, 46, 0.4));
     }
@@ -161,7 +161,7 @@
     }
     
     .version-bar a {
-        color: #8D9E40;
+        color: #2486B9;
         text-decoration: none;
         font-weight: 600;
         transition: all 0.2s ease;
@@ -175,7 +175,7 @@
         height: 1px;
         bottom: -1px;
         left: 0;
-        background-color: #8D9E40;
+        background-color: #2486B9;
         transition: width 0.3s ease;
     }
 
@@ -192,7 +192,7 @@
     }
     
     .developer-credit a {
-        color: #8D9E40;
+        color: #2486B9;
         font-weight: 600;
     }
     
@@ -370,7 +370,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        var el = document.getElementById('version-value');
+        var el = document.getElementById('app-version');
         if (el) {
             fetch('/version.txt').then(function(r) { return r.text(); })
                 .then(function(v) { el.textContent = v.trim(); })

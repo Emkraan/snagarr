@@ -134,7 +134,7 @@ def app_specific_loop(app_type: str) -> None:
         return # Exit thread if essential modules fail to load
 
     # Create app-specific logger using provided function
-    app_logger = logging.getLogger(f"huntarr.{app_type}")
+    app_logger = logging.getLogger(f"snagarr.{app_type}")
     
     while not stop_event.is_set():
         # --- Load Settings for this Cycle --- #
@@ -668,7 +668,7 @@ def start_hourly_cap_scheduler():
     
     logger.info(f"Hourly API cap scheduler started. Thread is alive: {hourly_cap_scheduler_thread.is_alive()}")
 
-def start_huntarr():
+def start_snagarr():
     """Main entry point for Huntarr background tasks."""
     logger.info(f"--- Starting Huntarr Background Tasks v{__version__} --- ")
     

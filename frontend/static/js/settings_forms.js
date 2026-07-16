@@ -842,7 +842,7 @@ const SettingsForms = {
             <div class="settings-group">
                 <h3>Swaparr (Beta) - Only For Torrent Users</h3>
                 <div class="setting-item">
-                    <p>Swaparr addresses the issue of stalled downloads and I rewrote it to support Huntarr. Visit Swaparr's <a href="https://github.com/ThijmenGThN/swaparr" target="_blank">GitHub</a> for more information and support the developer!</p>
+                    <p>Swaparr addresses the issue of stalled downloads and was adapted to support Snagarr. Visit Swaparr's <a href="https://github.com/ThijmenGThN/swaparr" target="_blank">GitHub</a> for more information and support the developer!</p>
                 </div>
             </div>
 
@@ -990,7 +990,7 @@ const SettingsForms = {
         } else if (!resetStrikesBtn) {
             console.warn('Could not find #reset_swaparr_strikes to attach listener.');
         } else {
-             console.warn('huntarrUI or huntarrUI.resetStatefulManagement is not available.');
+             console.warn('snagarrUI or snagarrUI.resetStatefulManagement is not available.');
         }
 
         // Add confirmation dialog for local access bypass toggle
@@ -1003,12 +1003,12 @@ const SettingsForms = {
                 const newState = this.checked;
                 
                 // Preview the UI changes immediately, but they'll be reverted if user doesn't save
-                if (typeof huntarrUI !== 'undefined' && typeof huntarrUI.updateUIForLocalAccessBypass === 'function') {
-                    huntarrUI.updateUIForLocalAccessBypass(newState);
+                if (typeof snagarrUI !== 'undefined' && typeof snagarrUI.updateUIForLocalAccessBypass === 'function') {
+                    snagarrUI.updateUIForLocalAccessBypass(newState);
                 }
                 // Also ensure the main app knows settings have changed if the preview runs
-                if (typeof huntarrUI !== 'undefined' && typeof huntarrUI.markSettingsAsChanged === 'function') {
-                     huntarrUI.markSettingsAsChanged();
+                if (typeof snagarrUI !== 'undefined' && typeof snagarrUI.markSettingsAsChanged === 'function') {
+                     snagarrUI.markSettingsAsChanged();
                 }
             });
         }
@@ -1219,7 +1219,7 @@ const SettingsForms = {
                         <input type="checkbox" id="check_for_updates" ${settings.check_for_updates !== false ? 'checked' : ''}>
                         <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
                     </label>
-                    <p class="setting-help" style="margin-left: -3ch !important;">Automatically check for Huntarr updates</p>
+                    <p class="setting-help" style="margin-left: -3ch !important;">Automatically check for Snagarr updates</p>
                 </div>
                 <div class="setting-item">
                     <label for="debug_mode"><span class="info-icon" title="Enable verbose logging for troubleshooting"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Debug Mode:</label>
@@ -1319,7 +1319,7 @@ const SettingsForms = {
                 <div class="setting-item">
                     <label for="log_refresh_interval_seconds"><span class="info-icon" title="Seconds between log display refreshes in the UI"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Log Refresh Interval:</label>
                     <input type="number" id="log_refresh_interval_seconds" min="5" value="${settings.log_refresh_interval_seconds !== undefined ? settings.log_refresh_interval_seconds : 30}">
-                    <p class="setting-help" style="margin-left: -3ch !important;">How often Huntarr refreshes logs from apps (seconds)</p>
+                    <p class="setting-help" style="margin-left: -3ch !important;">How often Snagarr refreshes logs from apps (seconds)</p>
                 </div>
             </div>
         `;
@@ -1340,9 +1340,9 @@ const SettingsForms = {
         const createdDateEl = document.getElementById('stateful_initial_state');
         const expiresDateEl = document.getElementById('stateful_expires_date');
 
-        // Skip loading if huntarrUI has already loaded this data to prevent flashing
-        if (window.huntarrUI && window.huntarrUI._cachedStatefulData) {
-            console.log('[SettingsForms] Using existing huntarrUI cached stateful data');
+        // Skip loading if snagarrUI has already loaded this data to prevent flashing
+        if (window.snagarrUI && window.snagarrUI._cachedStatefulData) {
+            console.log('[SettingsForms] Using existing snagarrUI cached stateful data');
             return; // Exit early - main.js already has this covered
         }
         
@@ -1355,7 +1355,7 @@ const SettingsForms = {
         }
 
         // Check if data is already cached in localStorage
-        const cachedStatefulData = localStorage.getItem('huntarr-stateful-data');
+        const cachedStatefulData = localStorage.getItem('snagarr-stateful-data');
         if (cachedStatefulData) {
             try {
                 const parsedData = JSON.parse(cachedStatefulData);
@@ -1400,7 +1400,7 @@ const SettingsForms = {
              })
             .then(data => {
                 // Cache the response with a timestamp for future use
-                localStorage.setItem('huntarr-stateful-data', JSON.stringify({
+                localStorage.setItem('snagarr-stateful-data', JSON.stringify({
                     ...data,
                     timestamp: Date.now()
                 }));
@@ -1424,8 +1424,8 @@ const SettingsForms = {
                 }
                 
                 // Store data for other components to use
-                if (window.huntarrUI) {
-                    window.huntarrUI._cachedStatefulData = data;
+                if (window.snagarrUI) {
+                    window.snagarrUI._cachedStatefulData = data;
                 }
             })
             .catch(error => {
@@ -1472,13 +1472,13 @@ const SettingsForms = {
                 .then(response => response.ok ? response.json() : null)
                 .then(data => {
                     if (data && data.success) {
-                        localStorage.setItem('huntarr-stateful-data', JSON.stringify({
+                        localStorage.setItem('snagarr-stateful-data', JSON.stringify({
                             ...data,
                             timestamp: Date.now()
                         }));
                         
-                        if (window.huntarrUI) {
-                            window.huntarrUI._cachedStatefulData = data;
+                        if (window.snagarrUI) {
+                            window.snagarrUI._cachedStatefulData = data;
                         }
                     }
                 })
@@ -1814,8 +1814,8 @@ const SettingsForms = {
     // Test connection to an *arr API
     testConnection: function(app, url, apiKey, buttonElement) {
         // Temporarily suppress change detection to prevent the unsaved changes dialog
-        if (window.huntarrUI && window.huntarrUI.suppressUnsavedChangesCheck) {
-            window.huntarrUI.suppressUnsavedChangesCheck = true;
+        if (window.snagarrUI && window.snagarrUI.suppressUnsavedChangesCheck) {
+            window.snagarrUI.suppressUnsavedChangesCheck = true;
         }
         
         // Also set a global flag used by the apps module
@@ -1929,8 +1929,8 @@ const SettingsForms = {
     // Helper method to reset unsaved changes suppression flags
     _resetSuppressionFlags: function() {
         // Reset all suppression flags
-        if (window.huntarrUI) {
-            window.huntarrUI.suppressUnsavedChangesCheck = false;
+        if (window.snagarrUI) {
+            window.snagarrUI.suppressUnsavedChangesCheck = false;
         }
         window._suppressUnsavedChangesDialog = false;
     },
@@ -1940,7 +1940,7 @@ const SettingsForms = {
 const styleEl = document.createElement('style');
 styleEl.innerHTML = `
     .toggle-switch input:checked + .toggle-slider {
-        background-color: #50762E !important;
+        background-color: #1B6FB8 !important;
     }
     .toggle-slider:before {
         position: absolute;

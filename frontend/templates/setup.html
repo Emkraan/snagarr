@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Setup - NewtArr</title>
+    <meta name="color-scheme" content="dark">
+    <meta name="theme-color" content="#070809">
+    <title>Setup - Snagarr</title>
     <!-- Inline script to prevent theme flashing -->
     <script>
         // Always use dark mode for setup page
@@ -13,7 +15,6 @@
     <!-- Logo is now a FontAwesome icon, no preload needed -->
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- ElfHosted brand overrides -->
     <link rel="stylesheet" href="/static/css/variables.css">
     <style>
         /* Match the heart icon pulsing animation from the sidebar */
@@ -43,11 +44,11 @@
         
         /* Define logo glowing animation same as sidebar */
         @keyframes logo-glow {
-            0%   { box-shadow: 0 0 15px #50762E, 0 0 5px rgba(80, 118, 46, 0.4); }
-            25%  { box-shadow: 0 0 15px #8D9E40, 0 0 5px rgba(141, 158, 64, 0.4); }
-            50%  { box-shadow: 0 0 15px #36511F, 0 0 5px rgba(54, 81, 31, 0.4); }
-            75%  { box-shadow: 0 0 15px #8D9E40, 0 0 5px rgba(141, 158, 64, 0.4); }
-            100% { box-shadow: 0 0 15px #50762E, 0 0 5px rgba(80, 118, 46, 0.4); }
+            0%   { box-shadow: 0 0 15px #1B6FB8, 0 0 5px rgba(27, 111, 184, 0.4); }
+            25%  { box-shadow: 0 0 15px #2486B9, 0 0 5px rgba(36, 134, 185, 0.4); }
+            50%  { box-shadow: 0 0 15px #155A95, 0 0 5px rgba(21, 90, 149, 0.4); }
+            75%  { box-shadow: 0 0 15px #2486B9, 0 0 5px rgba(36, 134, 185, 0.4); }
+            100% { box-shadow: 0 0 15px #1B6FB8, 0 0 5px rgba(27, 111, 184, 0.4); }
         }
         
         /* Logo styling */
@@ -69,10 +70,10 @@
         .login-logo i {
             font-size: 28px;
             color: #e0e6ed;
-            filter: drop-shadow(0 0 4px rgba(80, 118, 46, 0.5));
+            filter: drop-shadow(0 0 4px rgba(27, 111, 184, 0.5));
         }
     </style>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦎</text></svg>" type="image/svg+xml">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23070809'/%3E%3Ctext x='16' y='23' font-family='Sora,Segoe UI,sans-serif' font-size='21' font-weight='700' text-anchor='middle' fill='%232486B9'%3ES%3C/text%3E%3C/svg%3E">
     <!-- Preload script to prevent flashing -->
     <script src="/static/js/theme-preload.js"></script>
     <style>
@@ -153,11 +154,11 @@
         }
         
         .step.active {
-            background: linear-gradient(135deg, #50762E 0%, #6a8e3a 100%);
+            background: linear-gradient(135deg, #1B6FB8 0%, #2384C2 100%);
             color: white;
             opacity: 1;
-            border-color: rgba(80, 118, 46, 0.3);
-            box-shadow: 0 4px 10px rgba(80, 118, 46, 0.2);
+            border-color: rgba(27, 111, 184, 0.3);
+            box-shadow: 0 4px 10px rgba(27, 111, 184, 0.2);
             transform: translateY(-2px);
         }
         
@@ -198,7 +199,7 @@
         
         .form-group label i {
             margin-right: 8px;
-            color: rgba(80, 118, 46, 0.9);
+            color: rgba(27, 111, 184, 0.9);
         }
         
         .form-group input {
@@ -213,8 +214,8 @@
         }
         
         .form-group input:focus {
-            border-color: rgba(80, 118, 46, 0.6);
-            box-shadow: 0 0 0 3px rgba(80, 118, 46, 0.2);
+            border-color: rgba(27, 111, 184, 0.6);
+            box-shadow: 0 0 0 3px rgba(27, 111, 184, 0.2);
             outline: none;
         }
         
@@ -275,16 +276,16 @@
         }
         
         .next-button, .submit-button {
-            background: linear-gradient(135deg, #50762E 0%, #6a8e3a 100%);
+            background: linear-gradient(135deg, #1B6FB8 0%, #2384C2 100%);
             color: white;
             border: none;
-            box-shadow: 0 4px 10px rgba(80, 118, 46, 0.3);
+            box-shadow: 0 4px 10px rgba(27, 111, 184, 0.3);
         }
 
         .next-button:hover, .submit-button:hover {
-            background: linear-gradient(135deg, #6a8e3a 0%, #8D9E40 100%);
+            background: linear-gradient(135deg, #2384C2 0%, #2486B9 100%);
             transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(80, 118, 46, 0.4);
+            box-shadow: 0 6px 15px rgba(27, 111, 184, 0.4);
         }
         
         .back-button {
@@ -301,7 +302,7 @@
         
         .next-button:active, .back-button:active, .submit-button:active {
             transform: translateY(0);
-            box-shadow: 0 2px 8px rgba(80, 118, 46, 0.3);
+            box-shadow: 0 2px 8px rgba(27, 111, 184, 0.3);
         }
         
         /* Skip button styling */
@@ -457,13 +458,16 @@
             }
         }
     </style>
+    <!-- Snagarr Cobalt theme - loaded last so it wins specificity -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+    <link rel="stylesheet" href="/static/css/cobalt.css">
 </head>
 <body class="login-page dark-mode">
     <div class="login-container">
         <div class="login-header">
-            <span class="login-logo" aria-label="NewtArr"><i class="fas fa-dragon"></i></span>
-            <h1>NewtArr</h1>
-            <p style="margin: 5px 0 0; color: rgba(255,255,255,0.4); font-size: 12px; font-style: italic;">a neutered fork of Huntarr v6.6.3, from simpler times, maintained by <a href="https://store.elfhosted.com" target="_blank" rel="noopener" style="color: #8D9E40;">ElfHosted</a></p>
+            <span class="login-logo" aria-label="Snagarr"><i class="fas fa-dragon"></i></span>
+            <h1>Snagarr</h1>
+            <p style="margin: 5px 0 0; color: rgba(255,255,255,0.4); font-size: 12px; font-style: italic;">Missing and upgrade automation for the *arr apps</p>
         </div>
         <div class="login-form">
             <div class="setup-steps">
@@ -519,7 +523,7 @@
                     
                     <div class="form-group" style="display: flex; flex-direction: column; align-items: center; margin: 20px 0;">
                         <label for="verificationCode" style="display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
-                            <i class="fas fa-shield-alt" style="margin-right: 8px; color: #8D9E40;"></i>
+                            <i class="fas fa-shield-alt" style="margin-right: 8px; color: #2486B9;"></i>
                             <span>Verification Code</span>
                         </label>
                         <input type="text" id="verificationCode" placeholder="Enter 6-digit code" maxlength="6" style="text-align: center; width: 60%; max-width: 300px;">
@@ -538,20 +542,20 @@
             
             <div id="authModeSetup" class="setup-section">
                 <h2>Choose Authentication Mode</h2>
-                <p>Select how users will authenticate with NewtArr</p>
+                <p>Select how users will authenticate with Snagarr</p>
                 
                 <div class="form-group" style="margin-top: 25px;">
-                    <div style="background-color: rgba(28, 36, 54, 0.8); border-radius: 10px; padding: 15px; border: 1px solid rgba(80, 118, 46, 0.3);">
+                    <div style="background-color: rgba(28, 36, 54, 0.8); border-radius: 10px; padding: 15px; border: 1px solid rgba(27, 111, 184, 0.3);">
                         <div style="display: flex; align-items: flex-start;">
                             <div style="margin-right: 12px; margin-top: 2px;">
-                                <i class="fas fa-shield-alt" style="color: #8D9E40; font-size: 18px;"></i>
+                                <i class="fas fa-shield-alt" style="color: #2486B9; font-size: 18px;"></i>
                             </div>
                             <div>
                                 <label for="auth_mode" style="font-weight: 600; display: flex; align-items: center; margin-bottom: 8px;">
                                     <span>Authentication Mode</span>
                                 </label>
                                 <div style="margin-bottom: 10px;">
-                                    <select id="auth_mode" style="width: 100%; padding: 8px; background-color: rgba(28, 36, 54, 0.8); color: #fff; border: 1px solid rgba(80, 118, 46, 0.6); border-radius: 5px;">
+                                    <select id="auth_mode" style="width: 100%; padding: 8px; background-color: rgba(28, 36, 54, 0.8); color: #fff; border: 1px solid rgba(27, 111, 184, 0.6); border-radius: 5px;">
                                         <option value="login" selected>Login Mode</option>
                                         <option value="local_bypass">Local Bypass Mode</option>
                                         <option value="no_login">No Login Mode</option>
@@ -580,15 +584,15 @@
             
             <div id="setupComplete" class="setup-section">
                 <h2>Setup Complete</h2>
-                <p>Your NewtArr account has been created successfully!</p>
+                <p>Your Snagarr account has been created successfully!</p>
                 <div style="text-align: center; margin-top: 20px;">
                     <div style="background-color: #2c2c2c; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
                         <p>
                             <i class="fas fa-heart thankyou-heart"></i>
                         </p>
-                        <p style="font-weight: bold; margin-top: 10px;">Thank You For Using NewtArr</p>
+                        <p style="font-weight: bold; margin-top: 10px;">Thank You For Using Snagarr</p>
                         <p style="color: #bbb; font-size: 0.95em; margin-top: 10px; line-height: 1.4; text-align: left;">
-                            A neutered fork of Huntarr v6.6.3, from simpler times, maintained by <a href="https://store.elfhosted.com" target="_blank" rel="noopener" style="color: #8D9E40;">ElfHosted</a>.
+                            Missing and upgrade automation for the *arr apps.
                         </p>
                     </div>
                     <p><i class="fas fa-check-circle" style="color: #4CAF50;"></i> You can now proceed to the main interface.</p>
@@ -930,7 +934,7 @@
             
             // Always use dark mode
             document.body.classList.add('dark-mode');
-            localStorage.setItem('huntarr-dark-mode', 'true');
+            localStorage.setItem('snagarr-dark-mode', 'true');
         });
     </script>
 </body>

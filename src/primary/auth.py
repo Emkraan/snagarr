@@ -414,7 +414,7 @@ def generate_2fa_secret(username: str) -> Tuple[str, str]:
     totp = pyotp.TOTP(secret)
     
     # Get the provisioning URI - Use the actual username here
-    uri = totp.provisioning_uri(name=username, issuer_name="NewtArr")
+    uri = totp.provisioning_uri(name=username, issuer_name="Snagarr")
     
     # Generate QR code
     qr = qrcode.QRCode(
