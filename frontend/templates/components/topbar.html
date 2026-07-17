@@ -23,19 +23,17 @@
 
 <style>
     .top-bar {
-        height: 35px; /* Slightly increased height for better spacing */
-        background: linear-gradient(135deg, rgba(30, 39, 56, 0.95) 0%, rgba(14, 20, 32, 0.95) 50%, rgba(16, 24, 36, 0.95) 100%);
+        height: 56px;
+        background: linear-gradient(180deg, rgba(19,28,46,.78), rgba(15,22,38,.62));
         display: flex;
         align-items: center;
-        padding: 0 20px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        border-bottom: 1px solid rgba(90, 109, 137, 0.15);
+        padding: 0 24px;
+        border-bottom: 1px solid var(--border-subtle);
         position: sticky;
         top: 0;
-        z-index: 100;
-        position: relative;
-        transition: all 0.3s ease;
-        backdrop-filter: blur(5px); /* Add subtle blur effect for depth */
+        z-index: 50;
+        transition: background .3s ease;
+        backdrop-filter: blur(10px);
     }
     
     /* Top color line */
