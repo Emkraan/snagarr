@@ -95,6 +95,8 @@
         color: #ffffff;
         text-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
         letter-spacing: 0.5px;
+        white-space: nowrap;   /* keep multi-word titles (e.g. "User Settings") on one line */
+        flex-shrink: 0;        /* title wins space; the tagline yields instead */
     }
 
     .topbar-tagline {
@@ -103,6 +105,9 @@
         color: rgba(255, 255, 255, 0.3);
         margin-left: 12px;
         white-space: nowrap;
+        overflow: hidden;          /* ellipsize rather than push the title into a wrap */
+        text-overflow: ellipsis;
+        min-width: 0;
     }
     .topbar-tagline a {
         color: #2486B9;

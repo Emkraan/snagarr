@@ -95,7 +95,7 @@ def login_route():
         # If user already exists, show login, otherwise redirect to setup
         if not user_exists():
              logger.info("No user exists, redirecting to setup.")
-             return redirect(url_for('common.setup_route'))
+             return redirect(url_for('common.setup'))
         logger.debug("Displaying login page.")
         oidc_on = False
         try:

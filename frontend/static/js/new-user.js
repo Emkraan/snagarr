@@ -175,7 +175,13 @@
                 if (secretKeyElement) {
                     secretKeyElement.textContent = data.secret;
                 }
-                
+
+                // Wire the Cobalt copy button (ui.js reads data-copy at click time).
+                const copySecretButton = document.getElementById('copySecretButton');
+                if (copySecretButton) {
+                    copySecretButton.setAttribute('data-copy', data.secret || '');
+                }
+
                 // Show setup section
                 updateVisibility('enableTwoFactorSection', false);
                 updateVisibility('setupTwoFactorSection', true);

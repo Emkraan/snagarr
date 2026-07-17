@@ -193,14 +193,14 @@ def oidc_login():
     client = _client()
     if client is None:
         logger.warning("OIDC login requested but OIDC is not configured; sending to local login.")
-        return redirect(url_for("common.login_page") if _has_endpoint("common.login_page") else "/login")
+        return redirect(url_for("common.login_route") if _has_endpoint("common.login_route") else "/login")
     redirect_uri = _callback_url()
     try:
         return client.authorize_redirect(redirect_uri)
     except Exception as e:
         # Misconfigured / unreachable tenant must never lock out local login.
         logger.error(f"OIDC authorize_redirect failed ({e}); falling back to local login.")
-        return redirect(url_for("common.login_page") if _has_endpoint("common.login_page") else "/login")
+        return redirect(url_for("common.login_route") if _has_endpoint("common.login_route") else "/login")
 
 
 @oidc_bp.route("/auth/callback")

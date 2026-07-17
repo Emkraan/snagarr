@@ -27,6 +27,24 @@ window.huntarrSchedules = window.huntarrSchedules || {
         if (!string) return '';
         return string.charAt(0).toUpperCase() + string.slice(1);
     }
+
+    /**
+     * Route a user-facing message through the Cobalt toast system, falling back
+     * to snagarrUI.showNotification, then alert.
+     * @param {string} message
+     * @param {string} type - 'success' | 'error'
+     */
+    function notify(message, type) {
+        if (typeof window.toast === 'function') {
+            window.toast(message, type === 'error' ? 'error' : 'success');
+            return;
+        }
+        if (window.snagarrUI && typeof window.snagarrUI.showNotification === 'function') {
+            window.snagarrUI.showNotification(message, type);
+            return;
+        }
+        alert(message);
+    }
     
     // Initialize when document is loaded
     document.addEventListener('DOMContentLoaded', function() {
@@ -70,24 +88,7 @@ function initScheduler() {
         hourSelect.value = hour;
         minuteSelect.value = minute;
     }
-    
-    // Make sure schedule containers are visible
-    setTimeout(() => {
-        // Ensure schedule table container is visible
-        const tableContainer = document.getElementById('schedule-table-container');
-        if (tableContainer) {
-            tableContainer.style.display = 'block';
-            console.debug('Schedule table container visibility ensured');
-        }
-        
-        // Ensure current schedules panel is visible
-        const schedulePanel = document.querySelector('.scheduler-panel:nth-child(2)');
-        if (schedulePanel) {
-            schedulePanel.style.display = 'block';
-            console.debug('Current schedules panel visibility ensured');
-        }
-    }, 200);
-    
+
     // Check if we're on the scheduling section
     if (window.location.hash === '#scheduling') {
         // Make sure nav item is active
@@ -110,10 +111,21 @@ function setupEventListeners() {
     }
     
     // Save button functionality removed since we're using auto-save
-    
+
+    // Reflect the hidden day checkboxes onto their Cobalt chip labels.
+    syncDayChips();
+
     // Only set up the event handler during initialization, not on every page render
     // Use a closure to ensure event listener is registered only once
     if (!window.huntarrSchedulerInitialized) {
+        // Keep chip .active state in sync when a day chip is toggled.
+        document.addEventListener('change', function(e) {
+            if (e.target && e.target.classList && e.target.classList.contains('day-input')) {
+                const chip = e.target.closest('[data-day-chip]');
+                if (chip) chip.classList.toggle('active', e.target.checked);
+            }
+        });
+
         // Document level listener to catch delete actions regardless of when items are added
         document.addEventListener('click', function(e) {
             // Only react to delete buttons
@@ -480,48 +492,20 @@ function saveSchedules() {
                 if (data.success) {
                     console.debug('Schedules saved successfully');
                     // Show success toast notification
-                    if (window.snagarrUI && typeof window.snagarrUI.showNotification === 'function') {
-                        snagarrUI.showNotification('Schedules saved successfully!', 'success');
-                    } else {
-                        alert('Schedules saved successfully!'); // Fallback
-                    }
-                    
+                    notify('Schedules saved successfully!', 'success');
+
                     // Update our schedules object with the cleaned version
                     Object.keys(schedules).forEach(key => {
                         schedules[key] = schedulesCopy[key];
                     });
                 } else {
                     console.error('Failed to save schedules:', data.message);
-                    
-                    // Show error message
-                    const errorMessage = document.createElement('div');
-                    errorMessage.classList.add('save-error-message');
-                    errorMessage.textContent = `Failed to save: ${data.message}`;
-                    document.querySelector('.scheduler-container').appendChild(errorMessage);
-                    
-                    // Remove message after 3 seconds
-                    setTimeout(() => {
-                        if (errorMessage.parentNode) {
-                            errorMessage.parentNode.removeChild(errorMessage);
-                        }
-                    }, 3000);
+                    notify(`Failed to save: ${data.message}`, 'error');
                 }
             })
             .catch(error => {
                 console.error('Error saving schedules:', error);
-                
-                // Show error message
-                const errorMessage = document.createElement('div');
-                errorMessage.classList.add('save-error-message');
-                errorMessage.textContent = 'Failed to save schedules!';
-                document.querySelector('.scheduler-container').appendChild(errorMessage);
-                
-                // Remove message after 3 seconds
-                setTimeout(() => {
-                    if (errorMessage.parentNode) {
-                        errorMessage.parentNode.removeChild(errorMessage);
-                    }
-                }, 3000);
+                notify('Failed to save schedules!', 'error');
             });
     } catch (error) {
         console.error('Error in save function:', error);
@@ -552,74 +536,57 @@ function getFormattedSchedules() {
     return formattedSchedules;
 }
 
+// Trash glyph (Lucide, matches _icons.html trash macro) for row delete buttons.
+const TRASH_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+
 /**
- * Render schedules in the UI
+ * Render schedules into the server-rendered Cobalt table.
  */
 function renderSchedules() {
-    // Find the schedules container and message element
+    // Server-rendered nodes: a <tbody> for rows, a table wrap, and an empty state.
     const schedulesContainer = document.getElementById('schedulesContainer');
     const noSchedulesMessage = document.getElementById('noSchedulesMessage');
-    
-    // If elements don't exist, try to find their parent and make them visible
+    const tableWrap = document.getElementById('schedulesTableWrap');
+
     if (!schedulesContainer || !noSchedulesMessage) {
-        // Look for the parent panel that contains schedules
-        const schedulePanel = document.querySelector('.scheduler-panel:nth-child(2)');
-        if (schedulePanel) {
-            // Ensure the panel content is visible
-            const panelContent = schedulePanel.querySelector('.panel-content');
-            if (panelContent) {
-                panelContent.style.display = 'block';
-                
-                // Try again to get the elements after making panel visible
-                setTimeout(() => renderSchedules(), 100);
-                return;
-            }
-        }
         console.warn('Schedule container elements not found, cannot render schedules');
         return;
     }
-    
-    // Make sure container's parent elements are visible
-    const parentPanel = schedulesContainer.closest('.scheduler-panel');
-    if (parentPanel) {
-        parentPanel.style.display = 'block';
-    }
-    
-    // Clear current schedules
+
+    // Clear current rows
     schedulesContainer.innerHTML = '';
-    
+
     // Get all schedules in a flat array
     const allSchedules = getFormattedSchedules();
-    
+
     // Count total schedules
     const totalSchedules = allSchedules.length;
-    
-    // Show message if no schedules
+
+    // Show empty state if no schedules
     if (totalSchedules === 0) {
-        schedulesContainer.style.display = 'none';
+        if (tableWrap) tableWrap.style.display = 'none';
         noSchedulesMessage.style.display = 'block';
         return;
     }
-    
-    // Show schedules and hide message
-    schedulesContainer.style.display = 'block';
+
+    // Show table and hide empty state
+    if (tableWrap) tableWrap.style.display = '';
     noSchedulesMessage.style.display = 'none';
-    
+
     // Sort schedules by time for easier viewing
     allSchedules.sort((a, b) => {
         if (!a.time) return 1;
         if (!b.time) return -1;
-        
+
         const aTime = `${String(a.time.hour).padStart(2, '0')}:${String(a.time.minute).padStart(2, '0')}`;
         const bTime = `${String(b.time.hour).padStart(2, '0')}:${String(b.time.minute).padStart(2, '0')}`;
         return aTime.localeCompare(bTime);
     });
-    
+
     // Add each schedule to the UI
     allSchedules.forEach(schedule => {
-        const scheduleItem = document.createElement('div');
-        scheduleItem.className = 'schedule-item';
-        
+        const scheduleItem = document.createElement('tr');
+
         // Format time
         const formattedTime = `${String(schedule.time.hour).padStart(2, '0')}:${String(schedule.time.minute).padStart(2, '0')}`;
         
@@ -680,30 +647,21 @@ function renderSchedules() {
             }
         }
         
-        // Build the schedule item HTML (checkbox removed but layout preserved)
+        // Build the schedule row (Cobalt table cells)
         scheduleItem.innerHTML = `
-            <div class="schedule-item-checkbox"></div>
-            <div class="schedule-item-time">${formattedTime}</div>
-            <div class="schedule-item-days">${daysText}</div>
-            <div class="schedule-item-action">${actionText}</div>
-            <div class="schedule-item-app">${appText}</div>
-            <div class="schedule-item-actions">
-                <button class="icon-button delete-schedule" data-id="${schedule.id}" data-app-type="${schedule.appType}"><i class="fas fa-trash"></i></button>
-            </div>
+            <td class="sched-time-cell">${formattedTime}</td>
+            <td>${daysText}</td>
+            <td>${actionText}</td>
+            <td>${appText}</td>
+            <td class="r">
+                <span class="sched-row-actions">
+                    <button type="button" class="icon-btn delete-schedule" aria-label="Delete schedule" title="Delete schedule" data-id="${schedule.id}" data-app-type="${schedule.appType}">${TRASH_SVG}</button>
+                </span>
+            </td>
         `;
-        
-        // Checkbox removed but empty div kept for layout preservation
-        
-        // Add event listeners for edit and delete buttons
-        const editButton = scheduleItem.querySelector('.edit-schedule');
-        if (editButton) {
-            editButton.addEventListener('click', function() {
-                editSchedule(this.getAttribute('data-id'), this.getAttribute('data-app-type'));
-            });
-        }
-        
-        // No individual delete button handlers - all handled by the document level listener
-        
+
+        // Delete is handled by the document-level listener in setupEventListeners.
+
         // Add to container
         schedulesContainer.appendChild(scheduleItem);
     });
@@ -734,23 +692,14 @@ function addSchedule() {
     
     // Validate form inputs (basic validation)
     if (isNaN(hour) || isNaN(minute)) {
-        if (window.snagarrUI && typeof window.snagarrUI.showNotification === 'function') {
-            snagarrUI.showNotification('Please enter a valid hour and minute.', 'error');
-        } else {
-            alert('Please enter a valid hour and minute.'); // Fallback
-        }
+        notify('Please enter a valid hour and minute.', 'error');
         return;
     }
-    
+
     if (!anyDaySelected) {
-        // Assuming snagarrUI is globally available
-        if (window.snagarrUI && typeof window.snagarrUI.showNotification === 'function') {
-            snagarrUI.showNotification('Please select at least one day to save the schedule.', 'error');
-        } else {
-            alert('Please select at least one day to save the schedule.'); // Fallback
-        }
+        notify('Please select at least one day to save the schedule.', 'error');
         console.error('Validation Error: No day selected for the new schedule.');
-        return; 
+        return;
     }
     
     const app = document.getElementById('scheduleApp').value;
@@ -863,16 +812,24 @@ function toggleScheduleEnabled(scheduleId, appType = 'global', enabled) {
 }
 
 /**
- * Reset day checkboxes to unchecked
+ * Reset day checkboxes to unchecked (and clear their chip highlight).
  */
 function resetDayCheckboxes() {
-    document.getElementById('day-monday').checked = false;
-    document.getElementById('day-tuesday').checked = false;
-    document.getElementById('day-wednesday').checked = false;
-    document.getElementById('day-thursday').checked = false;
-    document.getElementById('day-friday').checked = false;
-    document.getElementById('day-saturday').checked = false;
-    document.getElementById('day-sunday').checked = false;
+    ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].forEach(day => {
+        const cb = document.getElementById('day-' + day);
+        if (cb) cb.checked = false;
+    });
+    syncDayChips();
+}
+
+/**
+ * Reflect each hidden day checkbox's state onto its Cobalt chip label.
+ */
+function syncDayChips() {
+    document.querySelectorAll('#schedulingSection [data-day-chip]').forEach(chip => {
+        const cb = chip.querySelector('.day-input');
+        chip.classList.toggle('active', !!(cb && cb.checked));
+    });
 }
 
 // Close the IIFE that wraps the script

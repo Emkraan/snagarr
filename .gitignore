@@ -19,3 +19,6 @@ terraform/.terraform/
 # Build artifacts
 dist/
 *.egg-info/
+
+# Runtime-generated web instance list
+frontend/static/data/app_instances.json

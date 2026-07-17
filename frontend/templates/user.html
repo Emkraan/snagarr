@@ -1,481 +1,212 @@
+{% import "_ui.html" as ui %}
+{% import "_icons.html" as icons %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <title>User Settings - Snagarr</title>
     {% include 'components/head.html' %}
     <style>
+        /* Layout + tokens only. All colour comes from cobalt.css variables. */
+        .main-content { overflow-y: auto; max-height: 100vh; }
+
         .user-section {
-            padding: 15px;
+            padding: 24px;
             max-width: 1200px;
             margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            align-items: start;
         }
-        
-        /* Desktop layout for cards side by side with intelligent wrapping */
-        @media (min-width: 992px) {
-            .user-section {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 20px;
-            }
-            
-            .user-card {
-                flex: 1 1 250px; /* Base width, but allow growth and shrinking */
-            }
-        }
-        
-        /* Medium displays - show just two cards side by side */
-        @media (min-width: 992px) and (max-width: 1200px) {
-            .user-section .user-card:nth-child(3) {
-                flex-basis: 100%; /* Third card takes full width */
-            }
-        }
-        
-        /* Ensure main content area is scrollable */
-        .main-content {
-            overflow-y: auto;
-            max-height: 100vh;
-        }
-        
-        .user-card {
-            background: linear-gradient(180deg, rgba(22, 26, 34, 0.98), rgba(18, 22, 30, 0.95));
-            border-radius: 10px;
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
-            padding: 18px;
-            border: 1px solid rgba(90, 109, 137, 0.15);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        /* Add bottom margin only when cards are stacked (mobile view) */
-        @media (max-width: 991px) {
-            .user-card {
-                margin-bottom: 15px;
-            }
-        }
-        
-        .user-card h3 {
-            display: flex;
-            align-items: center;
-            margin-top: 0;
-            margin-bottom: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            color: #fff;
-        }
-        
-        .user-card h3 i {
-            margin-right: 8px;
-            color: rgba(65, 105, 225, 0.9);
-            font-size: 14px;
-        }
-        
-        .form-group {
-            margin-bottom: 8px;
-            position: relative;
-        }
-        
-        /* Additional styling to compact the 2FA card */
-        .user-card:last-child .form-group {
-            margin-bottom: 6px;
-        }
-        
-        #twoFactorEnabled {
-            margin: 0;
-            line-height: 1.2;
-        }
-        
-        #enableTwoFactorSection, #setupTwoFactorSection, #disableTwoFactorSection {
-            margin-top: 8px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 6px;
-            color: rgba(255, 255, 255, 0.9);
-            font-weight: 500;
+        .user-card .card-fields { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; }
+        .user-card .card-actions { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+        .readonly-value {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
             font-size: 13px;
+            padding: 9px 12px;
         }
-        
-        .current-value {
-            padding: 8px 10px;
-            background: rgba(28, 36, 54, 0.6);
-            border-radius: 6px;
-            color: rgba(255, 255, 255, 0.8);
-            border: 1px solid rgba(90, 109, 137, 0.2);
-            font-size: 14px;
+
+        /* Status message target for new-user.js (it sets .status-success / .status-error). */
+        .status-success, .status-error {
+            margin-top: 14px;
+            padding: 10px 12px;
+            border-radius: var(--radius-md);
+            font-size: 12.5px;
+            line-height: 1.45;
         }
-        
-        .form-control {
-            width: 100%;
-            padding: 8px 10px;
-            border: 1px solid rgba(90, 109, 137, 0.2);
-            border-radius: 6px;
-            background-color: rgba(28, 36, 54, 0.6);
-            color: #fff;
-            font-size: 14px;
-            transition: all 0.3s ease;
+        .status-success {
+            background: var(--success-dim);
+            color: var(--success);
+            border: 1px solid var(--success-border);
         }
-        
-        .form-control:focus {
-            border-color: rgba(65, 105, 225, 0.6);
-            box-shadow: 0 0 0 2px rgba(65, 105, 225, 0.2);
-            outline: none;
+        .status-error {
+            background: var(--danger-dim);
+            color: var(--danger);
+            border: 1px solid var(--danger-border);
         }
-        
-        .password-field {
-            position: relative;
-        }
-        
-        .toggle-password {
-            position: absolute;
-            right: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: pointer;
-            color: rgba(255, 255, 255, 0.6);
-            z-index: 10;
-            font-size: 12px;
-        }
-        
-        .toggle-password:hover {
-            color: rgba(255, 255, 255, 0.9);
-        }
-        
-        .form-actions {
-            margin-top: 10px;
-            display: flex;
-            gap: 7px;
-        }
-        
-        .action-button {
-            padding: 8px 15px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.3s ease;
-            border: none;
-        }
-        
-        .primary-button {
-            background: linear-gradient(135deg, #3a71e4 0%, #5481e6 100%);
-            color: white;
-            box-shadow: 0 3px 8px rgba(58, 113, 228, 0.3);
-        }
-        
-        .primary-button:hover {
-            background: linear-gradient(135deg, #4a7deb 0%, #6491fa 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 10px rgba(58, 113, 228, 0.4);
-        }
-        
-        .secondary-button {
-            background: linear-gradient(135deg, #38495a 0%, #465b70 100%);
-            color: white;
-            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
-        }
-        
-        .secondary-button:hover {
-            background: linear-gradient(135deg, #465b70 0%, #546d84 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
-        }
-        
-        .danger-button {
-            background: linear-gradient(135deg, #e74c3c 0%, #f15846 100%);
-            color: white;
-            box-shadow: 0 3px 8px rgba(231, 76, 60, 0.3);
-        }
-        
-        .danger-button:hover {
-            background: linear-gradient(135deg, #f15846 0%, #f3695a 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 10px rgba(231, 76, 60, 0.4);
-        }
-        
-        .status-message {
-            margin-top: 12px;
-            padding: 8px;
-            border-radius: 6px;
-            font-size: 12px;
-        }
-        
-        .status-message.success {
-            background-color: rgba(40, 167, 69, 0.2);
-            color: #2ecc71;
-            border-left: 3px solid #28a745;
-        }
-        
-        .status-message.error {
-            background-color: rgba(220, 53, 69, 0.2);
-            color: #ff6b6b;
-            border-left: 3px solid #dc3545;
-        }
-        
-        .status-badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 15px;
-            font-weight: 600;
-            font-size: 12px;
-        }
-        
-        .status-badge.enabled {
-            background-color: rgba(40, 167, 69, 0.2);
-            color: #2ecc71;
-            border: 1px solid rgba(40, 167, 69, 0.4);
-        }
-        
-        .status-badge.disabled {
-            background-color: rgba(108, 117, 125, 0.2);
-            color: #adb5bd;
-            border: 1px solid rgba(108, 117, 125, 0.4);
-        }
-        
-        .qr-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin: 14px 0;
-        }
-        
+
+        /* 2FA card */
+        .twofactor-status-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+        .qr-wrap { display: flex; justify-content: center; margin: 16px 0; }
         .qr-code {
-            background: white;
+            background: #fff;                 /* QR codes require a white quiet-zone */
             padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
-            width: 64px;
-            height: 64px;
-            margin: 0 auto 10px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            width: 168px;
+            height: 168px;
         }
-        
-        .qr-code img {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-        
-        /* Responsive QR code for mobile */
-        @media (max-width: 768px) {
-            .qr-code {
-                width: 30%;
-                height: auto;
-            }
-        }
-        
-        .secret-key-container {
+        .qr-code img { width: 100%; height: 100%; display: block; }
+        .secret-row { display: flex; align-items: stretch; gap: 8px; }
+        .secret-key {
+            flex: 1;
+            min-width: 0;
             display: flex;
             align-items: center;
-            gap: 7px;
-            margin-bottom: 7px;
-        }
-        
-        .secret-key {
-            font-family: monospace;
-            padding: 7px 10px;
-            background: rgba(28, 36, 54, 0.8);
-            border-radius: 6px;
-            border: 1px solid rgba(90, 109, 137, 0.3);
-            color: rgba(255, 255, 255, 0.9);
-            flex: 1;
-            font-size: 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            font-size: 12.5px;
+            word-break: break-all;
             user-select: all;
         }
-        
-        .copy-button {
-            background: transparent;
-            border: 1px solid rgba(90, 109, 137, 0.3);
-            color: rgba(255, 255, 255, 0.8);
-            padding: 6px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 12px;
-            transition: all 0.2s ease;
-        }
-        
-        .copy-button:hover {
-            background: rgba(90, 109, 137, 0.1);
-            border-color: rgba(90, 109, 137, 0.5);
-            color: white;
-        }
-        
-        .help-text {
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.6);
-            margin-top: 4px;
-        }
-        
-        .verification-code {
-            font-family: monospace;
-            letter-spacing: 2px;
-            text-align: center;
-        }
-        
-        @media (max-width: 768px) {
-            .user-card {
-                padding: 15px;
-            }
-            
-            .form-actions {
-                flex-direction: column;
-            }
-            
-            .action-button {
-                width: 100%;
-                justify-content: center;
-            }
-            
-            .secret-key-container {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            
-            .copy-button {
-                margin-top: 7px;
-            }
+
+        @media (max-width: 720px) {
+            .user-section { padding: 16px; }
+            .secret-row { flex-direction: column; }
         }
     </style>
 </head>
 <body>
     <div class="app-container mobile-optimized">
         {% include 'components/sidebar.html' %}
-        
+
         <div class="main-content">
             {% include 'components/topbar.html' %}
-            
+
             <div class="user-section">
-                <div class="user-card">
-                    <h3><i class="fas fa-user-edit"></i> Change Username</h3>
-                    <div class="form-group">
-                        <label for="currentUsername">Current Username:</label>
-                        <span id="currentUsername" class="current-value">Loading...</span>
+
+                {# ── Change Username ─────────────────────────────────────── #}
+                {% call ui.card(klass='user-card') %}
+                    {{ ui.section_label('Change Username', icon=icons.user(14)) }}
+                    <div class="card-fields">
+                        {% call ui.field('Current Username') %}
+                            <div id="currentUsername" class="readonly-value mono">Loading...</div>
+                        {% endcall %}
+                        {% call ui.field('New Username') %}
+                            {{ ui.input('newUsername', attrs='id="newUsername" autocomplete="off"') }}
+                        {% endcall %}
+                        {% call ui.field('Current Password') %}
+                            {{ ui.input('currentPasswordForUsernameChange', type='password', attrs='id="currentPasswordForUsernameChange" autocomplete="current-password" required') }}
+                        {% endcall %}
                     </div>
-                    <div class="form-group">
-                        <label for="newUsername">New Username:</label>
-                        <input type="text" id="newUsername" class="form-control">
+                    <div class="card-actions">
+                        {{ ui.button('Save Username', variant='primary', icon=icons.check(15), attrs='id="saveUsername"') }}
                     </div>
-                    <div class="form-group">
-                        <label for="currentPasswordForUsernameChange">Current Password:</label>
-                        <input type="password" id="currentPasswordForUsernameChange" class="form-control" required>
+                    <div id="usernameStatus" style="display: none;"></div>
+                {% endcall %}
+
+                {# ── Change Password ─────────────────────────────────────── #}
+                {% call ui.card(klass='user-card') %}
+                    {{ ui.section_label('Change Password', icon=icons.key(14)) }}
+                    <div class="card-fields">
+                        {% call ui.field('Current Password') %}
+                            {{ ui.input('currentPassword', type='password', attrs='id="currentPassword" autocomplete="current-password"') }}
+                        {% endcall %}
+                        {% call ui.field('New Password', hint='Must be at least 8 characters long.') %}
+                            {{ ui.input('newPassword', type='password', attrs='id="newPassword" autocomplete="new-password"') }}
+                        {% endcall %}
+                        {% call ui.field('Confirm Password') %}
+                            {{ ui.input('confirmPassword', type='password', attrs='id="confirmPassword" autocomplete="new-password"') }}
+                        {% endcall %}
                     </div>
-                    <div class="form-actions">
-                        <button id="saveUsername" class="action-button primary-button">Save Username</button>
+                    <div class="card-actions">
+                        {{ ui.button('Save Password', variant='primary', icon=icons.check(15), attrs='id="savePassword"') }}
                     </div>
-                    <div id="usernameStatus" class="status-message" style="display: none;"></div>
-                </div>
-                
-                <div class="user-card">
-                    <h3><i class="fas fa-key"></i> Change Password</h3>
-                    <div class="form-group">
-                        <label for="currentPassword">Current Password:</label>
-                        <input type="password" id="currentPassword" class="form-control">
+                    <div id="passwordStatus" style="display: none;"></div>
+                {% endcall %}
+
+                {# ── Two-Factor Authentication ───────────────────────────── #}
+                {% call ui.card(klass='user-card') %}
+                    {{ ui.section_label('Two-Factor Authentication', icon=icons.shield(14)) }}
+                    <div class="twofactor-status-row">
+                        <span class="field-label">Status</span>
+                        <span id="twoFactorEnabled" class="badge"><span class="badge-dot"></span>Loading...</span>
                     </div>
-                    <div class="form-group">
-                        <label for="newPassword">New Password:</label>
-                        <input type="password" id="newPassword" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label for="confirmPassword">Confirm Password:</label>
-                        <input type="password" id="confirmPassword" class="form-control">
-                    </div>
-                    <div class="form-actions">
-                        <button id="savePassword" class="action-button primary-button">Save Password</button>
-                    </div>
-                    <div id="passwordStatus" class="status-message" style="display: none;"></div>
-                </div>
-                
-                <div class="user-card">
-                    <h3><i class="fas fa-shield-alt"></i> Two-Factor Authentication</h3>
-                    <div class="form-group">
-                        <label>Status:</label>
-                        <span id="twoFactorEnabled" class="status-badge" style="display: none;">Loading...</span>
-                    </div>
-                    
+
                     <div id="enableTwoFactorSection" style="display: none;">
-                        <div class="form-actions">
-                            <button id="enableTwoFactor" class="action-button primary-button">Enable 2FA</button>
+                        <div class="card-actions">
+                            {{ ui.button('Enable 2FA', variant='primary', icon=icons.shield(15), attrs='id="enableTwoFactor"') }}
                         </div>
                     </div>
-                    
+
                     <div id="setupTwoFactorSection" style="display: none;">
-                        <div class="qr-container">
+                        <div class="qr-wrap">
                             <div class="qr-code">
-                                <img id="qrCode" src="" alt="QR Code">
+                                <img id="qrCode" src="" alt="Two-factor QR code">
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label for="secretKey">Secret Key:</label>
-                            <div class="secret-key-container">
-                                <div id="secretKey" class="secret-key"></div>
-                                <button class="copy-button">Copy</button>
-                            </div>
-                            <p class="help-text">Use this key if you can't scan the QR code</p>
+                        <div class="card-fields">
+                            {% call ui.field('Secret Key', hint="Use this key if you can't scan the QR code.") %}
+                                <div class="secret-row">
+                                    <div id="secretKey" class="secret-key mono"></div>
+                                    {{ ui.button('Copy', variant='default', size='sm', icon=icons.copy(14), attrs='id="copySecretButton" data-copy=""') }}
+                                </div>
+                            {% endcall %}
+                            {% call ui.field('Verification Code') %}
+                                {{ ui.input('verificationCode', placeholder='000000', attrs='id="verificationCode" maxlength="6" inputmode="numeric" autocomplete="one-time-code"') }}
+                            {% endcall %}
                         </div>
-                        <div class="form-group">
-                            <label for="verificationCode">Verification Code:</label>
-                            <input type="text" id="verificationCode" class="form-control" placeholder="000000" maxlength="6">
+                        <div class="card-actions">
+                            {{ ui.button('Verify and Enable', variant='primary', icon=icons.check(15), attrs='id="verifyTwoFactor"') }}
                         </div>
-                        <div class="form-actions">
-                            <button id="verifyTwoFactor" class="action-button primary-button">Verify and Enable</button>
-                        </div>
-                        <div id="verifyStatus" class="status-message" style="display: none;"></div>
+                        <div id="verifyStatus" style="display: none;"></div>
                     </div>
-                    
+
                     <div id="disableTwoFactorSection" style="display: none;">
-                        <div class="form-group">
-                            <label for="currentPasswordFor2FADisable">Current Password:</label>
-                            <input type="password" id="currentPasswordFor2FADisable" class="form-control" placeholder="Enter your password" required>
+                        <div class="card-fields">
+                            {% call ui.field('Current Password') %}
+                                {{ ui.input('currentPasswordFor2FADisable', type='password', placeholder='Enter your password', attrs='id="currentPasswordFor2FADisable" autocomplete="current-password" required') }}
+                            {% endcall %}
+                            {% call ui.field('Current OTP Code') %}
+                                {{ ui.input('otpCodeFor2FADisable', placeholder='000000', attrs='id="otpCodeFor2FADisable" maxlength="6" inputmode="numeric" autocomplete="one-time-code" required') }}
+                            {% endcall %}
                         </div>
-                        <div class="form-group">
-                            <label for="otpCodeFor2FADisable">Current OTP Code:</label>
-                            <input type="text" id="otpCodeFor2FADisable" class="form-control" placeholder="000000" maxlength="6" required>
+                        <div class="card-actions">
+                            {{ ui.button('Disable 2FA', variant='danger', icon=icons.shield(15), attrs='id="disableTwoFactor"') }}
                         </div>
-                        <div class="form-actions">
-                            <button id="disableTwoFactor" class="action-button danger-button">Disable 2FA</button>
-                        </div>
-                        <div id="disableStatus" class="status-message" style="display: none;"></div>
+                        <div id="disableStatus" style="display: none;"></div>
                     </div>
-                </div>
+                {% endcall %}
+
             </div>
         </div>
     </div>
 
+    {{ ui.toast_root() }}
+
     {% include 'components/scripts.html' %}
-    <!-- Add specific reference to new-user.js -->
+    <!-- Cobalt v2 component behaviors (data-copy, toast) -->
+    <script src="/static/js/ui.js"></script>
+    <!-- User account page driver (change username/password + 2FA lifecycle) -->
     <script src="/static/js/new-user.js"></script>
     <script>
-        // Initialize dark mode
+        // Force the committed single dark theme + persist the preference.
         document.addEventListener('DOMContentLoaded', function() {
-            // Apply dark theme
             document.body.classList.add('dark-theme');
             localStorage.setItem('snagarr-dark-mode', 'true');
-            
-            // Update server setting to dark mode
             fetch('/api/settings/theme', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ dark_mode: true })
-            }).catch(error => console.error('Error saving theme:', error));
+            }).catch(function(error) { console.error('Error saving theme:', error); });
         });
-        
-        // Password validation function
-        function validatePassword(password) {
-            // Only check for minimum length of 8 characters
-            if (password.length < 8) {
-                return 'Password must be at least 8 characters long.';
-            }
-            return null; // Password is valid
-        }
     </script>
 </body>
 </html>

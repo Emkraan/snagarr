@@ -1,8 +1,15 @@
-/**
- * Huntarr - History Module
- * Handles displaying and managing history entries for all media apps
+/*
+ * Snagarr - History module.
+ *
+ * The History section is server-rendered with the Cobalt v2 macros
+ * (components/history_section.html): a page_header + Clear button, a filter row
+ * (app select / search / page-size), a macro table, loading + empty states, and
+ * prev/next pagination. This module POPULATES that markup - it never rebuilds
+ * the shell. It preserves the original endpoints and behaviours:
+ *   - GET    /api/history/<app_type>?page&page_size&search  (paged fetch)
+ *   - DELETE /api/history/<app_type>                        (clear)
+ * Operation types render as Cobalt badges with tone by outcome.
  */
-
 const historyModule = {
     // State
     currentApp: 'all',
@@ -11,144 +18,121 @@ const historyModule = {
     pageSize: 20,
     searchQuery: '',
     isLoading: false,
-    
+
     // DOM elements
     elements: {},
-    
+
     // Initialize the history module
     init: function() {
         this.cacheElements();
         this.setupEventListeners();
-        
+
         // Initial load if history is active section
-        if (snagarrUI && snagarrUI.currentSection === 'history') {
+        if (typeof snagarrUI !== 'undefined' && snagarrUI && snagarrUI.currentSection === 'history') {
             this.loadHistory();
         }
     },
-    
+
     // Cache DOM elements
     cacheElements: function() {
+        const section = document.getElementById('historySection');
         this.elements = {
-            // History dropdown
-            historyOptions: document.querySelectorAll('.history-option'),
-            currentHistoryApp: document.getElementById('current-history-app'),
-            historyDropdownBtn: document.querySelector('.history-dropdown-btn'),
-            historyDropdownContent: document.querySelector('.history-dropdown-content'),
-            
-            // Table and containers
-            historyTable: document.querySelector('.history-table'),
+            section: section,
+
+            // Table + state containers
+            tableWrap: section ? section.querySelector('.table-wrap') : null,
             historyTableBody: document.getElementById('historyTableBody'),
-            historyContainer: document.querySelector('.history-container'),
-            
+            historyEmptyState: document.getElementById('historyEmptyState'),
+            historyLoading: document.getElementById('historyLoading'),
+
             // Controls
+            historyAppSelect: document.getElementById('historyAppSelect'),
             historySearchInput: document.getElementById('historySearchInput'),
             historySearchButton: document.getElementById('historySearchButton'),
             historyPageSize: document.getElementById('historyPageSize'),
             clearHistoryButton: document.getElementById('clearHistoryButton'),
-            
+
             // Pagination
             historyPrevPage: document.getElementById('historyPrevPage'),
             historyNextPage: document.getElementById('historyNextPage'),
             historyCurrentPage: document.getElementById('historyCurrentPage'),
-            historyTotalPages: document.getElementById('historyTotalPages'),
-            
-            // State displays
-            historyEmptyState: document.getElementById('historyEmptyState'),
-            historyLoading: document.getElementById('historyLoading')
+            historyTotalPages: document.getElementById('historyTotalPages')
         };
     },
-    
+
     // Set up event listeners
     setupEventListeners: function() {
-        // App selection (native select)
-        const historyAppSelect = document.getElementById('historyAppSelect');
-        if (historyAppSelect) {
-            historyAppSelect.addEventListener('change', (e) => {
-                this.handleHistoryAppChange(e.target.value);
+        const e = this.elements;
+
+        if (e.historyAppSelect) {
+            e.historyAppSelect.addEventListener('change', (ev) => {
+                this.handleHistoryAppChange(ev.target.value);
             });
         }
-        // App selection (legacy click)
-        this.elements.historyOptions.forEach(option => {
-            option.addEventListener('click', e => this.handleHistoryAppChange(e));
-        });
-        
-        // Search
-        this.elements.historySearchButton.addEventListener('click', () => this.handleSearch());
-        this.elements.historySearchInput.addEventListener('keypress', e => {
-            if (e.key === 'Enter') this.handleSearch();
-        });
-        
-        // Page size
-        this.elements.historyPageSize.addEventListener('change', () => this.handlePageSizeChange());
-        
-        // Clear history
-        this.elements.clearHistoryButton.addEventListener('click', () => this.handleClearHistory());
-        
-        // Pagination
-        this.elements.historyPrevPage.addEventListener('click', () => this.handlePagination('prev'));
-        this.elements.historyNextPage.addEventListener('click', () => this.handlePagination('next'));
+
+        if (e.historySearchButton) {
+            e.historySearchButton.addEventListener('click', () => this.handleSearch());
+        }
+        if (e.historySearchInput) {
+            e.historySearchInput.addEventListener('keypress', (ev) => {
+                if (ev.key === 'Enter') this.handleSearch();
+            });
+        }
+
+        if (e.historyPageSize) {
+            e.historyPageSize.addEventListener('change', () => this.handlePageSizeChange());
+        }
+
+        if (e.clearHistoryButton) {
+            e.clearHistoryButton.addEventListener('click', () => this.handleClearHistory());
+        }
+
+        if (e.historyPrevPage) {
+            e.historyPrevPage.addEventListener('click', () => this.handlePagination('prev'));
+        }
+        if (e.historyNextPage) {
+            e.historyNextPage.addEventListener('click', () => this.handlePagination('next'));
+        }
     },
-    
+
     // Load history data when section becomes active
     loadHistory: function() {
-        if (this.elements.historyContainer) {
+        if (this.elements.historyTableBody) {
             this.fetchHistoryData();
         }
     },
-    
+
     // Handle app selection changes
-    handleHistoryAppChange: function(eOrValue) {
-        let selectedApp;
-        if (typeof eOrValue === 'string') {
-            selectedApp = eOrValue;
-        } else if (eOrValue && eOrValue.target) {
-            selectedApp = eOrValue.target.getAttribute('data-app');
-            eOrValue.preventDefault();
-        }
+    handleHistoryAppChange: function(value) {
+        const selectedApp = value;
         if (!selectedApp || selectedApp === this.currentApp) return;
-        // Update UI (for legacy click)
-        if (this.elements.historyOptions) {
-            this.elements.historyOptions.forEach(option => {
-                option.classList.remove('active');
-                if (option.getAttribute('data-app') === selectedApp) {
-                    option.classList.add('active');
-                }
-            });
-        }
-        // Update dropdown text (if present)
-        if (this.elements.currentHistoryApp) {
-            const displayName = selectedApp.charAt(0).toUpperCase() + selectedApp.slice(1);
-            this.elements.currentHistoryApp.textContent = displayName;
-        }
-        // Reset pagination
         this.currentPage = 1;
-        // Update state and fetch data
         this.currentApp = selectedApp;
         this.fetchHistoryData();
     },
-    
+
     // Handle search
     handleSearch: function() {
-        const newSearchQuery = this.elements.historySearchInput.value.trim();
-        
-        // Only fetch if search query changed
+        const newSearchQuery = this.elements.historySearchInput
+            ? this.elements.historySearchInput.value.trim() : '';
+
         if (newSearchQuery !== this.searchQuery) {
             this.searchQuery = newSearchQuery;
-            this.currentPage = 1; // Reset to first page
+            this.currentPage = 1;
             this.fetchHistoryData();
         }
     },
-    
+
     // Handle page size change
     handlePageSizeChange: function() {
-        const newPageSize = parseInt(this.elements.historyPageSize.value);
+        const newPageSize = parseInt(this.elements.historyPageSize.value, 10);
         if (newPageSize !== this.pageSize) {
             this.pageSize = newPageSize;
-            this.currentPage = 1; // Reset to first page
+            this.currentPage = 1;
             this.fetchHistoryData();
         }
     },
-    
+
     // Handle pagination
     handlePagination: function(direction) {
         if (direction === 'prev' && this.currentPage > 1) {
@@ -159,24 +143,24 @@ const historyModule = {
             this.fetchHistoryData();
         }
     },
-    
+
     // Handle clear history
     handleClearHistory: function() {
-        if (confirm(`Are you sure you want to clear ${this.currentApp === 'all' ? 'all history' : this.currentApp + ' history'}?`)) {
+        const label = this.currentApp === 'all' ? 'all history' : this.currentApp + ' history';
+        if (confirm(`Are you sure you want to clear ${label}?`)) {
             this.clearHistory();
         }
     },
-    
+
     // Fetch history data from API
     fetchHistoryData: function() {
         this.setLoading(true);
-        
-        // Construct URL with parameters
+
         let url = `/api/history/${this.currentApp}?page=${this.currentPage}&page_size=${this.pageSize}`;
         if (this.searchQuery) {
             url += `&search=${encodeURIComponent(this.searchQuery)}`;
         }
-        
+
         fetch(url)
             .then(response => {
                 if (!response.ok) {
@@ -185,7 +169,7 @@ const historyModule = {
                 return response.json();
             })
             .then(data => {
-                this.totalPages = data.total_pages;
+                this.totalPages = data.total_pages || 1;
                 this.renderHistoryData(data);
                 this.updatePaginationUI();
                 this.setLoading(false);
@@ -196,293 +180,195 @@ const historyModule = {
                 this.setLoading(false);
             });
     },
-    
+
     // Clear history
     clearHistory: function() {
         this.setLoading(true);
-        
-        fetch(`/api/history/${this.currentApp}`, {
-            method: 'DELETE',
-        })
+
+        fetch(`/api/history/${this.currentApp}`, { method: 'DELETE' })
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
                 return response.json();
             })
-            .then(() => {
-                // Reload data
-                this.fetchHistoryData();
-            })
+            .then(() => { this.fetchHistoryData(); })
             .catch(error => {
                 console.error('Error clearing history:', error);
                 this.showError('Failed to clear history. Please try again later.');
                 this.setLoading(false);
             });
     },
-    
-    // Render history data to table
+
+    // Render history data to the server-rendered table
     renderHistoryData: function(data) {
         const tableBody = this.elements.historyTableBody;
+        if (!tableBody) return;
         tableBody.innerHTML = '';
-        
+
         if (!data.entries || data.entries.length === 0) {
             this.showEmptyState();
             return;
         }
-        
-        // Hide empty state
-        this.elements.historyEmptyState.style.display = 'none';
-        this.elements.historyTable.style.display = 'table';
-        
-        // Render rows
+
+        // Show table, hide empty state
+        if (this.elements.historyEmptyState) this.elements.historyEmptyState.hidden = true;
+        if (this.elements.tableWrap) this.elements.tableWrap.hidden = false;
+
         data.entries.forEach(entry => {
             const row = document.createElement('tr');
-            
-            // Format the instance name to include app type (capitalize first letter of app type)
-            const appType = entry.app_type ? entry.app_type.charAt(0).toUpperCase() + entry.app_type.slice(1) : '';
-            const formattedInstance = appType ? `${appType} - ${entry.instance_name}` : entry.instance_name;
-            
-            // Build the row content piece by piece to ensure ID has no wrapping elements
-            const processedInfoCell = document.createElement('td');
-            
-            // Create info icon with hover tooltip functionality
-            const infoIcon = document.createElement('i');
-            infoIcon.className = 'fas fa-info-circle info-hover-icon';
-            // Ensure the icon has the right content and is centered
-            infoIcon.style.textAlign = 'center';
-            
-            // Create a span for the title with wrapping enabled
-            const titleSpan = document.createElement('span');
-            titleSpan.className = 'processed-title';
-            titleSpan.style.wordBreak = 'break-word'; // Enable word breaking
-            titleSpan.style.whiteSpace = 'normal'; // Allow normal wrapping
-            titleSpan.style.overflow = 'visible'; // Ensure text is not cut off
-            titleSpan.innerHTML = this.escapeHtml(entry.processed_info);
-            
-            // Create tooltip element for JSON data
-            const tooltip = document.createElement('div');
-            tooltip.className = 'json-tooltip';
-            
-            // Add a solid background backing div to ensure no transparency
-            const solidBackground = document.createElement('div');
-            solidBackground.style.position = 'absolute';
-            solidBackground.style.top = '0';
-            solidBackground.style.left = '0';
-            solidBackground.style.width = '100%';
-            solidBackground.style.height = '100%';
-            solidBackground.style.backgroundColor = '#121824'; // Solid dark background
-            solidBackground.style.zIndex = '1';
-            solidBackground.style.borderRadius = '5px';
-            tooltip.appendChild(solidBackground);
-            
-            // Add another solid layer for extra opacity
-            const extraLayer = document.createElement('div');
-            extraLayer.style.position = 'absolute';
-            extraLayer.style.top = '0';
-            extraLayer.style.left = '0';
-            extraLayer.style.width = '100%';
-            extraLayer.style.height = '100%';
-            extraLayer.style.backgroundColor = '#0c111d';
-            extraLayer.style.opacity = '0.9';
-            extraLayer.style.zIndex = '2';
-            extraLayer.style.borderRadius = '5px';
-            tooltip.appendChild(extraLayer);
-            
-            // Create a container for content that sits above the background
-            const contentContainer = document.createElement('div');
-            contentContainer.style.position = 'relative';
-            contentContainer.style.zIndex = '5'; // Higher z-index to ensure content is on top
-            contentContainer.style.pointerEvents = 'auto';
-            tooltip.appendChild(contentContainer);
-            
-            // Format the JSON data for display
-            let jsonData = {};
-            try {
-                // Extract available fields from the entry for the tooltip
-                jsonData = {
-                    title: entry.processed_info,
-                    id: entry.id,
-                    app: entry.app_type || 'Unknown',
-                    instance: entry.instance_name || 'Default',
-                    date: entry.date_time_readable,
-                    operation: entry.operation_type,
-                    // Add any additional fields that might be useful
-                    details: entry.details || {}
-                };
-            } catch (e) {
-                jsonData = { error: 'Could not parse JSON data', title: entry.processed_info };
-            }
-            
-            // Create formatted JSON content
-            const pre = document.createElement('pre');
-            pre.className = 'json-content';
-            pre.textContent = JSON.stringify(jsonData, null, 2);
-            contentContainer.appendChild(pre);
-            
-            // Add the tooltip to the icon
-            infoIcon.appendChild(tooltip);
-            
-            // Add positioning logic to prevent the tooltip from being cut off
-            infoIcon.addEventListener('mouseenter', () => {
-                setTimeout(() => {
-                    // Get positions
-                    const iconRect = infoIcon.getBoundingClientRect();
-                    const tooltipRect = tooltip.getBoundingClientRect();
-                    const viewportWidth = window.innerWidth;
-                    
-                    // Position the tooltip to the right of the icon by default
-                    let leftPos = 35; // Start with offset to the right
-                    let topPos = '100%';
-                    
-                    // If tooltip would go off the right edge
-                    if (iconRect.left + tooltipRect.width > viewportWidth) {
-                        // Move it to the left so it stays within the viewport
-                        const overflow = iconRect.left + tooltipRect.width - viewportWidth;
-                        leftPos = -overflow - 20; // 20px padding from edge
-                    }
-                    
-                    // Check if tooltip would go off the bottom edge
-                    const viewportHeight = window.innerHeight;
-                    if (iconRect.bottom + tooltipRect.height > viewportHeight) {
-                        // Position above the icon instead
-                        topPos = `-${tooltipRect.height}px`;
-                    }
-                    
-                    // Apply the calculated positions
-                    tooltip.style.left = `${leftPos}px`;
-                    tooltip.style.top = topPos;
-                }, 0);
-            });
-            
-            // Create a container div to hold both icon and title on the same line
-            const lineContainer = document.createElement('div');
-            lineContainer.className = 'title-line-container';
-            // Additional inline styles to ensure proper alignment
-            lineContainer.style.display = 'flex';
-            lineContainer.style.alignItems = 'flex-start';
-            
-            // Append icon and title to the container
-            lineContainer.appendChild(infoIcon);
-            lineContainer.appendChild(document.createTextNode(' ')); // Add space
-            lineContainer.appendChild(titleSpan);
-            
-            // Add the container to the cell
-            processedInfoCell.appendChild(lineContainer);
-            
-            const operationTypeCell = document.createElement('td');
-            operationTypeCell.innerHTML = this.formatOperationType(entry.operation_type);
-            
-            // Create a plain text ID cell with no styling
+
+            const appType = entry.app_type
+                ? entry.app_type.charAt(0).toUpperCase() + entry.app_type.slice(1) : '';
+            const formattedInstance = appType
+                ? `${appType} - ${entry.instance_name}` : (entry.instance_name || '');
+
+            // Processed information: info icon (details on hover) + title.
+            const processedCell = document.createElement('td');
+            const line = document.createElement('div');
+            line.className = 'history-processed';
+
+            const info = document.createElement('span');
+            info.className = 'history-info-ico';
+            info.setAttribute('aria-hidden', 'true');
+            info.innerHTML = this.infoIconSvg();
+            info.title = this.buildDetails(entry);
+
+            const title = document.createElement('span');
+            title.className = 'history-title';
+            title.textContent = entry.processed_info || '';
+
+            line.appendChild(info);
+            line.appendChild(title);
+            processedCell.appendChild(line);
+
+            // Operation badge (tone by outcome).
+            const opCell = document.createElement('td');
+            opCell.innerHTML = this.operationBadge(entry.operation_type);
+
+            // ID (plain, mono).
             const idCell = document.createElement('td');
-            idCell.className = 'plain-id';
-            idCell.textContent = entry.id; // Use textContent to ensure no HTML parsing
-            
+            idCell.className = 'mono';
+            idCell.textContent = entry.id;
+
             const instanceCell = document.createElement('td');
-            instanceCell.innerHTML = this.escapeHtml(formattedInstance);
-            
-            const timeAgoCell = document.createElement('td');
-            timeAgoCell.innerHTML = this.escapeHtml(entry.how_long_ago);
-            
-            // Clear any existing content and append the cells
-            row.innerHTML = '';
-            row.appendChild(processedInfoCell);
-            row.appendChild(operationTypeCell);
+            instanceCell.textContent = formattedInstance;
+
+            const timeCell = document.createElement('td');
+            timeCell.textContent = entry.how_long_ago || '';
+
+            row.appendChild(processedCell);
+            row.appendChild(opCell);
             row.appendChild(idCell);
             row.appendChild(instanceCell);
-            row.appendChild(timeAgoCell);
-            
+            row.appendChild(timeCell);
+
             tableBody.appendChild(row);
         });
     },
-    
+
     // Update pagination UI
     updatePaginationUI: function() {
-        this.elements.historyCurrentPage.textContent = this.currentPage;
-        this.elements.historyTotalPages.textContent = this.totalPages;
-        
-        // Enable/disable pagination buttons
-        this.elements.historyPrevPage.disabled = this.currentPage <= 1;
-        this.elements.historyNextPage.disabled = this.currentPage >= this.totalPages;
+        if (this.elements.historyCurrentPage) {
+            this.elements.historyCurrentPage.textContent = this.currentPage;
+        }
+        if (this.elements.historyTotalPages) {
+            this.elements.historyTotalPages.textContent = this.totalPages;
+        }
+        if (this.elements.historyPrevPage) {
+            this.elements.historyPrevPage.disabled = this.currentPage <= 1;
+        }
+        if (this.elements.historyNextPage) {
+            this.elements.historyNextPage.disabled = this.currentPage >= this.totalPages;
+        }
     },
-    
+
     // Show empty state
     showEmptyState: function() {
-        this.elements.historyTable.style.display = 'none';
-        this.elements.historyEmptyState.style.display = 'flex';
+        if (this.elements.tableWrap) this.elements.tableWrap.hidden = true;
+        if (this.elements.historyEmptyState) this.elements.historyEmptyState.hidden = false;
     },
-    
-    // Show error
+
+    // Show error via the shared toast/notification systems
     showError: function(message) {
-        // Use snagarrUI's notification system if available
-        if (typeof snagarrUI !== 'undefined' && typeof snagarrUI.showNotification === 'function') {
+        if (typeof window.toast === 'function') {
+            window.toast(message, 'error');
+        } else if (typeof snagarrUI !== 'undefined' && typeof snagarrUI.showNotification === 'function') {
             snagarrUI.showNotification(message, 'error');
         } else {
             alert(message);
         }
     },
-    
+
     // Set loading state
     setLoading: function(isLoading) {
         this.isLoading = isLoading;
-        
+        const e = this.elements;
+
         if (isLoading) {
-            this.elements.historyLoading.style.display = 'flex';
-            this.elements.historyTable.style.display = 'none';
-            this.elements.historyEmptyState.style.display = 'none';
+            if (e.historyLoading) e.historyLoading.hidden = false;
+            if (e.tableWrap) e.tableWrap.hidden = true;
+            if (e.historyEmptyState) e.historyEmptyState.hidden = true;
         } else {
-            this.elements.historyLoading.style.display = 'none';
+            if (e.historyLoading) e.historyLoading.hidden = true;
         }
     },
-    
-    // Helper function to escape HTML
-    escapeHtml: function(text) {
-        if (text === null || text === undefined) return '';
-        
-        const map = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
+
+    // Build a plain-text details blob for the processed-info tooltip
+    buildDetails: function(entry) {
+        const details = {
+            title: entry.processed_info,
+            id: entry.id,
+            app: entry.app_type || 'Unknown',
+            instance: entry.instance_name || 'Default',
+            date: entry.date_time_readable,
+            operation: entry.operation_type
         };
-        
-        return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
-    },
-    
-    // Helper function to format operation type with gradient styling
-    formatOperationType: function(operationType) {
-        switch (operationType) {
-            case 'missing':
-                return '<span class="operation-status missing">Missing</span>';
-            case 'upgrade':
-                return '<span class="operation-status upgrade">Upgrade</span>';
-            case 'warning':
-                return '<span class="operation-status warning">Warning</span>';
-            case 'error':
-                return '<span class="operation-status error">Error</span>';
-            case 'success':
-                return '<span class="operation-status success">Success</span>';
-            default:
-                return operationType ? this.escapeHtml(operationType.charAt(0).toUpperCase() + operationType.slice(1)) : 'Unknown';
+        try {
+            return JSON.stringify(details, null, 2);
+        } catch (err) {
+            return String(entry.processed_info || '');
         }
+    },
+
+    // Inline info glyph (Lucide style, matches _icons.info)
+    infoIconSvg: function() {
+        return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+               'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+               '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/>' +
+               '<line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
+    },
+
+    // Map an operation type to a Cobalt badge (class matches the `badge` macro)
+    operationBadge: function(operationType) {
+        const tones = {
+            success: 'success',
+            upgrade: 'info',
+            warning: 'warning',
+            missing: 'danger',
+            error: 'danger'
+        };
+        const key = (operationType || '').toLowerCase();
+        const tone = tones[key];
+        const label = operationType
+            ? operationType.charAt(0).toUpperCase() + operationType.slice(1)
+            : 'Unknown';
+        const span = document.createElement('span');
+        span.className = 'badge' + (tone ? ' tone-' + tone : '');
+        span.textContent = label;
+        return span.outerHTML;
     }
 };
 
-// Initialize when snagarrUI is ready
+// Initialize when the DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     historyModule.init();
-    
-    // Connect with main app
-    if (typeof snagarrUI !== 'undefined') {
-        // Add loadHistory to the section switch handler
+
+    // Hook into the SPA router: load history when its section is shown.
+    if (typeof snagarrUI !== 'undefined' && typeof snagarrUI.switchSection === 'function') {
         const originalSwitchSection = snagarrUI.switchSection;
-        
         snagarrUI.switchSection = function(section) {
-            // Call original function
             originalSwitchSection.call(snagarrUI, section);
-            
-            // Load history data when switching to history section
             if (section === 'history') {
                 historyModule.loadHistory();
             }
