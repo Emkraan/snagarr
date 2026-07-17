@@ -160,11 +160,14 @@
                 </label>
                 <button type="submit" id="loginButton" class="btn btn-primary auth-submit">{{ icons.logout(15) }} Log In</button>
             </form>
-            {% if oidc_enabled %}
+            {% if oidc_providers %}
             <div class="oidc-divider"><span class="rule"></span>Or<span class="rule"></span></div>
-            <a href="/auth/login" class="btn btn-default oidc-button">
-                <i class="fab fa-microsoft"></i> Sign in with Microsoft
+            {% for p in oidc_providers %}
+            {% set brand = {'microsoft':'fab fa-microsoft','google':'fab fa-google','github':'fab fa-github'}.get(p.provider_type, 'fas fa-right-to-bracket') %}
+            <a href="/auth/login/{{ p.name }}" class="btn btn-default oidc-button">
+                <i class="{{ brand }}"></i> Sign in with {{ p.display_name }}
             </a>
+            {% endfor %}
             {% endif %}
         </div>
     </div>
