@@ -296,6 +296,15 @@ code,pre,kbd,samp{font-family:var(--font-mono);}
 .content-col{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0;}
 .scroll-col{flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;padding:24px;}
 
+/* Constrain + centre content on wide screens so panels/inputs never stretch
+   edge-to-edge on an ultrawide monitor (the #1 "flat / clunky" tell). Applies
+   to every SPA view + the page header. Wide-content views can opt out with
+   .content-section.wide. */
+/* !important is required: a legacy stylesheet forces max-width on these sections. */
+.content-section{max-width:1180px !important;margin-left:auto !important;margin-right:auto !important;width:100%;}
+.content-section.wide{max-width:1480px !important;}
+/* Apps keeps its wide double-panel layout (its own #appsSection !important wins). */
+
 /* Sidebar */
 .sidebar{width:224px;min-width:224px;height:100%;
   background:linear-gradient(180deg,var(--bg-secondary) 0%,var(--bg-primary) 100%);
@@ -425,9 +434,9 @@ code,pre,kbd,samp{font-family:var(--font-mono);}
 /* =========================================================================
    10. Card + hover-lift
    ========================================================================= */
-.card{background:linear-gradient(180deg,var(--bg-card) 0%,var(--bg-secondary) 100%);
-  border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:18px;
-  box-shadow:var(--shadow-sm),var(--shadow-inset-top);}
+.card{background:linear-gradient(180deg,var(--surface-2) 0%,var(--surface-1) 100%);
+  border:1px solid var(--border-default);border-radius:var(--radius-lg);padding:20px;
+  box-shadow:var(--elev-2);}
 .card.clickable{cursor:pointer;}   /* pair with .hover-lift */
 
 /* =========================================================================
