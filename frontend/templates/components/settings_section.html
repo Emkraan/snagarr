@@ -115,8 +115,13 @@
 
 <style>
   /* Layout-only utilities (no colours; all theming stays in cobalt.css tokens). */
-  #settingsSection .settings-stack { display: flex; flex-direction: column; gap: 16px; }
-  #settingsSection .settings-fields { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; }
+  #settingsSection .settings-stack { display: flex; flex-direction: column; gap: 18px; }
+  #settingsSection .settings-fields { display: flex; flex-direction: column; gap: 16px; margin-top: 14px; }
+  /* Controls read as intentional inputs, not full-width bars (general fields only;
+     the SSO panel under #ssoRoot manages its own widths). */
+  #settingsSection .settings-fields > .field .input,
+  #settingsSection .settings-fields > .field .select,
+  #settingsSection .settings-fields > .field .textarea { max-width: 460px; }
   #settingsSection .stateful-dates { display: flex; flex-wrap: wrap; gap: 24px; }
   #settingsSection .stateful-dates .field { flex: 1 1 200px; }
   #settingsSection .stateful-header-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
