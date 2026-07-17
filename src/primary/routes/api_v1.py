@@ -16,7 +16,7 @@ from functools import wraps
 
 from flask import Blueprint, request, jsonify, session, g
 
-from src.primary import settings_manager, api_keys
+from src.primary import settings_manager, api_keys, oidc_config
 from src.primary.auth import verify_session, SESSION_COOKIE_NAME
 from src.primary.utils.logger import get_logger
 
@@ -24,8 +24,13 @@ logger = get_logger("api_v1")
 
 api_v1 = Blueprint("api_v1", __name__, url_prefix="/api/v1")
 
-# Keys whose values are masked in GET responses unless minted for it later.
-_MASK_KEYS = {"api_key", "oidc_client_secret", "client_secret", "password"}
+# Keys masked with a last-4 hint in GET responses (identifying, not clobberable
+# in practice because these paths are not round-tripped through the UI form).
+_MASK_KEYS = {"api_key", "password"}
+# Keys replaced wholesale with a non-reversible sentinel: any part of a client
+# secret is still secret material, and a last-4 mask can be round-tripped into a
+# clobber. These honor preserve-unless-changed on write instead.
+_SECRET_SENTINEL_KEYS = {"oidc_client_secret", "client_secret"}
 
 
 def _ok(data=None, status=200):
@@ -37,9 +42,18 @@ def _err(code, message, status):
 
 
 def _mask(value):
-    """Recursively mask secret-like values, keeping the last 4 chars as a hint."""
+    """Recursively mask secret-like values. Client secrets are replaced with a
+    non-reversible sentinel; other secret-like keys keep a last-4 hint."""
     if isinstance(value, dict):
-        return {k: (_mask_scalar(v) if k in _MASK_KEYS else _mask(v)) for k, v in value.items()}
+        out = {}
+        for k, v in value.items():
+            if k in _SECRET_SENTINEL_KEYS:
+                out[k] = oidc_config.SECRET_SENTINEL if v else ""
+            elif k in _MASK_KEYS:
+                out[k] = _mask_scalar(v)
+            else:
+                out[k] = _mask(v)
+        return out
     if isinstance(value, list):
         return [_mask(v) for v in value]
     return value
@@ -49,6 +63,27 @@ def _mask_scalar(v):
     if not v or not isinstance(v, str):
         return v
     return ("*" * max(0, len(v) - 4)) + v[-4:] if len(v) > 4 else "****"
+
+
+def _preserve_secrets(app_name, body):
+    """Preserve-unless-changed for secret fields on write: an incoming secret
+    that is empty or the sentinel keeps the stored value; anything else is a new
+    secret. Mutates and returns body."""
+    if not isinstance(body, dict):
+        return body
+    if any(k in body for k in _SECRET_SENTINEL_KEYS):
+        try:
+            current = settings_manager.load_settings(app_name) or {}
+        except Exception:
+            current = {}
+        for k in _SECRET_SENTINEL_KEYS:
+            if k in body and body[k] in ("", oidc_config.SECRET_SENTINEL):
+                stored = current.get(k, "")
+                if stored:
+                    body[k] = stored
+                else:
+                    body.pop(k, None)
+    return body
 
 
 def require_api_key(scope="read"):
@@ -123,10 +158,35 @@ def meta():
 
 # --- config ----------------------------------------------------------------
 
+def _masked_oidc_block():
+    """OIDC config for a GET: values from the dedicated 0600 store with the
+    secret sentinelized so it never leaves the server, plus a companion flag."""
+    stored = oidc_config.load_oidc_config() or {}
+    secret_set = bool(stored.get("oidc_client_secret"))
+    return {
+        "oidc_tenant_id": stored.get("oidc_tenant_id", ""),
+        "oidc_client_id": stored.get("oidc_client_id", ""),
+        "oidc_client_secret": oidc_config.SECRET_SENTINEL if secret_set else "",
+        "oidc_client_secret_set": secret_set,
+        "oidc_allowed_groups": stored.get("oidc_allowed_groups", []) or [],
+        "oidc_admin_groups": stored.get("oidc_admin_groups", []) or [],
+    }
+
+
+def _merge_general_oidc(settings_dict):
+    """Splice the masked OIDC block into a general-settings dict for a GET."""
+    if isinstance(settings_dict, dict):
+        settings_dict.update(_masked_oidc_block())
+    return settings_dict
+
+
 @api_v1.route("/config", methods=["GET"])
 @require_api_key("read")
 def get_all_config():
-    return _ok(_mask(settings_manager.get_all_settings()))
+    data = _mask(settings_manager.get_all_settings())
+    if isinstance(data, dict) and isinstance(data.get("general"), dict):
+        _merge_general_oidc(data["general"])
+    return _ok(data)
 
 
 @api_v1.route("/config/<app_name>", methods=["GET"])
@@ -135,7 +195,10 @@ def get_config(app_name):
     app, err = _app_or_error(app_name)
     if err:
         return err
-    return _ok(_mask(settings_manager.load_settings(app)))
+    data = _mask(settings_manager.load_settings(app))
+    if app == "general":
+        _merge_general_oidc(data)
+    return _ok(data)
 
 
 @api_v1.route("/config/<app_name>", methods=["PUT"])
@@ -147,8 +210,12 @@ def put_config(app_name):
     body = request.get_json(silent=True)
     if not isinstance(body, dict):
         return _err("unprocessable", "Body must be a JSON object.", 422)
+    body = _preserve_secrets(app, body)
     if settings_manager.save_settings(app, _normalize_urls(body)):
-        return _ok(_mask(settings_manager.load_settings(app)))
+        data = _mask(settings_manager.load_settings(app))
+        if app == "general":
+            _merge_general_oidc(data)
+        return _ok(data)
     return _err("save_failed", "Could not save settings.", 500)
 
 
@@ -161,10 +228,14 @@ def patch_config(app_name):
     body = request.get_json(silent=True)
     if not isinstance(body, dict):
         return _err("unprocessable", "Body must be a JSON object.", 422)
+    body = _preserve_secrets(app, body)
     merged = settings_manager.load_settings(app)
     merged.update(body)  # shallow merge is the right granularity for these flat configs
     if settings_manager.save_settings(app, _normalize_urls(merged)):
-        return _ok(_mask(settings_manager.load_settings(app)))
+        data = _mask(settings_manager.load_settings(app))
+        if app == "general":
+            _merge_general_oidc(data)
+        return _ok(data)
     return _err("save_failed", "Could not save settings.", 500)
 
 

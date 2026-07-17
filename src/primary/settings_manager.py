@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO)
 settings_logger = logging.getLogger("settings_manager")
 
 # Settings directory setup - Root config directory
-SETTINGS_DIR = pathlib.Path("/config")
+SETTINGS_DIR = pathlib.Path(os.getenv("SNAGARR_CONFIG_DIR", "/config"))
 SETTINGS_DIR.mkdir(parents=True, exist_ok=True)
 
 # Default configs location remains the same

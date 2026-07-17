@@ -1,93 +1,148 @@
+{% import "_ui.html" as ui %}
+{% import "_icons.html" as icons %}
+
 <section id="settingsSection" class="content-section">
-    <div class="section-header">
-        <h2>Settings</h2>
-        
-        <div class="settings-actions">
-            <button id="saveSettingsButton" class="save-button" disabled>
-                <i class="fas fa-save"></i> Save
-            </button>
-        </div>
+
+  {% call ui.page_header('Settings', 'Configure Snagarr behaviour, security, and single sign-on.') %}
+    {{ ui.button('Save', variant='primary', icon=icons.check(15), disabled=True, attrs='id="saveSettingsButton"') }}
+  {% endcall %}
+
+  <div class="settings-form">
+    <div id="generalSettings" class="app-settings-panel active">
+      <div class="settings-stack">
+
+        {# ── General ─────────────────────────────────────────────────────── #}
+        {% call ui.card() %}
+          {{ ui.section_label('General', icon=icons.settings(14)) }}
+          <div class="settings-fields">
+            {% call ui.field('Check for Updates', hint='Automatically check for new Snagarr releases.') %}
+              {{ ui.switch('check_for_updates', checked=True, attrs='id="check_for_updates"') }}
+            {% endcall %}
+            {% call ui.field('Debug Mode', hint='Enable verbose logging for troubleshooting (applies to all apps).') %}
+              {{ ui.switch('debug_mode', attrs='id="debug_mode"') }}
+            {% endcall %}
+            {% call ui.field('Display Resources', hint='Show or hide the Resources section on the home page.') %}
+              {{ ui.switch('display_community_resources', checked=True, attrs='id="display_community_resources"') }}
+            {% endcall %}
+            {% call ui.field('Log Refresh Interval (seconds)', hint='How often Snagarr refreshes logs from apps.') %}
+              {{ ui.input('log_refresh_interval_seconds', value='30', type='number', attrs='id="log_refresh_interval_seconds" min="5"') }}
+            {% endcall %}
+          </div>
+        {% endcall %}
+
+        {# ── Stateful Management ──────────────────────────────────────────── #}
+        {% call ui.card() %}
+          <div class="stateful-header-row">
+            {{ ui.section_label('Stateful Management', icon=icons.clock(14)) }}
+          </div>
+          <div id="stateful-notification" class="banner tone-danger" hidden>
+            <span class="banner-text">Failed to load stateful management info. Check logs for details.</span>
+          </div>
+          <div class="settings-fields">
+            <div class="stateful-dates">
+              {% call ui.field('Initial State Created') %}
+                <div id="stateful_initial_state" class="mono">Loading...</div>
+              {% endcall %}
+              {% call ui.field('State Reset Date') %}
+                <div id="stateful_expires_date" class="mono">Loading...</div>
+              {% endcall %}
+            </div>
+            {% call ui.field('State Reset (Hours)', hint='Reset clears all processed media IDs so items can be searched again.') %}
+              {{ ui.input('stateful_management_hours', value='168', type='number', attrs='id="stateful_management_hours" min="1"') }}
+            {% endcall %}
+            <p class="field-hint">Approximately <span id="stateful_management_days">7.0 days</span>.</p>
+          </div>
+        {% endcall %}
+
+        {# ── Security ─────────────────────────────────────────────────────── #}
+        {% call ui.card() %}
+          {{ ui.section_label('Security', icon=icons.shield(14)) }}
+          <div class="settings-fields">
+            {% call ui.field('Authentication Mode') %}
+              {{ ui.select('auth_mode', [
+                   {'value': 'login',        'label': 'Login Mode'},
+                   {'value': 'local_bypass', 'label': 'Local Bypass Mode'},
+                   {'value': 'no_login',     'label': 'No Login Mode'}
+                 ], selected='login', attrs='id="auth_mode"') }}
+            {% endcall %}
+            {% call ui.banner(tone='info', icon=icons.info(15)) %}
+              <strong>Login Mode:</strong> standard login for all connections.<br>
+              <strong>Local Bypass Mode:</strong> only local-network connections skip login.<br>
+              <strong>No Login Mode:</strong> disables authentication (only use behind a trusted reverse proxy).
+            {% endcall %}
+            {% call ui.field('Enable SSL Verify', hint='Disable only when using self-signed certificates on a private network.') %}
+              {{ ui.switch('ssl_verify', attrs='id="ssl_verify"') }}
+            {% endcall %}
+          </div>
+        {% endcall %}
+
+        {# ── Advanced ─────────────────────────────────────────────────────── #}
+        {% call ui.card() %}
+          {{ ui.section_label('Advanced', icon=icons.server(14)) }}
+          <div class="settings-fields">
+            {% call ui.field('API Timeout (seconds)', hint='API request timeout in seconds.') %}
+              {{ ui.input('api_timeout', value='120', type='number', attrs='id="api_timeout" min="10"') }}
+            {% endcall %}
+            {% call ui.field('Command Wait Delay (seconds)', hint='Delay between command status checks.') %}
+              {{ ui.input('command_wait_delay', value='1', type='number', attrs='id="command_wait_delay" min="1"') }}
+            {% endcall %}
+            {% call ui.field('Command Wait Attempts', hint='Maximum number of attempts to check command status.') %}
+              {{ ui.input('command_wait_attempts', value='600', type='number', attrs='id="command_wait_attempts" min="1"') }}
+            {% endcall %}
+            {% call ui.field('Max Download Queue Size', hint='Skip searching when an instance download queue exceeds this. Set to -1 to disable.') %}
+              {{ ui.input('minimum_download_queue_size', value='-1', type='number', attrs='id="minimum_download_queue_size" min="-1"') }}
+            {% endcall %}
+          </div>
+        {% endcall %}
+
+        {# ── Single Sign-On (OIDC / Entra ID) ─────────────────────────────── #}
+        {% call ui.card() %}
+          {{ ui.section_label('Single Sign-On (OIDC / Entra ID)', icon=icons.key(14)) }}
+          <div class="settings-fields">
+            {% call ui.banner(tone='info', icon=icons.info(15)) %}
+              Single sign-on applies in <strong>Login Mode</strong>. Bypass modes skip login before any provider is consulted.
+            {% endcall %}
+            {% call ui.field('Enable Single Sign-On', hint='Show "Sign in with Microsoft" and accept Entra ID logins.') %}
+              {{ ui.switch('oidc_enabled', attrs='id="oidc_enabled"') }}
+            {% endcall %}
+            {% call ui.field('Tenant ID', hint='Directory (tenant) ID from your Entra app registration.') %}
+              {{ ui.input('oidc_tenant_id', placeholder='00000000-0000-0000-0000-000000000000', attrs='id="oidc_tenant_id" autocomplete="off"') }}
+            {% endcall %}
+            {% call ui.field('Client ID', hint='Application (client) ID from your Entra app registration.') %}
+              {{ ui.input('oidc_client_id', placeholder='00000000-0000-0000-0000-000000000000', attrs='id="oidc_client_id" autocomplete="off"') }}
+            {% endcall %}
+            {% call ui.field('Client Secret') %}
+              {{ ui.input('oidc_client_secret', type='password', placeholder='Enter a client secret', attrs='id="oidc_client_secret" autocomplete="new-password"') }}
+            {% endcall %}
+            <p class="field-hint" id="oidc_secret_hint" hidden>Secret is set - leave unchanged to keep.</p>
+            {% call ui.field('Allowed Groups', hint='Comma-separated group object IDs. Leave empty to allow any tenant user.') %}
+              {{ ui.input('oidc_allowed_groups', placeholder='group-id-1, group-id-2', attrs='id="oidc_allowed_groups" autocomplete="off"') }}
+            {% endcall %}
+            {% call ui.field('Admin Groups', hint='Comma-separated group object IDs granted admin access.') %}
+              {{ ui.input('oidc_admin_groups', placeholder='group-id-1, group-id-2', attrs='id="oidc_admin_groups" autocomplete="off"') }}
+            {% endcall %}
+            {% call ui.field('Redirect URI', hint='Register this exact URI in Entra under App registration, Redirect URIs (Web).') %}
+              <div class="mono">{{ ui.input('oidc_redirect_uri_display', type='text', attrs='id="oidc_redirect_uri_display" readonly') }}</div>
+            {% endcall %}
+            <div class="oidc-status-row">
+              {{ ui.button('Copy redirect URI', variant='default', size='sm', icon=icons.copy(14), attrs='id="oidc_copy_redirect" data-copy=""') }}
+              {{ ui.button('Verify', variant='default', size='sm', icon=icons.refresh(14), attrs='id="oidc_verify_btn"') }}
+              <span id="oidc_status_slot">{{ ui.badge('Checking...', dot=True) }}</span>
+            </div>
+          </div>
+        {% endcall %}
+
+      </div>
     </div>
-    
-    <div class="settings-form">
-        <div id="generalSettings" class="app-settings-panel active" style="display: block;"></div>
-    </div>
+  </div>
 </section>
 
 <style>
-    /* Mobile-specific settings adjustments */
-    @media (max-width: 768px) {
-        #settingsSection .section-header {
-            flex-direction: row !important;
-            align-items: center !important;
-            justify-content: space-between !important;
-        }
-        
-        #settingsSection .section-header h2 {
-            margin-bottom: 0 !important;
-        }
-        
-        #settingsSection .settings-actions {
-            margin-top: 0 !important;
-            width: auto !important;
-        }
-        
-        #saveSettingsButton {
-            width: auto !important;
-            text-align: center;
-            justify-content: center;
-        }
-    }
-    
-    /* Fixed banner footer styling */
-    .fixed-banner-footer {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        text-align: center;
-        padding: 10px 20px;
-        background-color: var(--bg-secondary);
-        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-        border-top: 1px solid var(--border-color);
-        z-index: 1000; /* Ensure it's above other elements */
-    }
-    
-    /* Add bottom padding to the settings panel to prevent content from being hidden */
-    .app-settings-panel {
-        padding-bottom: 50px;
-    }
-    
-    .fixed-banner-footer p {
-        margin: 0;
-        font-size: 1em;
-        color: var(--text-primary);
-        font-weight: 500;
-    }
-    
-    .fixed-banner-footer a {
-        color: var(--accent-color);
-        text-decoration: none;
-        font-weight: 600;
-        transition: color 0.2s, text-decoration 0.2s;
-    }
-    
-    .fixed-banner-footer a:hover {
-        text-decoration: underline;
-        color: var(--accent-hover);
-    }
-    
-    .fixed-banner-footer .donation-icon {
-        color: var(--error-color, #ff6b6b);
-    }
-    
-    .fixed-banner-footer .star-icon {
-        color: var(--warning-color, #ffd700);
-    }
+  /* Layout-only utilities (no colours; all theming stays in cobalt.css tokens). */
+  #settingsSection .settings-stack { display: flex; flex-direction: column; gap: 16px; }
+  #settingsSection .settings-fields { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; }
+  #settingsSection .stateful-dates { display: flex; flex-wrap: wrap; gap: 24px; }
+  #settingsSection .stateful-dates .field { flex: 1 1 200px; }
+  #settingsSection .stateful-header-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  #settingsSection .oidc-status-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 </style>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // ...existing code...
-    });
-</script>

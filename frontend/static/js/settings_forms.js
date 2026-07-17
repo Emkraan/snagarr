@@ -1963,3 +1963,6 @@ styleEl.innerHTML = `
     }
 `;
 document.head.appendChild(styleEl);
+
+// Expose globally so late-loading modules (settings_general.js) can extend it.
+window.SettingsForms = SettingsForms;

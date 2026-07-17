@@ -38,7 +38,9 @@ from src.primary.auth import (
 # Import blueprint for common routes
 from src.primary.routes.common import common_bp
 # Import in-app OIDC (Entra) sign-in
+from src.primary.routes import oidc as oidc_routes
 from src.primary.routes.oidc import oidc_bp, init_oidc
+from src.primary import oidc_config
 # Import the versioned programmatic config API
 from src.primary.routes.api_v1 import api_v1
 
@@ -428,11 +430,39 @@ def logs_stream():
     response.headers['X-Accel-Buffering'] = 'no'  # Disable nginx buffering if using nginx
     return response
 
+def _masked_oidc_block():
+    """The OIDC config as it should appear in a GET response: values from the
+    dedicated 0600 store, with the secret replaced by a sentinel so it never
+    leaves the server. Includes a companion boolean so the UI can render a
+    'secret is set' state without seeing the secret."""
+    stored = oidc_config.load_oidc_config() or {}
+    secret_set = bool(stored.get("oidc_client_secret"))
+    return {
+        "oidc_tenant_id": stored.get("oidc_tenant_id", ""),
+        "oidc_client_id": stored.get("oidc_client_id", ""),
+        "oidc_client_secret": oidc_config.SECRET_SENTINEL if secret_set else "",
+        "oidc_client_secret_set": secret_set,
+        "oidc_allowed_groups": stored.get("oidc_allowed_groups", []) or [],
+        "oidc_admin_groups": stored.get("oidc_admin_groups", []) or [],
+    }
+
+
+def _merge_masked_oidc(general_settings):
+    """Splice the masked OIDC block into a general-settings dict for a GET."""
+    if isinstance(general_settings, dict):
+        general_settings.update(_masked_oidc_block())
+    return general_settings
+
+
 @app.route('/api/settings', methods=['GET'])
 def api_settings():
     if request.method == 'GET':
         # Return all settings using the new manager function
         all_settings = settings_manager.get_all_settings() # Corrected function name
+        # The OIDC values live in a dedicated 0600 store, not general.json; merge
+        # the masked block into the general section so the UI form gets one object.
+        if isinstance(all_settings, dict) and isinstance(all_settings.get('general'), dict):
+            _merge_masked_oidc(all_settings['general'])
         return jsonify(all_settings)
 
 @app.route('/api/settings/general', methods=['POST'])
@@ -460,7 +490,33 @@ def save_general_settings():
         elif auth_mode == 'login':
             data['local_access_bypass'] = False
             data['proxy_auth_bypass'] = False
-    
+
+    # Peel the OIDC config out of the general payload and route it to the
+    # dedicated 0600 store. oidc_enabled stays in general.json (the hot auth
+    # path reads it), but tenant/client id/secret/groups must never land in the
+    # 0644 general.json. Apply preserve-unless-changed on the secret so a form
+    # that echoes back the masking sentinel does not clobber the stored value.
+    if any(k in data for k in oidc_config.OIDC_KEYS):
+        stored = oidc_config.load_oidc_config() or {}
+        incoming_secret = data.get('oidc_client_secret', '')
+        if incoming_secret in ('', oidc_config.SECRET_SENTINEL):
+            new_secret = stored.get('oidc_client_secret', '')
+        else:
+            new_secret = incoming_secret
+        oidc_payload = {
+            'oidc_tenant_id': data.get('oidc_tenant_id', stored.get('oidc_tenant_id', '')),
+            'oidc_client_id': data.get('oidc_client_id', stored.get('oidc_client_id', '')),
+            'oidc_client_secret': new_secret,
+            'oidc_allowed_groups': data.get('oidc_allowed_groups', stored.get('oidc_allowed_groups', []) or []),
+            'oidc_admin_groups': data.get('oidc_admin_groups', stored.get('oidc_admin_groups', []) or []),
+        }
+        oidc_config.save_oidc_config(oidc_payload)
+        # Drop the five OIDC value keys so they are never written to general.json.
+        for k in oidc_config.OIDC_KEYS:
+            data.pop(k, None)
+        # Force the running Authlib client to re-register on the next request.
+        oidc_routes.invalidate()
+
     # Save general settings
     success = settings_manager.save_settings('general', data)
     
@@ -495,6 +551,10 @@ def handle_app_settings(app_name):
     if request.method == 'GET':
         # Return settings for the specific app
         app_settings = settings_manager.load_settings(app_name)
+        # OIDC values live in a dedicated 0600 store; merge the masked block into
+        # the general section so the UI form gets one object (secret sentinelized).
+        if app_name == 'general':
+            _merge_masked_oidc(app_settings)
         return jsonify(app_settings)
     
     elif request.method == 'POST':
