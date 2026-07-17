@@ -340,8 +340,9 @@ def authenticate_request():
     health_check_path = f"{script_root}/api/health"
     ping_path = f"{script_root}/ping"
     auth_prefix = f"{script_root}/auth/"  # OIDC login / callback / logout
+    api_v1_prefix = f"{script_root}/api/v1/"  # versioned API enforces its own key/scope auth
 
-    if request.path.startswith((static_path, login_path, api_login_path, setup_path, api_setup_path, auth_prefix)) or request.path in (favicon_path, health_check_path, ping_path):
+    if request.path.startswith((static_path, login_path, api_login_path, setup_path, api_setup_path, auth_prefix, api_v1_prefix)) or request.path in (favicon_path, health_check_path, ping_path):
         return None
 
     # Load general settings for local_access_bypass

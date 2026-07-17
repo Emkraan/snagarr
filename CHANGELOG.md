@@ -20,8 +20,12 @@ Entra OIDC sign-in, and the versioned configuration API.
 - Microsoft Entra ID sign-in via in-app OIDC (Authlib), as an alternative to the
   local login. Client credentials are read from mounted secret files, and access
   can be restricted to configured Entra groups.
-- Unit tests covering the state engine, password hashing/migration, and OIDC
-  configuration.
+- A versioned programmatic configuration API at `/api/v1` for reading and writing
+  every setting, resetting state, and checking status. It is authenticated with
+  scoped bearer API keys (read/write/admin) or an operator session, returns a
+  consistent response envelope, and masks secret values in responses.
+- Unit tests covering the state engine, password hashing/migration, OIDC
+  configuration, the API-key store, and the `/api/v1` surface.
 
 ### Fixed
 
