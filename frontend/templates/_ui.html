@@ -1,0 +1,244 @@
+{#
+  _ui.html - Cobalt v2 component macros (server-rendered Jinja, no build step).
+
+  Import:  {% import "_ui.html" as ui %}
+  Styling: every class emitted here is defined in static/css/cobalt.css.
+  Behavior: every data-* attribute emitted here is bound by static/js/ui.js.
+  This is a shared contract - class names + data-* attributes MUST match the
+  CSS and JS authored in parallel. Do not rename or add classes/attributes that
+  are not in the Cobalt v2 spec.
+
+  Macros accept a trailing `attrs` string (raw HTML, |safe) so passthrough
+  attributes (name, id, value, required, csrf_token, hx-*, aria-*, etc.) flow
+  through to the underlying element and existing forms/JS keep working.
+#}
+{% import "_icons.html" as icons %}
+
+{# ── 5.1 Buttons ─────────────────────────────────────────────────────────── #}
+{% macro button(label, variant='default', size='md', type='button', icon=None, loading=False, disabled=False, attrs='') %}
+<button type="{{ type }}"
+        class="btn btn-{{ variant }}{{ ' btn-sm' if size=='sm' }}{{ ' is-loading' if loading }}"
+        {{ 'disabled' if (disabled or loading) }} {{ attrs|safe }}>
+  {% if loading %}<svg class="btn-spinner" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-opacity=".2"/><path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>{% endif %}
+  {% if icon %}{{ icon }}{% endif %}{{ label }}
+</button>
+{% endmacro %}
+
+{% macro icon_button(icon, label, size=30, attrs='') %}
+<button type="button" class="icon-btn" aria-label="{{ label }}" title="{{ label }}"
+        style="width:{{ size }}px;height:{{ size }}px;" {{ attrs|safe }}>{{ icon }}</button>
+{% endmacro %}
+
+{# ── 5.2 Field / Input / Textarea / Select ───────────────────────────────── #}
+{% macro field(label='', hint='') %}
+<label class="field">
+  {% if label %}<span class="field-label">{{ label }}</span>{% endif %}
+  {{ caller() }}
+  {% if hint %}<span class="field-hint">{{ hint }}</span>{% endif %}
+</label>
+{% endmacro %}
+
+{% macro input(name, value='', type='text', placeholder='', attrs='') %}
+<input class="input" type="{{ type }}" name="{{ name }}" value="{{ value }}" placeholder="{{ placeholder }}" {{ attrs|safe }}>
+{% endmacro %}
+
+{% macro textarea(name, value='', placeholder='', attrs='') %}
+<textarea class="textarea" name="{{ name }}" placeholder="{{ placeholder }}" {{ attrs|safe }}>{{ value }}</textarea>
+{% endmacro %}
+
+{% macro select(name, options, selected=None, attrs='') %}
+<select class="select" name="{{ name }}" {{ attrs|safe }}>
+  {% for opt in options %}
+    {% set val = opt.value if opt is mapping else opt %}
+    {% set lbl = opt.label if opt is mapping else opt %}
+    <option value="{{ val }}" {{ 'selected' if val == selected }}>{{ lbl }}</option>
+  {% endfor %}
+</select>
+{% endmacro %}
+
+{# ── 5.3 Card + hover-lift ───────────────────────────────────────────────── #}
+{% macro card(clickable=False, klass='', attrs='') %}
+<div class="card{{ ' clickable hover-lift' if clickable }}{{ ' ' ~ klass if klass }}" {{ attrs|safe }}>{{ caller() }}</div>
+{% endmacro %}
+
+{# ── 5.4 KPI / Stat tile (.hero-num gradient numeral) ─────────────────────── #}
+{% macro kpi_tile(label, value, sub='', tone='accent', icon=None, href='#', hero_a=None, hero_b=None, active=False, i=0) %}
+{% set tonevars = {
+  'accent':  '--tone-ink:var(--accent);--tone-dim:var(--accent-dim);--tone-border:var(--accent-border);--hero-a:var(--accent-bright);--hero-b:var(--accent-700)',
+  'success': '--tone-ink:var(--success);--tone-dim:var(--success-dim);--tone-border:var(--success-border);--hero-a:var(--success);--hero-b:#1B5C30',
+  'warning': '--tone-ink:var(--warning);--tone-dim:var(--warning-dim);--tone-border:var(--warning-border);--hero-a:var(--warning);--hero-b:#6B520F',
+  'danger':  '--tone-ink:var(--danger);--tone-dim:var(--danger-dim);--tone-border:var(--danger-border);--hero-a:var(--danger);--hero-b:var(--danger-900)',
+  'info':    '--tone-ink:var(--info);--tone-dim:var(--info-dim);--tone-border:var(--info-border);--hero-a:var(--info);--hero-b:#114B7C'
+} %}
+<a href="{{ href }}" class="kpi-tile rise-in{{ ' active' if active }}" role="button" tabindex="0"
+   style="{{ tonevars[tone] }};animation-delay:{{ i*60 }}ms;">
+  <span class="kpi-rail"></span><span class="kpi-glow"></span>
+  <div class="kpi-head">
+    <span class="kpi-label">{{ label }}</span>
+    {% if icon %}<span class="kpi-chip">{{ icon }}</span>{% endif %}
+  </div>
+  <div class="kpi-value hero-num">{{ value }}</div>
+  {% if sub %}<div class="kpi-sub">{{ sub }}</div>{% endif %}
+</a>
+{% endmacro %}
+
+{# `stat` is an alias of `kpi_tile` - the StatCard grid reuses the same shape/classes. #}
+{% macro stat(label, value, sub='', tone='accent', icon=None, href='#', active=False, i=0) %}{{ kpi_tile(label, value, sub, tone, icon, href, none, none, active, i) }}{% endmacro %}
+
+{# ── 5.5 Table (sticky header + hover + zebra) ────────────────────────────── #}
+{% macro table_open(zebra=False) %}<div class="table-wrap"><table class="table{{ ' zebra' if zebra }}">{% endmacro %}
+{% macro table_close() %}</table></div>{% endmacro %}
+{% macro th(label, align='left') %}<th class="{{ 'r' if align=='right' else 'c' if align=='center' }}">{{ label }}</th>{% endmacro %}
+{% macro td(align='left', klass='') %}<td class="{{ 'r' if align=='right' else 'c' if align=='center' }}{{ ' '~klass if klass }}">{{ caller() }}</td>{% endmacro %}
+{% macro tr(clickable=False, klass='', attrs='') %}<tr class="{{ 'clickable' if clickable }}{{ ' '~klass if klass }}" {{ attrs|safe }}>{{ caller() }}</tr>{% endmacro %}
+
+{# ── 5.6 Badge / Pill + StatusDot ────────────────────────────────────────── #}
+{% macro badge(text, tone='default', dot=False, mono=False, title='') %}
+<span class="badge{{ ' tone-'~tone if tone!='default' }}{{ ' mono' if mono }}"{{ ' title="'~title~'"' if title }}>
+  {% if dot %}<span class="badge-dot"></span>{% endif %}{{ text }}
+</span>
+{% endmacro %}
+
+{% macro pill(text, tone='default', dot=False, mono=False, title='') %}{{ badge(text, tone, dot, mono, title) }}{% endmacro %}
+
+{% macro status_dot(tone='default', live=False, title='') %}
+<span class="status-dot{{ ' tone-'~tone if tone!='default' }}{{ ' dot-live' if live }}"{{ ' title="'~title~'"' if title }}></span>
+{% endmacro %}
+
+{# ── 5.7 Toggle / switch (pure CSS) ──────────────────────────────────────── #}
+{% macro switch(name, checked=False, label='', attrs='') %}
+<label class="switch">
+  <input type="checkbox" name="{{ name }}" {{ 'checked' if checked }} {{ attrs|safe }}>
+  <span class="track"><span class="knob"></span></span>
+  {% if label %}<span class="switch-label">{{ label }}</span>{% endif %}
+</label>
+{% endmacro %}
+
+{# ── 5.8 Tabs (animated indicator) ───────────────────────────────────────── #}
+{% macro tabs(items, active) %}
+<div class="tabs" role="tablist" data-tabs>
+  {% for t in items %}
+  <button class="tab{{ ' active' if t.id==active }}" role="tab" aria-selected="{{ 'true' if t.id==active else 'false' }}"
+          data-tab="{{ t.id }}">
+    {% if t.icon %}{{ t.icon }}{% endif %}{{ t.label }}
+    {% if t.badge is defined and t.badge is not none %}<span class="tab-badge">{{ t.badge }}</span>{% endif %}
+    <span class="tab-indicator"></span>
+  </button>
+  {% endfor %}
+</div>
+{% endmacro %}
+
+{# ── 5.9 Banner (inline alert) ───────────────────────────────────────────── #}
+{% macro banner(tone='info', title='', icon=None, dismissible=False) %}
+<div class="banner tone-{{ tone }}" role="alert">
+  {% if icon %}<span class="banner-ico">{{ icon }}</span>{% endif %}
+  <div class="banner-body">
+    {% if title %}<div class="banner-title">{{ title }}</div>{% endif %}
+    <div class="banner-text">{{ caller() }}</div>
+  </div>
+  {% if dismissible %}<button class="icon-btn" style="width:22px;height:22px;color:currentColor;" data-banner-close aria-label="Dismiss">{{ icons.x(14) }}</button>{% endif %}
+</div>
+{% endmacro %}
+
+{# ── 5.10 Toast root (JS-spawned via window.toast; server flashes drain here) ─ #}
+{% macro toast_root() %}
+<div class="toast-root" id="toast-root" aria-live="polite" aria-atomic="true"></div>
+{% endmacro %}
+
+{# ── 5.11 Modal / Confirm (mobile bottom-sheet) ──────────────────────────── #}
+{% macro modal(id, title, width=460) %}
+<div class="modal-backdrop glass" id="modal-{{ id }}" data-modal="{{ id }}" hidden>
+  <div class="modal" style="--modal-w:{{ width }}px;" role="dialog" aria-modal="true" aria-label="{{ title }}">
+    <div class="modal-grip"><span></span></div>
+    <div class="modal-head">
+      <div class="modal-title">{{ title }}</div>
+      {{ icon_button(icons.x(16), 'Close', attrs='data-modal-close') }}
+    </div>
+    <div class="modal-body">{{ caller() }}</div>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro confirm(id, title, message, confirm_label='Confirm', tone='danger', action_attrs='') %}
+<div class="modal-backdrop glass" id="modal-{{ id }}" data-modal="{{ id }}" hidden>
+  <div class="modal" style="--modal-w:440px;" role="dialog" aria-modal="true" aria-label="{{ title }}">
+    <div class="modal-grip"><span></span></div>
+    <div class="modal-head">
+      <div class="modal-title">{{ title }}</div>
+      {{ icon_button(icons.x(16), 'Close', attrs='data-modal-close') }}
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text-secondary);font-size:13px;margin:0;line-height:1.6;">{{ message }}</p>
+    </div>
+    <div class="modal-foot">
+      {{ button('Cancel', variant='ghost', attrs='data-modal-close') }}
+      {{ button(confirm_label, variant=tone, attrs=action_attrs) }}
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
+{# ── 5.12 EmptyState + Skeleton ──────────────────────────────────────────── #}
+{% macro empty_state(title, message='', icon=None, filtered=False) %}
+<div class="empty-state{{ ' filtered' if filtered }}">
+  {% if icon %}<div class="empty-ico">{{ icon }}</div>{% endif %}
+  {% if title %}<div class="empty-title">{{ title }}</div>{% endif %}
+  {% if message %}<div class="empty-msg">{{ message }}</div>{% endif %}
+  {% if caller is defined %}<div style="margin-top:6px;">{{ caller() }}</div>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro skeleton(width='100%', height=12, radius=6) %}
+<div class="skeleton" style="width:{{ width }};height:{{ height }}px;border-radius:{{ radius }}px;"></div>
+{% endmacro %}
+
+{% macro skeleton_list(rows=4, height=44, gap=8) %}
+<div style="display:flex;flex-direction:column;gap:{{ gap }}px;">
+  {% for _ in range(rows) %}{{ skeleton('100%', height, 8) }}{% endfor %}
+</div>
+{% endmacro %}
+
+{# ── 5.13 Nav item, eyebrow, section label, page header ──────────────────── #}
+{% macro nav_item(href, icon, label, active=False) %}
+<a href="{{ href }}" class="nav-item{{ ' active' if active }}" data-nav>
+  <span class="nav-rail" aria-hidden="true"></span>
+  <span class="nav-ico">{{ icon }}</span>
+  <span style="overflow:hidden;text-overflow:ellipsis;">{{ label }}</span>
+</a>
+{% endmacro %}
+
+{% macro eyebrow(text) %}<span class="eyebrow">{{ text }}</span>{% endmacro %}
+
+{% macro page_header(title, subtitle='') %}
+<div class="page-header">
+  <div style="min-width:0;">
+    <div class="ph-title">{{ title }}</div>
+    {% if subtitle %}<div class="ph-sub">{{ subtitle }}</div>{% endif %}
+  </div>
+  {% if caller is defined %}<div class="ph-actions">{{ caller() }}</div>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro section_label(text, count=None, icon=None) %}
+<div class="section-label">
+  {% if icon %}<span class="sl-ico">{{ icon }}</span>{% endif %}{{ text }}
+  {% if count is not none %}<span class="sl-count">{{ count }}</span>{% endif %}
+</div>
+{% endmacro %}
+
+{# ── 6. List page - FilterBar (URL-synced) + Archive scope pill ──────────── #}
+{% macro filter_bar(q='', scope='active') %}
+<div class="filter-bar" data-filterbar>
+  <div class="filter-search">
+    <span class="search-ico">{{ icons.search(15) }}</span>
+    <input class="input" type="search" placeholder="Search..." value="{{ q }}" data-filter="q" data-debounce="250">
+  </div>
+  {{ caller() }}
+  <div class="filter-spacer"></div>
+  <div class="scope-pill" data-filter="scope">
+    <button data-value="active"   class="{{ 'active' if scope=='active' }}">Active</button>
+    <button data-value="archived" class="{{ 'active' if scope=='archived' }}">Archived</button>
+    <button data-value="all"      class="{{ 'active' if scope=='all' }}">All</button>
+  </div>
+</div>
+{% endmacro %}

@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO)
 keys_logger = logging.getLogger("keys_manager")
 
 # Settings directory - Changed to match the updated settings_manager.py
-SETTINGS_DIR = pathlib.Path("/config")
+SETTINGS_DIR = pathlib.Path(os.getenv("SNAGARR_CONFIG_DIR", "/config"))
 SETTINGS_DIR.mkdir(parents=True, exist_ok=True)
 
 SETTINGS_FILE = SETTINGS_DIR / "huntarr.json"

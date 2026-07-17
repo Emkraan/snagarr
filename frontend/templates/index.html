@@ -36,10 +36,17 @@
     </div>
     
     {% include 'components/footer.html' %}
-    
+
+    <!-- Cobalt v2 toast root (window.toast target) -->
+    <div class="toast-root" id="toast-root" aria-live="polite" aria-atomic="true"></div>
+
     {% include 'components/scripts.html' %}
+    <!-- Cobalt v2 component behaviors (data-copy, toast, switch) -->
+    <script src="/static/js/ui.js"></script>
     <!-- Load settings-related scripts -->
     <script src="/static/js/settings_forms.js"></script>
+    <!-- General + Single Sign-On settings wiring -->
+    <script src="/static/js/settings_general.js"></script>
     <!-- Load history script -->
     <script src="/static/js/history.js"></script>
     <!-- Load apps script -->

@@ -17,7 +17,7 @@ import pathlib
 import threading
 from typing import Optional, Dict, Any, List
 
-API_DIR = pathlib.Path(os.getenv("SNAGARR_API_DIR", "/config/api"))
+API_DIR = pathlib.Path(os.getenv("SNAGARR_API_DIR") or os.path.join(os.getenv("SNAGARR_CONFIG_DIR", "/config"), "api"))
 KEYS_FILE = API_DIR / "keys.json"
 KEY_PREFIX = "snag_"
 SCOPES = {"read": 1, "write": 2, "admin": 3}

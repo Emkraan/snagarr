@@ -31,7 +31,7 @@ from typing import Dict, Any, Set
 stateful_logger = logging.getLogger("stateful_manager")
 
 # Constants
-STATEFUL_DIR = pathlib.Path(os.getenv("STATEFUL_DIR", "/config/stateful"))
+STATEFUL_DIR = pathlib.Path(os.getenv("STATEFUL_DIR") or os.path.join(os.getenv("SNAGARR_CONFIG_DIR", "/config"), "stateful"))
 LOCK_FILE = STATEFUL_DIR / "lock.json"
 DEFAULT_HOURS = 168  # Default 7 days (168 hours)
 

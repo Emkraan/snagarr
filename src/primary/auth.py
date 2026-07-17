@@ -22,7 +22,7 @@ from flask import request, redirect, url_for, session
 from .utils.logger import logger # Ensure logger is imported
 
 # User directory setup (env-overridable, mainly for tests; default unchanged)
-USER_DIR = pathlib.Path(os.getenv("SNAGARR_USER_DIR", "/config/user"))
+USER_DIR = pathlib.Path(os.getenv("SNAGARR_USER_DIR") or os.path.join(os.getenv("SNAGARR_CONFIG_DIR", "/config"), "user"))
 USER_DIR.mkdir(parents=True, exist_ok=True)
 USER_FILE = USER_DIR / "credentials.json"
 
@@ -424,8 +424,10 @@ def authenticate_request():
     api_path = f"{script_root}/api/"
 
     # In OIDC mode, send the browser to the in-app OIDC initiator rather than the
-    # local login form. OIDC counts as enabled if the setting is on OR the client
-    # credentials are provided via mounted secret files.
+    # local login form. OIDC counts as enabled if the operator toggled it on, OR
+    # the credentials are provided via env/mounted secret files (deployment-managed).
+    # Note: UI-STORED creds alone do NOT force OIDC; the oidc_enabled toggle must be
+    # on. This stops merely saving credentials from locking out local login.
     oidc_on = False
     try:
         from src.primary.settings_manager import load_settings
@@ -434,8 +436,8 @@ def authenticate_request():
         pass
     if not oidc_on:
         try:
-            from src.primary.routes.oidc import oidc_configured
-            oidc_on = oidc_configured()
+            from src.primary.routes.oidc import oidc_env_configured
+            oidc_on = oidc_env_configured()
         except Exception:
             pass
 

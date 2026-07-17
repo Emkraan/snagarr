@@ -10,7 +10,7 @@ import pathlib
 logger = logging.getLogger(__name__)
 
 # Path will be /config/history in production
-HISTORY_BASE_PATH = pathlib.Path("/config/history")
+HISTORY_BASE_PATH = pathlib.Path(os.getenv("SNAGARR_CONFIG_DIR", "/config")) / "history"
 
 # Lock to prevent race conditions during file operations
 history_locks = {
