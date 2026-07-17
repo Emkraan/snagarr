@@ -38,7 +38,7 @@ def static_files(filename):
 def favicon():
     # Serve the Snagarr mark as the favicon (no separate .ico asset is shipped;
     # browsers accept an SVG here). Fixes the prior static_folder=None 500.
-    return send_from_directory(os.path.join(_STATIC_DIR, 'logo'), 'snagarr.svg', mimetype='image/svg+xml')
+    return send_from_directory(os.path.join(_STATIC_DIR, 'logo'), 'favicon.svg', mimetype='image/svg+xml')
 
 @common_bp.route('/logo/<path:filename>')
 def logo_files(filename):

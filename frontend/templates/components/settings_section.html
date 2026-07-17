@@ -8,10 +8,20 @@
   {% endcall %}
 
   <div class="settings-form">
+    {# #generalSettings wraps every panel so the settings collector reads all
+       fields even when a tab is hidden. Tabs are scoped (data-settingstab) so
+       they never touch other sections' [data-panel] nodes. #}
     <div id="generalSettings" class="app-settings-panel active">
-      <div class="settings-stack">
 
-        {# ── General ─────────────────────────────────────────────────────── #}
+      <div class="tabs settings-tabs" id="settingsTabs">
+        <button type="button" class="tab active" data-settingstab="general" aria-selected="true">General<span class="tab-indicator"></span></button>
+        <button type="button" class="tab" data-settingstab="security" aria-selected="false">Security<span class="tab-indicator"></span></button>
+        <button type="button" class="tab" data-settingstab="sso" aria-selected="false">Single sign-on<span class="tab-indicator"></span></button>
+        <button type="button" class="tab" data-settingstab="advanced" aria-selected="false">Advanced<span class="tab-indicator"></span></button>
+      </div>
+
+      {# ── General ─────────────────────────────────────────────────────── #}
+      <div class="settings-stack" data-settingspanel="general">
         {% call ui.card() %}
           {{ ui.section_label('General', icon=icons.settings(14)) }}
           <div class="settings-fields">
@@ -30,7 +40,6 @@
           </div>
         {% endcall %}
 
-        {# ── Stateful Management ──────────────────────────────────────────── #}
         {% call ui.card() %}
           <div class="stateful-header-row">
             {{ ui.section_label('Stateful Management', icon=icons.clock(14)) }}
@@ -53,8 +62,10 @@
             <p class="field-hint">Approximately <span id="stateful_management_days">7.0 days</span>.</p>
           </div>
         {% endcall %}
+      </div>
 
-        {# ── Security ─────────────────────────────────────────────────────── #}
+      {# ── Security ─────────────────────────────────────────────────────── #}
+      <div class="settings-stack" data-settingspanel="security" hidden>
         {% call ui.card() %}
           {{ ui.section_label('Security', icon=icons.shield(14)) }}
           <div class="settings-fields">
@@ -75,8 +86,25 @@
             {% endcall %}
           </div>
         {% endcall %}
+      </div>
 
-        {# ── Advanced ─────────────────────────────────────────────────────── #}
+      {# ── Single Sign-On (provider-agnostic; managed by sso.js) ─────────── #}
+      <div class="settings-stack" data-settingspanel="sso" hidden>
+        {% call ui.card() %}
+          {{ ui.section_label('Single Sign-On', icon=icons.key(14)) }}
+          <div class="settings-fields">
+            {% call ui.banner(tone='info', icon=icons.info(15)) %}
+              Single sign-on applies in <strong>Login Mode</strong>. Add one or more identity providers &mdash; Microsoft Entra, Google, GitHub, Okta, Keycloak, Authentik, a generic OIDC issuer, or a custom OAuth2 endpoint. Bypass modes skip login before any provider is consulted.
+            {% endcall %}
+            <div id="ssoRoot" data-sso-root>
+              <div class="sso-empty">Loading providers&hellip;</div>
+            </div>
+          </div>
+        {% endcall %}
+      </div>
+
+      {# ── Advanced ─────────────────────────────────────────────────────── #}
+      <div class="settings-stack" data-settingspanel="advanced" hidden>
         {% call ui.card() %}
           {{ ui.section_label('Advanced', icon=icons.server(14)) }}
           <div class="settings-fields">
@@ -94,28 +122,39 @@
             {% endcall %}
           </div>
         {% endcall %}
-
-        {# ── Single Sign-On (provider-agnostic; managed by sso.js) ─────────── #}
-        {% call ui.card() %}
-          {{ ui.section_label('Single Sign-On', icon=icons.key(14)) }}
-          <div class="settings-fields">
-            {% call ui.banner(tone='info', icon=icons.info(15)) %}
-              Single sign-on applies in <strong>Login Mode</strong>. Add one or more identity providers &mdash; Microsoft Entra, Google, GitHub, Okta, Keycloak, Authentik, a generic OIDC issuer, or a custom OAuth2 endpoint. Bypass modes skip login before any provider is consulted.
-            {% endcall %}
-            <div id="ssoRoot" data-sso-root>
-              <div class="sso-empty">Loading providers&hellip;</div>
-            </div>
-          </div>
-        {% endcall %}
-
       </div>
+
     </div>
   </div>
 </section>
 
+<script>
+  // Scoped Settings tabs (custom data-settingstab so the global data-tabs
+  // handler never toggles other sections' panels). Hidden panels keep their
+  // fields in the DOM so the settings collector still submits them.
+  (function () {
+    var bar = document.getElementById('settingsTabs');
+    if (!bar || bar.dataset.wired) return;
+    bar.dataset.wired = '1';
+    var panels = function () { return document.querySelectorAll('#generalSettings [data-settingspanel]'); };
+    bar.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-settingstab]'); if (!b) return;
+      var id = b.dataset.settingstab;
+      bar.querySelectorAll('[data-settingstab]').forEach(function (x) {
+        var on = x === b; x.classList.toggle('active', on); x.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      panels().forEach(function (p) { p.hidden = p.dataset.settingspanel !== id; });
+    });
+  })();
+</script>
+
 <style>
   /* Layout-only utilities (no colours; all theming stays in cobalt.css tokens). */
+  #settingsSection .settings-tabs { margin-bottom: 22px; }
   #settingsSection .settings-stack { display: flex; flex-direction: column; gap: 18px; }
+  /* [hidden] must beat the flex rule above (higher specificity) so inactive tab panels stay hidden. */
+  #settingsSection .settings-stack[hidden] { display: none; }
+  #settingsSection .settings-stack[data-settingspanel] { animation: fadeIn .24s var(--ease-out); }
   #settingsSection .settings-fields { display: flex; flex-direction: column; gap: 16px; margin-top: 14px; }
   /* Controls read as intentional inputs, not full-width bars (general fields only;
      the SSO panel under #ssoRoot manages its own widths). */
@@ -126,27 +165,17 @@
   #settingsSection .stateful-dates .field { flex: 1 1 200px; }
   #settingsSection .stateful-header-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
-  /* ---- SSO multi-provider (sso.js) ---- */
+  /* ---- SSO list (cards in #ssoRoot; the editor is a modal in sso.js) ---- */
   #ssoRoot { display: flex; flex-direction: column; gap: 12px; }
   #ssoRoot .sso-empty { color: var(--text-muted); font-size: 13px; padding: 6px 0; }
   #ssoRoot .sso-card { display: flex; align-items: center; gap: 14px; padding: 13px 15px;
     background: var(--surface-2); border-radius: var(--radius-md); box-shadow: var(--elev-1); }
-  #ssoRoot .sso-card .sso-plogo { width: 34px; height: 34px; border-radius: var(--radius-sm); flex: none;
+  #ssoRoot .sso-card .sso-plogo { width: 36px; height: 36px; border-radius: var(--radius-sm); flex: none;
     display: grid; place-items: center; background: var(--surface-3); box-shadow: var(--elev-0); }
-  #ssoRoot .sso-card .sso-plogo i { font-size: 17px; color: var(--accent-bright); }
+  #ssoRoot .sso-card .sso-plogo i { font-size: 18px; color: var(--accent-bright); }
   #ssoRoot .sso-card .sso-meta { flex: 1; min-width: 0; }
   #ssoRoot .sso-card .sso-name { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 9px; }
   #ssoRoot .sso-card .sso-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #ssoRoot .sso-card .sso-actions { display: flex; align-items: center; gap: 8px; flex: none; }
-  #ssoRoot .sso-panel { background: var(--surface-2); border-radius: var(--radius-lg); box-shadow: var(--elev-1); padding: 18px; }
-  #ssoRoot .sso-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  #ssoRoot .sso-provfields { display: none; }
-  #ssoRoot .sso-provfields.active { display: block; }
-  #ssoRoot .sso-copyrow { display: flex; gap: 8px; align-items: stretch; }
-  #ssoRoot .sso-copyrow .input { flex: 1; }
-  #ssoRoot .sso-verify { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
-  #ssoRoot .sso-vrow { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--text-secondary);
-    padding: 9px 12px; background: var(--surface-inset); border-radius: var(--radius-sm); box-shadow: inset 0 0 0 1px var(--border-subtle); }
-  #ssoRoot .sso-actions-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
-  @media (max-width: 720px) { #ssoRoot .sso-grid2 { grid-template-columns: 1fr; } }
+  #ssoRoot .sso-actions-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
 </style>
