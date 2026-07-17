@@ -1,6 +1,6 @@
 # Snagarr container image
 # Pinned to the Debian bookworm variant for a reproducible, patched base.
-FROM python:3.12-slim-bookworm
+FROM python:3.14-slim-bookworm
 
 # Do not write .pyc files (keeps a non-root /app clean) and stream logs unbuffered.
 ENV PYTHONDONTWRITEBYTECODE=1 \
