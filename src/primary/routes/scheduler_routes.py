@@ -19,8 +19,8 @@ scheduler_logger = logging.getLogger("scheduler")
 # Create blueprint
 scheduler_api = Blueprint('scheduler_api', __name__)
 
-# Configuration file path
-CONFIG_DIR = "/config/scheduler"
+# Configuration file path (honors SNAGARR_CONFIG_DIR for portable/local runs)
+CONFIG_DIR = os.path.join(os.getenv("SNAGARR_CONFIG_DIR", "/config"), "scheduler")
 SCHEDULE_FILE = os.path.join(CONFIG_DIR, "schedule.json")
 
 def ensure_config_dir():

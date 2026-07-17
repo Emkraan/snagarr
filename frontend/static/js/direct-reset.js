@@ -29,16 +29,9 @@ window.lastStatefulHoursValue = null;
         // Create the new button
         const resetButton = document.createElement('button');
         resetButton.id = 'emergency_reset_btn';
-        resetButton.innerText = '🔥 EMERGENCY RESET 🔥';
-        resetButton.style.background = 'linear-gradient(to right, #ff0000, #8b0000)';
-        resetButton.style.color = 'white';
-        resetButton.style.fontWeight = 'bold';
-        resetButton.style.border = 'none';
-        resetButton.style.borderRadius = '4px';
-        resetButton.style.padding = '8px 16px';
-        resetButton.style.marginLeft = '15px';
-        resetButton.style.cursor = 'pointer';
-        resetButton.style.boxShadow = '0 2px 5px rgba(0,0,0,0.3)';
+        resetButton.className = 'btn btn-danger';
+        resetButton.innerHTML = '<i class="fas fa-triangle-exclamation"></i> Reset State';
+        resetButton.style.marginLeft = 'auto';
         
         // Add click handler for the new button
         resetButton.onclick = function() {
@@ -46,8 +39,7 @@ window.lastStatefulHoursValue = null;
                 
                 // Show loading state
                 this.disabled = true;
-                this.innerText = '⏳ Resetting...';
-                this.style.background = '#666';
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Resetting...';
                 
                 // Mark that we're performing a reset to prevent expiration notification
                 window.justCompletedStatefulReset = true;
@@ -77,8 +69,7 @@ window.lastStatefulHoursValue = null;
                     
                     // Restore button state
                     this.disabled = false;
-                    this.innerText = '🔥 EMERGENCY RESET 🔥';
-                    this.style.background = 'linear-gradient(to right, #ff0000, #8b0000)';
+                    this.innerHTML = '<i class="fas fa-triangle-exclamation"></i> Reset State';
                     
                     // Clear the reset flag since operation failed
                     window.justCompletedStatefulReset = false;

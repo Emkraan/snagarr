@@ -63,7 +63,12 @@ def generate_instance_list():
     
     # Also try to save to a web-accessible location
     try:
-        web_accessible_dir = Path(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))) / "frontend" / "static" / "data"
+        # This file lives at src/primary/utils/, so the repo root is four
+        # levels up; that is where Flask serves frontend/static from (see
+        # web_server.py). Three levels lands in src/ and writes to an
+        # unserved src/frontend/ instead.
+        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        web_accessible_dir = Path(repo_root) / "frontend" / "static" / "data"
         os.makedirs(web_accessible_dir, exist_ok=True)
         logger.debug(f"Web accessible directory: {web_accessible_dir}")
         web_accessible_path_valid = True

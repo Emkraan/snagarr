@@ -1367,12 +1367,12 @@ const SettingsForms = {
                     
                     if (createdDateEl && parsedData.created_at_ts) {
                         const createdDate = new Date(parsedData.created_at_ts * 1000);
-                        createdDateEl.textContent = this.formatDate(createdDate);
+                        createdDateEl.textContent = SettingsForms.formatDate(createdDate);
                     }
                     
                     if (expiresDateEl && parsedData.expires_at_ts) {
                         const expiresDate = new Date(parsedData.expires_at_ts * 1000);
-                        expiresDateEl.textContent = this.formatDate(expiresDate);
+                        expiresDateEl.textContent = SettingsForms.formatDate(expiresDate);
                     }
                     
                     // Still fetch fresh data in the background, but don't update UI
@@ -1408,7 +1408,7 @@ const SettingsForms = {
                 if (createdDateEl) {
                     if (data.created_at_ts) {
                         const createdDate = new Date(data.created_at_ts * 1000);
-                        createdDateEl.textContent = this.formatDate(createdDate);
+                        createdDateEl.textContent = SettingsForms.formatDate(createdDate);
                     } else {
                         createdDateEl.textContent = 'Not yet created';
                     }
@@ -1417,7 +1417,7 @@ const SettingsForms = {
                 if (expiresDateEl) {
                     if (data.expires_at_ts) {
                         const expiresDate = new Date(data.expires_at_ts * 1000);
-                        expiresDateEl.textContent = this.formatDate(expiresDate);
+                        expiresDateEl.textContent = SettingsForms.formatDate(expiresDate);
                     } else {
                         expiresDateEl.textContent = 'Not set';
                     }
@@ -1438,14 +1438,14 @@ const SettingsForms = {
                         
                         if (createdDateEl && parsedData.created_at_ts) {
                             const createdDate = new Date(parsedData.created_at_ts * 1000);
-                            createdDateEl.textContent = this.formatDate(createdDate) + ' (cached)';
+                            createdDateEl.textContent = SettingsForms.formatDate(createdDate) + ' (cached)';
                         } else if (createdDateEl) {
                             createdDateEl.textContent = 'Not available';
                         }
                         
                         if (expiresDateEl && parsedData.expires_at_ts) {
                             const expiresDate = new Date(parsedData.expires_at_ts * 1000);
-                            expiresDateEl.textContent = this.formatDate(expiresDate) + ' (cached)';
+                            expiresDateEl.textContent = SettingsForms.formatDate(expiresDate) + ' (cached)';
                         } else if (expiresDateEl) {
                             expiresDateEl.textContent = 'Not available';
                         }
