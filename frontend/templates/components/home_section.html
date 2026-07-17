@@ -1,50 +1,61 @@
 {% import "_ui.html" as ui %}
 {% import "_icons.html" as icons %}
 
-{% set arrs = [
-  {'key': 'sonarr',   'label': 'Sonarr',      'icon': 'sonarr'},
-  {'key': 'radarr',   'label': 'Radarr',      'icon': 'radarr'},
-  {'key': 'lidarr',   'label': 'Lidarr',      'icon': 'lidarr'},
-  {'key': 'readarr',  'label': 'Readarr',     'icon': 'readarr'},
-  {'key': 'whisparr', 'label': 'Whisparr V2', 'icon': 'whisparr'},
-  {'key': 'eros',     'label': 'Whisparr V3', 'icon': 'whisparr'}
-] %}
-
 <section id="homeSection" class="content-section">
 
   {% call ui.page_header('Dashboard', 'Live hunt activity and connection health across your apps.') %}
+    <div class="ringstat-row" id="dashRings">
+      <div class="ringstat">
+        <span class="dial" id="ringApps" style="--v:0;--rc:#34C759"><b id="ringAppsVal">0/0</b></span>
+        <span class="rl">Apps<br><b>online</b></span>
+      </div>
+      <div class="ringstat">
+        <span class="dial" id="ringApi" style="--v:0;--rc:#3B9EFF"><b id="ringApiVal">0%</b></span>
+        <span class="rl">API<br><b>budget</b></span>
+      </div>
+    </div>
     {{ ui.button('Reset stats', variant='danger', icon=icons.trash(15), attrs='id="dashboardResetStats"') }}
   {% endcall %}
 
-  <div id="dashboardGrid" class="dashboard-grid">
-    {% for a in arrs %}
-      {% call ui.card(klass='arr-card ' ~ a.key, attrs='id="' ~ a.key ~ 'Card"') %}
-        <div class="arr-top">
-          <span class="arr-chip">{{ icons.arr(a.icon, 22) }}</span>
-          <div class="arr-name">{{ a.label }}</div>
-          <span class="status-slot" id="{{ a.key }}HomeStatus">{{ ui.badge('Loading', dot=True) }}</span>
-        </div>
+  <div id="dashboardMain">
+    <div class="kpi-row">
+      <div class="gkpi blue">
+        <div class="gkpi-top"><span class="gkpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span></div>
+        <div class="gkpi-lbl">Searches triggered</div>
+        <div class="gkpi-num" id="kpiSearches" data-countup="0">0</div>
+        <div class="gkpi-sub" id="kpiSearchesSub">across 0 apps</div>
+      </div>
+      <div class="gkpi violet">
+        <div class="gkpi-top"><span class="gkpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg></span></div>
+        <div class="gkpi-lbl">Upgrades triggered</div>
+        <div class="gkpi-num" id="kpiUpgrades" data-countup="0">0</div>
+        <div class="gkpi-sub" id="kpiUpgradesSub">quality bumps</div>
+      </div>
+      <div class="gkpi green">
+        <div class="gkpi-top"><span class="gkpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></span></div>
+        <div class="gkpi-lbl">Apps connected</div>
+        <div class="gkpi-num" id="kpiApps" data-countup="0">0</div>
+        <div class="gkpi-sub" id="kpiAppsSub">of 0 configured</div>
+      </div>
+      <div class="gkpi amber">
+        <div class="gkpi-top"><span class="gkpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg></span></div>
+        <div class="gkpi-lbl">API calls this hour</div>
+        <div class="gkpi-num" id="kpiApi" data-countup="0">0</div>
+        <div class="gkpi-bar"><i id="kpiApiBar" style="width:0%"></i></div>
+      </div>
+    </div>
 
-        <div class="arr-cap">
-          <span class="cap-slot" id="{{ a.key }}Cap">{{ ui.badge('API --', dot=True, mono=True) }}</span>
-        </div>
-
-        <div class="arr-stats">
-          <div class="arr-stat">
-            <span class="kpi-value hero-num arr-num" id="stat-{{ a.key }}-hunted" data-countup="0">0</span>
-            <span class="arr-stat-label">Searches Triggered</span>
-          </div>
-          <div class="arr-stat">
-            <span class="kpi-value hero-num arr-num" id="stat-{{ a.key }}-upgraded" data-countup="0">0</span>
-            <span class="arr-stat-label">Upgrades Triggered</span>
-          </div>
-        </div>
-
-        <div class="arr-foot">
-          {{ ui.button('Reset cycle', variant='ghost', size='sm', icon=icons.refresh(14), attrs='data-cycle-app="' ~ a.key ~ '"') }}
-        </div>
+    <div class="dash-grid2">
+      {% call ui.card() %}
+        <div class="card-head"><span class="ch-t">Searches by app</span><span class="badge mono" id="searchTotalBadge">0 total</span></div>
+        <div class="barchart" id="searchBars"></div>
+        <div id="searchBarsEmpty" class="field-hint" style="padding:8px 0" hidden>No searches recorded yet.</div>
       {% endcall %}
-    {% endfor %}
+      {% call ui.card() %}
+        <div class="card-head"><span class="ch-t">Connection health</span><span class="status-slot" id="connSummary">{{ ui.badge('Loading', dot=True) }}</span></div>
+        <div class="conn-list" id="connList"></div>
+      {% endcall %}
+    </div>
   </div>
 
   <div id="dashboardEmpty" hidden>
@@ -54,105 +65,11 @@
 </section>
 
 <style>
-  /* Layout-only utilities. Theming stays in cobalt.css tokens; the six per-arr
-     brand accents are intentionally preserved (the *arr apps' own identities). */
-  #homeSection .dashboard-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 16px;
-  }
-
-  #homeSection .arr-card {
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-  #homeSection .arr-card::before {
-    content: "";
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    background: var(--arr-accent, var(--accent));
-  }
-
-  #homeSection .arr-top {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  #homeSection .arr-chip {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    border-radius: var(--radius-md);
-    background: var(--bg-hover);
-    border: 1px solid var(--border-subtle);
-    flex-shrink: 0;
-  }
-  #homeSection .arr-name {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: 15px;
-    color: var(--text-primary);
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  #homeSection .status-slot { margin-left: auto; flex-shrink: 0; }
-
-  #homeSection .arr-cap { display: flex; }
-
-  #homeSection .arr-stats {
-    display: flex;
-    gap: 12px;
-    margin-top: 2px;
-  }
-  #homeSection .arr-stat {
-    flex: 1 1 0;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-    min-width: 0;
-  }
-  #homeSection .arr-num {
-    font-size: 30px;
-    line-height: 1;
-  }
-  #homeSection .arr-stat-label {
-    font-size: 10px;
-    font-family: var(--font-mono);
-    text-transform: uppercase;
-    letter-spacing: .1em;
-    color: var(--text-muted);
-  }
-
-  #homeSection .arr-foot {
-    margin-top: auto;
-    display: flex;
-    justify-content: flex-end;
-    padding-top: 4px;
-    border-top: 1px solid var(--border-subtle);
-  }
-
-  /* Per-arr brand accents (preserved identities) - drive the top rail and the
-     gradient hero numerals via the .hero-num tone variables. */
-  #homeSection .arr-card.sonarr   { --arr-accent: #00aef0; }
-  #homeSection .arr-card.radarr   { --arr-accent: #fdcb2b; }
-  #homeSection .arr-card.lidarr   { --arr-accent: #31c538; }
-  #homeSection .arr-card.readarr  { --arr-accent: #c02d28; }
-  #homeSection .arr-card.whisparr { --arr-accent: #c300e6; }
-  #homeSection .arr-card.eros     { --arr-accent: #c300e6; }
-
-  #homeSection .arr-card.sonarr   .hero-num { --hero-a: #5acdff; --hero-b: #00aef0; }
-  #homeSection .arr-card.radarr   .hero-num { --hero-a: #ffe066; --hero-b: #fdcb2b; }
-  #homeSection .arr-card.lidarr   .hero-num { --hero-a: #5de264; --hero-b: #31c538; }
-  #homeSection .arr-card.readarr  .hero-num { --hero-a: #e35751; --hero-b: #c02d28; }
-  #homeSection .arr-card.whisparr .hero-num { --hero-a: #e64dff; --hero-b: #c300e6; }
-  #homeSection .arr-card.eros     .hero-num { --hero-a: #e64dff; --hero-b: #c300e6; }
+  /* Layout only; theming stays in cobalt.css tokens. */
+  #homeSection .dash-grid2 { display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; margin-top: 20px; }
+  @media (max-width: 980px) { #homeSection .dash-grid2 { grid-template-columns: 1fr; } }
+  /* Per-arr brand accents (the apps' own identities) reused by dashboard.js for
+     the bar chart + connection rings. */
+  #homeSection { --arr-sonarr:#3B9EFF; --arr-radarr:#F5B301; --arr-lidarr:#34C759;
+    --arr-readarr:#EB5860; --arr-whisparr:#8B7CF6; --arr-eros:#F65E8E; }
 </style>

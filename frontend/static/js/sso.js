@@ -30,6 +30,15 @@
   ];
   function ptype(v) { return PTYPES.filter(function (p) { return p.v === v; })[0] || PTYPES[PTYPES.length - 1]; }
 
+  // Real brand marks where they exist (colored), else the fa glyph in accent.
+  function logoHtml(v) {
+    if (v === "microsoft") return '<svg viewBox="0 0 24 24" width="22" height="22"><rect x="3" y="3" width="8.4" height="8.4" fill="#F25022"/><rect x="12.6" y="3" width="8.4" height="8.4" fill="#7FBA00"/><rect x="3" y="12.6" width="8.4" height="8.4" fill="#00A4EF"/><rect x="12.6" y="12.6" width="8.4" height="8.4" fill="#FFB900"/></svg>';
+    if (v === "google") return '<svg viewBox="0 0 24 24" width="22" height="22"><path fill="#4285F4" d="M21.6 12.2c0-.6-.05-1.2-.16-1.8H12v3.4h5.4a4.6 4.6 0 01-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.1z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.2H3.1v2.6A10 10 0 0012 22z"/><path fill="#FBBC05" d="M6.4 13.9a6 6 0 010-3.8V7.5H3.1a10 10 0 000 9z"/><path fill="#EA4335" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.8-2.8A10 10 0 003.1 7.5l3.3 2.6C7.2 7.7 9.4 5.9 12 5.9z"/></svg>';
+    if (v === "github") return '<svg viewBox="0 0 24 24" width="20" height="20" fill="#e6edf6"><path d="M12 1.5A10.5 10.5 0 001.7 12c0 4.6 3 8.5 7.2 9.9.5.1.7-.2.7-.5v-1.7c-2.9.6-3.5-1.4-3.5-1.4-.5-1.2-1.2-1.5-1.2-1.5-.9-.6.1-.6.1-.6 1 .1 1.6 1 1.6 1 .9 1.6 2.4 1.1 3 .9.1-.7.4-1.1.6-1.4-2.3-.3-4.7-1.2-4.7-5.1 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.3 9.3 0 015 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.4 4.8-4.7 5.1.4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5 4.2-1.4 7.2-5.3 7.2-9.9A10.5 10.5 0 0012 1.5z"/></svg>';
+    var pt = ptype(v);
+    return '<i class="' + pt.icon + '" style="font-size:18px;color:var(--accent-bright)"></i>';
+  }
+
   function root() { return document.querySelector("#ssoRoot"); }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function toast(m, t) { if (typeof window.toast === "function") window.toast(m, t); }
@@ -112,7 +121,7 @@
       var sub = pt.l + (p.show_on_login ? " · shown on login" : " · hidden from login") +
         (p.configured ? "" : " · not configured");
       return '<div class="sso-card" data-name="' + esc(p.name) + '">' +
-        '<div class="sso-plogo"><i class="' + pt.icon + '"></i></div>' +
+        '<div class="sso-plogo">' + logoHtml(p.provider_type) + "</div>" +
         '<div class="sso-meta"><div class="sso-name">' + esc(p.display_name || p.name) + " " + badges.join(" ") + "</div>" +
         '<div class="sso-sub">' + esc(sub) + "</div></div>" +
         '<div class="sso-actions">' +
