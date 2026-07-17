@@ -56,3 +56,13 @@ def test_oidc_secret_file_resolution(tmp_path):
         assert oidc._read_secret("OIDC_CLIENT_SECRET") == "file-sourced-secret"
     finally:
         os.environ.pop("OIDC_CLIENT_SECRET_FILE", None)
+
+
+def test_callback_url_env_override(tmp_path):
+    oidc = load_oidc(tmp_path)
+    import os
+    os.environ["OIDC_REDIRECT_URI"] = "https://snagarr.example.com/auth/callback"
+    try:
+        assert oidc._callback_url() == "https://snagarr.example.com/auth/callback"
+    finally:
+        os.environ.pop("OIDC_REDIRECT_URI", None)

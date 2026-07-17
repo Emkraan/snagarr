@@ -119,13 +119,31 @@ def _is_admin(claims) -> bool:
     return bool(principal & c["admin_groups"])
 
 
+def _callback_url() -> str:
+    """Build the OIDC callback URL, forcing https behind a TLS-terminating proxy.
+
+    Order: an explicit OIDC_REDIRECT_URI env (most reliable), else url_for. The
+    internal proxy hop is plain HTTP, so url_for often yields http://; Entra
+    requires the redirect_uri to match the registered https URL exactly, so we
+    upgrade the scheme for any non-localhost host.
+    """
+    override = os.environ.get("OIDC_REDIRECT_URI")
+    if override:
+        return override
+    uri = url_for("oidc.oidc_callback", _external=True)
+    host = (request.host or "").split(":")[0]
+    if uri.startswith("http://") and host not in ("localhost", "127.0.0.1"):
+        uri = "https://" + uri[len("http://"):]
+    return uri
+
+
 @oidc_bp.route("/auth/login")
 def oidc_login():
     client = _client()
     if client is None:
         logger.warning("OIDC login requested but OIDC is not configured; sending to local login.")
         return redirect(url_for("common.login_page") if _has_endpoint("common.login_page") else "/login")
-    redirect_uri = url_for("oidc.oidc_callback", _external=True)
+    redirect_uri = _callback_url()
     return client.authorize_redirect(redirect_uri)
 
 
