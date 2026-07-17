@@ -23,20 +23,26 @@ from .. import settings_manager # Import settings_manager
 
 common_bp = Blueprint('common', __name__)
 
+# Repo-root frontend/static (this file is src/primary/routes/, so three up).
+# The blueprint itself has no static_folder, so resolve the served dir directly
+# instead of relying on common_bp.static_folder (which is None -> 500s).
+_STATIC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'frontend', 'static'))
+
 # --- Static File Serving --- #
 
 @common_bp.route('/static/<path:filename>')
 def static_files(filename):
-    return send_from_directory(common_bp.static_folder, filename)
+    return send_from_directory(_STATIC_DIR, filename)
 
 @common_bp.route('/favicon.ico')
 def favicon():
-    return send_from_directory(common_bp.static_folder, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+    # Serve the Snagarr mark as the favicon (no separate .ico asset is shipped;
+    # browsers accept an SVG here). Fixes the prior static_folder=None 500.
+    return send_from_directory(os.path.join(_STATIC_DIR, 'logo'), 'snagarr.svg', mimetype='image/svg+xml')
 
 @common_bp.route('/logo/<path:filename>')
 def logo_files(filename):
-    logo_dir = os.path.join(common_bp.static_folder, 'logo')
-    return send_from_directory(logo_dir, filename)
+    return send_from_directory(os.path.join(_STATIC_DIR, 'logo'), filename)
 
 # --- Authentication Routes --- #
 
@@ -97,19 +103,18 @@ def login_route():
              logger.info("No user exists, redirecting to setup.")
              return redirect(url_for('common.setup'))
         logger.debug("Displaying login page.")
-        oidc_on = False
+        # Render a sign-in button for every enabled, login-visible SSO provider.
+        providers = []
         try:
-            from src.primary.settings_manager import load_settings
-            oidc_on = load_settings("general").get("oidc_enabled", False)
+            from src.primary import oidc_config
+            providers = [
+                {"name": p["name"], "display_name": p.get("display_name") or p["name"],
+                 "provider_type": p.get("provider_type")}
+                for p in oidc_config.login_providers()
+            ]
         except Exception:
             pass
-        if not oidc_on:
-            try:
-                from src.primary.routes.oidc import oidc_configured
-                oidc_on = oidc_configured()
-            except Exception:
-                pass
-        return render_template('login.html', oidc_enabled=oidc_on)
+        return render_template('login.html', oidc_providers=providers)
 
 @common_bp.route('/logout', methods=['POST'])
 def logout_route():

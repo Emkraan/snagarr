@@ -1,7 +1,9 @@
 """
-Smoke tests for the OIDC blueprint: it imports cleanly and its config
-resolution reflects env/secret-file presence. The full sign-in flow is verified
-against a live Entra tenant at deploy, not here.
+Smoke + unit tests for the provider-agnostic SSO subsystem: the blueprint
+imports cleanly, the provider store round-trips (with secret preserve-unless-
+changed), presets resolve to the right flow/endpoints, a legacy flat Entra
+config migrates, and an env deployment seeds the store. The full sign-in flow is
+verified against a live tenant at deploy, not here.
 """
 
 import importlib
@@ -22,7 +24,9 @@ def load_oidc(tmp_path):
     fake_logger_mod.get_logger = lambda name="": logging.getLogger(f"test-{name}")
     sys.modules["src.primary.utils.logger"] = fake_logger_mod
 
+    # Re-import auth (for a fresh USER_DIR), the store, and the blueprint.
     sys.modules.pop("src.primary.auth", None)
+    sys.modules.pop("src.primary.oidc_config", None)
     sys.modules.pop("src.primary.routes.oidc", None)
     import src.primary.routes.oidc as oidc
     importlib.reload(oidc)
@@ -35,16 +39,66 @@ def test_oidc_imports_and_unconfigured_by_default(tmp_path):
     assert oidc.oidc_configured() is False
 
 
-def test_oidc_configured_from_env(tmp_path):
+def test_env_seed_creates_microsoft_provider(tmp_path):
     oidc = load_oidc(tmp_path)
+    from src.primary import oidc_config
     os.environ["OIDC_TENANT_ID"] = "11111111-1111-1111-1111-111111111111"
     os.environ["OIDC_CLIENT_ID"] = "22222222-2222-2222-2222-222222222222"
     os.environ["OIDC_CLIENT_SECRET"] = "shh-not-a-real-secret"
     try:
+        assert oidc.oidc_env_configured() is True
+        oidc.seed_from_env()
+        provs = oidc_config.load_providers()
+        assert len(provs) == 1
+        assert provs[0]["provider_type"] == "microsoft"
+        assert provs[0]["tenant"] == "11111111-1111-1111-1111-111111111111"
         assert oidc.oidc_configured() is True
+        # the secret is stored underneath but masked on the read-model
+        assert oidc_config.mask_provider(provs[0])["client_secret"] == oidc_config.SECRET_SENTINEL
+        # seeding is one-time: it must not clobber an existing store
+        oidc.seed_from_env()
+        assert len(oidc_config.load_providers()) == 1
     finally:
         for k in ("OIDC_TENANT_ID", "OIDC_CLIENT_ID", "OIDC_CLIENT_SECRET"):
             os.environ.pop(k, None)
+
+
+def test_provider_store_crud_and_secret_preserve(tmp_path):
+    load_oidc(tmp_path)
+    from src.primary import oidc_config
+    oidc_config.save_providers([{
+        "name": "okta", "provider_type": "okta", "enabled": True,
+        "client_id": "cid", "client_secret": "sek", "issuer": "https://x.okta.com",
+    }])
+    p = oidc_config.get_provider("okta")
+    assert p and p["client_secret"] == "sek"
+    # sentinel / empty preserves the stored secret; anything else replaces it
+    assert oidc_config.merge_provider_secret(
+        {"client_secret": oidc_config.SECRET_SENTINEL}, p)["client_secret"] == "sek"
+    assert oidc_config.merge_provider_secret({"client_secret": ""}, p)["client_secret"] == "sek"
+    assert oidc_config.merge_provider_secret({"client_secret": "new"}, p)["client_secret"] == "new"
+
+
+def test_resolve_microsoft_and_github_flows(tmp_path):
+    oidc = load_oidc(tmp_path)
+    ms = oidc.resolve({"name": "microsoft", "provider_type": "microsoft",
+                       "tenant": "TENANT", "client_id": "c", "client_secret": "s"})
+    assert ms["_flow"] == "oidc"
+    assert "login.microsoftonline.com/TENANT/v2.0/.well-known/openid-configuration" in ms["discovery_url"]
+
+    gh = oidc.resolve({"name": "github", "provider_type": "github", "client_id": "c", "client_secret": "s"})
+    assert gh["_flow"] == "oauth2"
+    assert gh["userinfo_url"] == "https://api.github.com/user"
+
+
+def test_legacy_flat_config_migrates(tmp_path):
+    load_oidc(tmp_path)
+    from src.primary import oidc_config
+    oidc_config.save_oidc_config({"oidc_tenant_id": "t", "oidc_client_id": "c", "oidc_client_secret": "s"})
+    provs = oidc_config.load_providers()
+    assert len(provs) == 1
+    assert provs[0]["provider_type"] == "microsoft"
+    assert provs[0]["tenant"] == "t"
 
 
 def test_oidc_secret_file_resolution(tmp_path):
@@ -60,7 +114,6 @@ def test_oidc_secret_file_resolution(tmp_path):
 
 def test_callback_url_env_override(tmp_path):
     oidc = load_oidc(tmp_path)
-    import os
     os.environ["OIDC_REDIRECT_URI"] = "https://snagarr.example.com/auth/callback"
     try:
         assert oidc._callback_url() == "https://snagarr.example.com/auth/callback"

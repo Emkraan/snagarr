@@ -25,24 +25,30 @@
 :root {
   color-scheme: dark;
 
-  /* ---- Surfaces (cool near-black, slight blue bias) ---- */
-  --bg-primary:   #070809;  --bg-secondary: #0E0F12;  --bg-card: #15171B;
-  --bg-hover:     #1C1F25;  --bg-active:    #272C34;   --bg-input: #101319;
+  /* ---- Surface ladder (v3 "Elevated": luminance-stacked, all lean blue ~218deg).
+     Legacy names retained so every component recolors for free; new --surface-*
+     aliases are the canonical v3 tokens. ---- */
+  --bg-canvas:  #0B1220;  --surface-1: #0F1626;  --surface-2: #131B2E;
+  --surface-3:  #182238;  --surface-4: #1E2A44;  --surface-5: #253250;  --surface-inset: #080E1A;
+  --bg-primary:   #0B1220;  --bg-secondary: #0F1626;  --bg-card: #131B2E;
+  --bg-hover:     #1B273D;  --bg-active:    #22304C;   --bg-input: #080E1A;
 
-  /* ---- Borders ---- */
-  --border: #262A31;  --border-subtle: #16181D;  --border-strong: #394049;  --border-accent: #1F5C97;
+  /* ---- Borders (hairline white-alpha + solid fallbacks) ---- */
+  --border: #263049;  --border-subtle: #1B2438;  --border-strong: #33405C;  --border-accent: #2C6FA8;
+  --border-hair:       rgba(255,255,255,0.06);
+  --border-hair-strong:rgba(255,255,255,0.12);
 
   /* ---- Text ---- */
-  --text-primary: #F7F9FB;  --text-secondary: #AEB6C2;  --text-muted: #727C8A;
-  --text-dim: #5E6773;      --text-inverse: #061018;
+  --text-primary: #F4F7FB;  --text-secondary: #AEB8C6;  --text-muted: #7C879A;
+  --text-dim: #5A6576;      --text-inverse: #06101A;
 
   /* ---- PRIMARY accent -- Emkraan logo blue ramp (500=#2486B9 peak, 600=#1B6FB8 token) ---- */
   --accent-50:#E8F1FB; --accent-100:#C6DEF5; --accent-200:#93C2EC; --accent-300:#5FA4E0;
-  --accent-400:#4A9FE0; --accent-500:#2486B9; --accent-600:#1B6FB8; --accent-700:#155A95; --accent-800:#114B7C;
-  --accent: #1B6FB8;  --accent-hover: #2384C2;  --accent-bright: #4A9FE0;
+  --accent-400:#4A9FE0; --accent-500:#2486B9; --accent-600:#1B6FB8; --accent-700:#155A95; --accent-800:#114B7C; --accent-900:#0D3A61;
+  --accent: #1B6FB8;  --accent-hover: #2384C2;  --accent-press:#155A95;  --accent-bright: #4A9FE0;
   --accent-dim: rgba(27,111,184,0.16);  --accent-soft: rgba(27,111,184,0.16);  --accent-veil: rgba(27,111,184,0.10);
-  --accent-border: rgba(36,134,185,0.45);  --accent-glow: rgba(36,134,185,0.34);
-  --accent-grad: linear-gradient(180deg, #1F78B0 0%, #1B6FB8 100%);
+  --accent-border: rgba(36,134,185,0.55);  --accent-glow: rgba(36,134,185,0.34);
+  --accent-grad: linear-gradient(180deg, #2486B9 0%, #1B6FB8 100%);
 
   /* ---- Status -- mapped to logo inks ---- */
   --success:#34C759; --success-dim:#0E2A18; --success-border:#1B5C30;
@@ -55,34 +61,52 @@
   --font-display:"Sora","Segoe UI",system-ui,sans-serif;
   --font-sans:"Inter","Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,Roboto,sans-serif;
   --font-mono:"IBM Plex Mono","JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
-  --track-tight:-0.01em; --lh-tight:1.2; --lh-body:1.55;
+  /* Tracking is a negative function of size: tight at display, ~0 by label, positive for caps. */
+  --track-tight:-0.01em; --track-display:-0.021em; --track-title:-0.016em; --track-caps:0.08em;
+  --lh-tight:1.15; --lh-body:1.55;
 
   /* ---- Radius ---- */
-  --radius:9px; --radius-xs:5px; --radius-sm:7px; --radius-md:9px; --radius-lg:12px; --radius-xl:16px; --radius-pill:999px;
+  --radius:8px; --radius-xs:4px; --radius-sm:6px; --radius-md:8px; --radius-lg:12px; --radius-xl:16px; --radius-pill:999px;
 
-  /* ---- Focus ring (logo blue, double-ring halo) ---- */
-  --focus-ring: 0 0 0 2px var(--bg-secondary), 0 0 0 4px rgba(36,134,185,0.65);
+  /* ---- Focus ring (logo blue, canvas-gap + accent halo) ---- */
+  --focus-ring: 0 0 0 2px var(--bg-canvas), 0 0 0 4px rgba(36,134,185,0.65);
+  --focus-ring-tight: 0 0 0 2px rgba(36,134,185,0.60);
+  --focus-glow-soft: 0 0 0 3px rgba(36,134,185,0.22);
 
-  /* ---- Elevation (layered: ambient + contact + inset highlight) ---- */
-  --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.40);
-  --shadow:    0 4px 16px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.02);
-  --shadow-md: 0 10px 24px -6px rgba(0,0,0,0.55), 0 4px 8px -4px rgba(0,0,0,0.4);
-  --shadow-lg: 0 24px 48px -12px rgba(0,0,0,0.7);
-  --shadow-accent: 0 6px 20px -4px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,0.08);
+  /* ---- Elevation ladder (hairline ring + negative-spread key shadows + top highlight) ---- */
+  --elev-0: inset 0 1px 0 rgba(255,255,255,0.04), 0 0 0 1px rgba(255,255,255,0.05);
+  --elev-1: 0 0 0 1px rgba(255,255,255,0.05), 0 1px 2px -1px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04);
+  --elev-2: 0 0 0 1px rgba(255,255,255,0.06), 0 2px 4px -2px rgba(0,0,0,0.50), 0 4px 8px -4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05);
+  --elev-3: 0 0 0 1px rgba(255,255,255,0.07), 0 4px 8px -4px rgba(0,0,0,0.50), 0 12px 24px -8px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05);
+  --elev-4: 0 0 0 1px rgba(255,255,255,0.08), 0 8px 16px -8px rgba(0,0,0,0.55), 0 24px 48px -12px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06);
+  --elev-5: 0 0 0 1px rgba(255,255,255,0.09), 0 16px 32px -12px rgba(0,0,0,0.55), 0 40px 80px -16px rgba(0,0,0,0.60), inset 0 1px 0 rgba(255,255,255,0.07);
+  /* Legacy shadow names -> elevation ladder */
+  --shadow-sm: var(--elev-1);
+  --shadow:    var(--elev-2);
+  --shadow-md: var(--elev-3);
+  --shadow-lg: var(--elev-4);
+  --shadow-accent: 0 0 0 1px rgba(36,134,185,0.60), 0 2px 8px -2px rgba(27,111,184,0.50), inset 0 1px 0 rgba(255,255,255,0.14);
   --shadow-glow:   var(--shadow-accent);
-  --shadow-inset-top: inset 0 1px 0 rgba(255,255,255,0.03);
+  --shadow-inset-top: inset 0 1px 0 rgba(255,255,255,0.05);
+  --btn-accent-grad: linear-gradient(180deg, #2486B9 0%, #1B6FB8 100%);
+  --btn-danger-grad: linear-gradient(180deg, #D8363D 0%, #C9282F 100%);
+  --sheen-top: linear-gradient(180deg, rgba(255,255,255,0.035) 0%, rgba(255,255,255,0) 38%);
 
   /* ---- Motion ---- */
   --ease-out: cubic-bezier(0.16,1,0.3,1);
   --ease:     cubic-bezier(0.4,0,0.2,1);
-  --ease-in:  cubic-bezier(0.4,0,1,1);
+  --ease-in:  cubic-bezier(0.5,0,0.75,0);
+  --ease-in-out: cubic-bezier(0.65,0,0.35,1);
   --ease-spring: cubic-bezier(0.34,1.56,0.64,1);
-  --t-fast:120ms; --t:180ms; --t-slow:260ms;
+  --dur-instant:80ms; --dur-fast:120ms; --dur-base:180ms; --dur-slow:240ms; --dur-slower:300ms;
+  --t-instant:80ms; --t-fast:120ms; --t:180ms; --t-slow:240ms;
 
-  /* ---- Body ambient wash (kept as a token for legacy callers) ---- */
-  --body-wash: radial-gradient(1200px 600px at 18% -10%, rgba(27,111,184,0.10), transparent 60%),
-               radial-gradient(900px 500px at 100% 0%, rgba(36,134,185,0.06), transparent 55%),
-               var(--bg-primary);
+  /* ---- Spacing scale (4px base) ---- */
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:20px; --space-6:24px; --space-8:32px; --space-10:40px;
+
+  /* ---- Body ambient wash (dark-but-not-black canvas the glow fades into) ---- */
+  --body-wash: radial-gradient(120% 75% at 50% -10%, rgba(36,134,185,0.10) 0%, rgba(11,18,32,0) 55%),
+               var(--bg-canvas);
 }
 
 /* =========================================================================
@@ -173,14 +197,15 @@ body{
 /* Ambient cobalt wash behind the whole shell (from the logo blue). */
 body::before{
   content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
-  background:
-    radial-gradient(1200px 600px at 18% -10%, rgba(27,111,184,0.10), transparent 60%),
-    radial-gradient(900px 500px at 100% 0%, rgba(36,134,185,0.06), transparent 55%);
+  background: radial-gradient(120% 75% at 50% -10%, rgba(36,134,185,0.10) 0%, rgba(11,18,32,0) 55%);
 }
 a{color:inherit;text-decoration:none;}
 button{font-family:var(--font-sans);}
 input,textarea,select{font-family:var(--font-sans);color:var(--text-primary);}
-h1,h2,h3,h4,h5,h6{font-family:var(--font-display);}
+h1,h2,h3,h4,h5,h6{font-family:var(--font-display);letter-spacing:var(--track-title);text-wrap:balance;}
+/* Inter OpenType character + tabular figures where digits align */
+body{font-feature-settings:"cv01" 1,"cv02" 1,"cv03" 1,"cv04" 1,"calt" 1,"liga" 1,"ss03" 1;}
+.tnum,.mono,.kpi-value,.stat-value,td.num,time{font-variant-numeric:tabular-nums slashed-zero;}
 code,pre,kbd,samp{font-family:var(--font-mono);}
 
 /* Premium thin scrollbar - muted, rounded, glows toward accent on hover */
@@ -437,8 +462,8 @@ code,pre,kbd,samp{font-family:var(--font-mono);}
   letter-spacing:.06em;color:var(--text-muted);border-bottom:1px solid var(--border);white-space:nowrap;}
 .table th.r,.table td.r{text-align:right;} .table th.c,.table td.c{text-align:center;}
 .table td{padding:11px 14px;color:var(--text-secondary);border-bottom:1px solid var(--border-subtle);}
-.table tbody tr{transition:background var(--t-fast) var(--ease);}
-.table tbody tr:hover{background:var(--bg-hover);}
+.table tbody tr{transition:background var(--t-instant) var(--ease);}
+.table tbody tr:hover{background:var(--accent-veil);}
 .table tbody tr.clickable{cursor:pointer;}
 .table.zebra tbody tr:nth-child(even){background:var(--bg-secondary);}
 

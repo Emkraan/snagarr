@@ -95,39 +95,15 @@
           </div>
         {% endcall %}
 
-        {# ── Single Sign-On (OIDC / Entra ID) ─────────────────────────────── #}
+        {# ── Single Sign-On (provider-agnostic; managed by sso.js) ─────────── #}
         {% call ui.card() %}
-          {{ ui.section_label('Single Sign-On (OIDC / Entra ID)', icon=icons.key(14)) }}
+          {{ ui.section_label('Single Sign-On', icon=icons.key(14)) }}
           <div class="settings-fields">
             {% call ui.banner(tone='info', icon=icons.info(15)) %}
-              Single sign-on applies in <strong>Login Mode</strong>. Bypass modes skip login before any provider is consulted.
+              Single sign-on applies in <strong>Login Mode</strong>. Add one or more identity providers &mdash; Microsoft Entra, Google, GitHub, Okta, Keycloak, Authentik, a generic OIDC issuer, or a custom OAuth2 endpoint. Bypass modes skip login before any provider is consulted.
             {% endcall %}
-            {% call ui.field('Enable Single Sign-On', hint='Show "Sign in with Microsoft" and accept Entra ID logins.') %}
-              {{ ui.switch('oidc_enabled', attrs='id="oidc_enabled"') }}
-            {% endcall %}
-            {% call ui.field('Tenant ID', hint='Directory (tenant) ID from your Entra app registration.') %}
-              {{ ui.input('oidc_tenant_id', placeholder='00000000-0000-0000-0000-000000000000', attrs='id="oidc_tenant_id" autocomplete="off"') }}
-            {% endcall %}
-            {% call ui.field('Client ID', hint='Application (client) ID from your Entra app registration.') %}
-              {{ ui.input('oidc_client_id', placeholder='00000000-0000-0000-0000-000000000000', attrs='id="oidc_client_id" autocomplete="off"') }}
-            {% endcall %}
-            {% call ui.field('Client Secret') %}
-              {{ ui.input('oidc_client_secret', type='password', placeholder='Enter a client secret', attrs='id="oidc_client_secret" autocomplete="new-password"') }}
-            {% endcall %}
-            <p class="field-hint" id="oidc_secret_hint" hidden>Secret is set - leave unchanged to keep.</p>
-            {% call ui.field('Allowed Groups', hint='Comma-separated group object IDs. Leave empty to allow any tenant user.') %}
-              {{ ui.input('oidc_allowed_groups', placeholder='group-id-1, group-id-2', attrs='id="oidc_allowed_groups" autocomplete="off"') }}
-            {% endcall %}
-            {% call ui.field('Admin Groups', hint='Comma-separated group object IDs granted admin access.') %}
-              {{ ui.input('oidc_admin_groups', placeholder='group-id-1, group-id-2', attrs='id="oidc_admin_groups" autocomplete="off"') }}
-            {% endcall %}
-            {% call ui.field('Redirect URI', hint='Register this exact URI in Entra under App registration, Redirect URIs (Web).') %}
-              <div class="mono">{{ ui.input('oidc_redirect_uri_display', type='text', attrs='id="oidc_redirect_uri_display" readonly') }}</div>
-            {% endcall %}
-            <div class="oidc-status-row">
-              {{ ui.button('Copy redirect URI', variant='default', size='sm', icon=icons.copy(14), attrs='id="oidc_copy_redirect" data-copy=""') }}
-              {{ ui.button('Verify', variant='default', size='sm', icon=icons.refresh(14), attrs='id="oidc_verify_btn"') }}
-              <span id="oidc_status_slot">{{ ui.badge('Checking...', dot=True) }}</span>
+            <div id="ssoRoot" data-sso-root>
+              <div class="sso-empty">Loading providers&hellip;</div>
             </div>
           </div>
         {% endcall %}
@@ -144,5 +120,28 @@
   #settingsSection .stateful-dates { display: flex; flex-wrap: wrap; gap: 24px; }
   #settingsSection .stateful-dates .field { flex: 1 1 200px; }
   #settingsSection .stateful-header-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-  #settingsSection .oidc-status-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+  /* ---- SSO multi-provider (sso.js) ---- */
+  #ssoRoot { display: flex; flex-direction: column; gap: 12px; }
+  #ssoRoot .sso-empty { color: var(--text-muted); font-size: 13px; padding: 6px 0; }
+  #ssoRoot .sso-card { display: flex; align-items: center; gap: 14px; padding: 13px 15px;
+    background: var(--surface-2); border-radius: var(--radius-md); box-shadow: var(--elev-1); }
+  #ssoRoot .sso-card .sso-plogo { width: 34px; height: 34px; border-radius: var(--radius-sm); flex: none;
+    display: grid; place-items: center; background: var(--surface-3); box-shadow: var(--elev-0); }
+  #ssoRoot .sso-card .sso-plogo i { font-size: 17px; color: var(--accent-bright); }
+  #ssoRoot .sso-card .sso-meta { flex: 1; min-width: 0; }
+  #ssoRoot .sso-card .sso-name { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 9px; }
+  #ssoRoot .sso-card .sso-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #ssoRoot .sso-card .sso-actions { display: flex; align-items: center; gap: 8px; flex: none; }
+  #ssoRoot .sso-panel { background: var(--surface-2); border-radius: var(--radius-lg); box-shadow: var(--elev-1); padding: 18px; }
+  #ssoRoot .sso-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  #ssoRoot .sso-provfields { display: none; }
+  #ssoRoot .sso-provfields.active { display: block; }
+  #ssoRoot .sso-copyrow { display: flex; gap: 8px; align-items: stretch; }
+  #ssoRoot .sso-copyrow .input { flex: 1; }
+  #ssoRoot .sso-verify { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+  #ssoRoot .sso-vrow { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--text-secondary);
+    padding: 9px 12px; background: var(--surface-inset); border-radius: var(--radius-sm); box-shadow: inset 0 0 0 1px var(--border-subtle); }
+  #ssoRoot .sso-actions-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  @media (max-width: 720px) { #ssoRoot .sso-grid2 { grid-template-columns: 1fr; } }
 </style>

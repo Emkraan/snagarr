@@ -423,25 +423,11 @@ def authenticate_request():
     script_root = request.script_root
     api_path = f"{script_root}/api/"
 
-    # In OIDC mode, send the browser to the in-app OIDC initiator rather than the
-    # local login form. OIDC counts as enabled if the operator toggled it on, OR
-    # the credentials are provided via env/mounted secret files (deployment-managed).
-    # Note: UI-STORED creds alone do NOT force OIDC; the oidc_enabled toggle must be
-    # on. This stops merely saving credentials from locking out local login.
-    oidc_on = False
-    try:
-        from src.primary.settings_manager import load_settings
-        oidc_on = load_settings("general").get("oidc_enabled", False)
-    except Exception:
-        pass
-    if not oidc_on:
-        try:
-            from src.primary.routes.oidc import oidc_env_configured
-            oidc_on = oidc_env_configured()
-        except Exception:
-            pass
-
-    login_target = f"{script_root}/auth/login" if oidc_on else f"{script_root}/login"
+    # Provider-agnostic SSO: always send the browser to the local login page,
+    # which renders the local username/password form AND a button per enabled
+    # SSO provider (Portainer-style). We never auto-bounce to a single IdP, so
+    # a mis-configured provider can never lock out local login.
+    login_target = f"{script_root}/login"
 
     if not request.path.startswith(api_path):
         return redirect(login_target)

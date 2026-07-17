@@ -159,22 +159,13 @@ def meta():
 # --- config ----------------------------------------------------------------
 
 def _masked_oidc_block():
-    """OIDC config for a GET: values from the dedicated 0600 store with the
-    secret sentinelized so it never leaves the server, plus a companion flag."""
-    stored = oidc_config.load_oidc_config() or {}
-    secret_set = bool(stored.get("oidc_client_secret"))
-    return {
-        "oidc_tenant_id": stored.get("oidc_tenant_id", ""),
-        "oidc_client_id": stored.get("oidc_client_id", ""),
-        "oidc_client_secret": oidc_config.SECRET_SENTINEL if secret_set else "",
-        "oidc_client_secret_set": secret_set,
-        "oidc_allowed_groups": stored.get("oidc_allowed_groups", []) or [],
-        "oidc_admin_groups": stored.get("oidc_admin_groups", []) or [],
-    }
+    """SSO providers for a GET: from the dedicated 0600 store, each client secret
+    sentinelized so it never leaves the server. Provider CRUD is at /api/sso/*."""
+    return {"sso_providers": [oidc_config.mask_provider(p) for p in oidc_config.load_providers()]}
 
 
 def _merge_general_oidc(settings_dict):
-    """Splice the masked OIDC block into a general-settings dict for a GET."""
+    """Splice the masked SSO provider list into a general-settings dict for a GET."""
     if isinstance(settings_dict, dict):
         settings_dict.update(_masked_oidc_block())
     return settings_dict
