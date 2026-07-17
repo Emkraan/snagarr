@@ -56,6 +56,12 @@
         <div class="conn-list" id="connList"></div>
       {% endcall %}
     </div>
+
+    {% call ui.card(attrs='style="margin-top:16px"') %}
+      <div class="card-head"><span class="ch-t">Recent activity</span><span class="badge mono" id="activityCount">&mdash;</span></div>
+      <div class="activity" id="recentActivity"></div>
+      <div id="recentActivityEmpty" class="field-hint" style="padding:8px 0" hidden>No hunt activity yet &mdash; grabs and upgrades will appear here.</div>
+    {% endcall %}
   </div>
 
   <div id="dashboardEmpty" hidden>

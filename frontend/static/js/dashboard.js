@@ -153,7 +153,31 @@
       if (d && d.caps) state.caps = d.caps; if (d && d.limits) state.limits = d.limits;
     }).catch(function () {});
   }
-  function refreshAll() { return Promise.all([loadStatus(), loadStats(), loadCaps()]).then(render); }
+  function renderActivity(entries) {
+    var box = el("recentActivity"), empty = el("recentActivityEmpty"), cnt = el("activityCount");
+    entries = entries || [];
+    if (cnt) cnt.textContent = entries.length ? entries.length + " recent" : "none";
+    if (empty) empty.hidden = entries.length > 0;
+    if (!box) return;
+    box.innerHTML = entries.map(function (e) {
+      var op = String(e.operation_type || "").toLowerCase();
+      var chip = "chip-blue", ic = '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>';
+      if (/upgrade/.test(op)) { chip = "chip-green"; ic = '<path d="M12 4v12M7 9l5-5 5 5M5 20h14"/>'; }
+      else if (/grab|download|snatch|add/.test(op)) { chip = "chip-violet"; ic = '<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>'; }
+      var app = String(e.app_type || "");
+      app = app.charAt(0).toUpperCase() + app.slice(1);
+      var sub = [app, e.instance_name].filter(Boolean).join(" · ");
+      return '<div class="actrow"><span class="actchip ' + chip + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + ic + "</svg></span>" +
+        '<div class="ab"><div class="at">' + esc(e.processed_info || "—") + '</div><div class="as">' + esc(sub) + "</div></div>" +
+        "<time>" + esc(e.how_long_ago || "") + "</time></div>";
+    }).join("");
+  }
+  function loadActivity() {
+    return fetchJson("/api/history/all?page=1&page_size=6")
+      .then(function (d) { renderActivity((d && d.entries) || []); })
+      .catch(function () { renderActivity([]); });
+  }
+  function refreshAll() { return Promise.all([loadStatus(), loadStats(), loadCaps(), loadActivity()]).then(render); }
 
   // -- reset controls -------------------------------------------------------
   function resetAllStats() {

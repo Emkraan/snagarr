@@ -296,15 +296,21 @@ code,pre,kbd,samp{font-family:var(--font-mono);}
 .content-col{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0;}
 .scroll-col{flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;padding:24px;}
 
-/* Constrain + centre content on wide screens so panels/inputs never stretch
-   edge-to-edge on an ultrawide monitor (the #1 "flat / clunky" tell). Applies
-   to every SPA view + the page header. Wide-content views can opt out with
-   .content-section.wide. */
-/* !important is required: a legacy stylesheet forces max-width on these sections. */
-.content-section{max-width:1180px !important;margin-left:auto !important;margin-right:auto !important;width:100%;}
-.content-section.wide{max-width:1480px !important;}
-/* Constrain Apps too (id+class beats its legacy id-only max-width:100% !important). */
-#appsSection.content-section{max-width:1180px !important;}
+/* -------------------------------------------------------------------------
+   AUTHORITATIVE APP SHELL (v3 - supersedes the legacy new-style/style sheets,
+   which are no longer linked). cobalt.css is the single design system.
+   Layout: .app-container [ .sidebar | .main-content [ .top-bar + sections ] ].
+   main-content is the scroller; the top bar is sticky; each .content-section is
+   a centred, padded content column shown/hidden by .active.
+   ------------------------------------------------------------------------- */
+html,body{height:100%;margin:0;}
+body{overflow:hidden;background:var(--bg-primary);}
+.app-container{display:flex;height:100vh;overflow:hidden;position:relative;z-index:1;}
+.main-content{flex:1;min-width:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;}
+.top-bar{position:sticky;top:0;z-index:50;flex-shrink:0;}
+.content-section{display:none;width:100%;max-width:1180px;margin:0 auto;padding:26px 30px 56px;}
+.content-section.active{display:block;animation:fadeIn .28s var(--ease-out);}
+.content-section.wide{max-width:1480px;}
 
 /* Sidebar */
 .sidebar{width:224px;min-width:224px;height:100%;
@@ -418,7 +424,7 @@ code,pre,kbd,samp{font-family:var(--font-mono);}
    9. Field / Input / Textarea / Select
    ========================================================================= */
 .field{display:flex;flex-direction:column;gap:6px;}
-.field-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);}
+.field-label{font-size:12.5px;font-weight:500;letter-spacing:0;color:var(--text-secondary);}
 .field-hint{font-size:11px;color:var(--text-dim);line-height:1.4;}
 
 .input,.textarea,.select{background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);
@@ -601,10 +607,9 @@ code,pre,kbd,samp{font-family:var(--font-mono);}
 /* =========================================================================
    20. Nav item macro helpers, PageHeader / PanelHead / section label
    ========================================================================= */
-.page-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 24px;
-  border-bottom:1px solid var(--border-subtle);flex-shrink:0;}
-.page-header .ph-title{font-size:18px;font-weight:700;font-family:var(--font-display);letter-spacing:-.01em;}
-.page-header .ph-sub{font-size:13px;color:var(--text-muted);margin-top:2px;}
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:0 0 20px;flex-shrink:0;}
+.page-header .ph-title{font-size:26px;font-weight:600;font-family:var(--font-display);letter-spacing:-.02em;line-height:1.15;}
+.page-header .ph-sub{font-size:13.5px;color:var(--text-secondary);margin-top:5px;}
 .page-header .ph-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;}
 .panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;}
 .panel-head .pnl-title{font-size:16px;font-weight:700;font-family:var(--font-display);letter-spacing:-.01em;color:var(--text-primary);}
