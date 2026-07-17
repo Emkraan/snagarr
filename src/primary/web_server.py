@@ -39,6 +39,8 @@ from src.primary.auth import (
 from src.primary.routes.common import common_bp
 # Import in-app OIDC (Entra) sign-in
 from src.primary.routes.oidc import oidc_bp, init_oidc
+# Import the versioned programmatic config API
+from src.primary.routes.api_v1 import api_v1
 
 # Import blueprints for each app from the centralized blueprints module
 from src.primary.apps.blueprints import sonarr_bp, radarr_bp, lidarr_bp, readarr_bp, whisparr_bp, swaparr_bp, eros_bp
@@ -134,6 +136,7 @@ init_oidc(app)
 # Register blueprints
 app.register_blueprint(common_bp)
 app.register_blueprint(oidc_bp)
+app.register_blueprint(api_v1)
 app.register_blueprint(sonarr_bp, url_prefix='/api/sonarr')
 app.register_blueprint(radarr_bp, url_prefix='/api/radarr')
 app.register_blueprint(lidarr_bp, url_prefix='/api/lidarr')
