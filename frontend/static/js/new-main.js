@@ -322,8 +322,9 @@ let snagarrUI = {
             this.elements.stopHuntButton.addEventListener('click', () => this.stopHunt());
         }
         
-        // Logout button
-        if (this.elements.logoutLink) {
+        // Logout button (skip if the sidebar already owns it — see sidebar.html)
+        if (this.elements.logoutLink && !this.elements.logoutLink.dataset.bound) {
+            this.elements.logoutLink.dataset.bound = '1';
             this.elements.logoutLink.addEventListener('click', (e) => this.logout(e));
         }
         
@@ -677,11 +678,11 @@ let snagarrUI = {
         }
 
         // Update the page title
+        // The topbar was retired; each content-section now carries its own
+        // page-header title, so a missing #currentPageTitle is expected.
         const pageTitleElement = document.getElementById('currentPageTitle');
         if (pageTitleElement) {
             pageTitleElement.textContent = newTitle;
-        } else {
-            console.warn("[snagarrUI] currentPageTitle element not found during section switch.");
         }
     },
     

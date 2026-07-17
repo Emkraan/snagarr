@@ -82,6 +82,8 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
+          build-args: |
+            GIT_SHA=${{ steps.meta.outputs.short_sha }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: |
             org.opencontainers.image.title=Snagarr
