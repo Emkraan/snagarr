@@ -60,11 +60,32 @@
         </div>
     </nav>
 
-    <!-- Emkraan author/brand tag — pinned bottom-left (family standard, every build) -->
-    <a class="emkraan-tag" href="https://github.com/Emkraan/snagarr" target="_blank" rel="noopener" aria-label="Built by Emkraan">
-        <img class="emkraan-mark" src="/static/logo/emkraan.png" alt="" width="20" height="20">
-        <span class="emkraan-text">Built by <b>Emkraan</b></span>
-    </a>
+    <!-- Bottom-left standard: account row + brand / version / build / GitHub -->
+    <div class="sidebar-foot">
+        <!-- Signed-in account (ids kept so new-main.js keeps wiring name + logout) -->
+        <div class="acct-row" id="userInfoContainer">
+            <span class="acct-avatar" id="acctAvatar" aria-hidden="true">U</span>
+            <span class="acct-meta">
+                <span class="acct-name" id="username">User</span>
+                <span class="acct-role">Signed in</span>
+            </span>
+            <a href="#" id="logoutLink" class="acct-logout" title="Sign out" aria-label="Sign out">
+                <i class="fas fa-arrow-right-from-bracket"></i>
+            </a>
+        </div>
+
+        <!-- Emkraan brand tag (family standard, every build) + version/build + GitHub -->
+        <div class="brand-foot">
+            <img class="emkraan-mark" src="/static/logo/emkraan.png" alt="" width="18" height="18">
+            <span class="brand-meta">
+                <span class="brand-line">Built by <b>Emkraan</b></span>
+                <span class="brand-build mono"><span id="snagarrVersion">v0.1.0</span> &middot; <span id="snagarrBuild">dev</span></span>
+            </span>
+            <a class="brand-gh" href="https://github.com/Emkraan/snagarr" target="_blank" rel="noopener" title="Source on GitHub" aria-label="Source on GitHub">
+                <i class="fab fa-github"></i>
+            </a>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -158,19 +179,69 @@
         .nav-item:hover { transform: translateX(2px); }
     }
 
-    /* Emkraan brand tag */
-    .emkraan-tag {
-        display: flex; align-items: center; gap: 9px; margin: 0 12px 14px; flex-shrink: 0;
-        padding: 9px 11px; border-radius: var(--radius-sm); text-decoration: none;
-        color: var(--text-dim); font-size: 11px; font-weight: 500;
-        letter-spacing: var(--track-caps); text-transform: uppercase;
-        transition: background-color var(--t) var(--ease), color var(--t) var(--ease);
+    /* ---- Bottom-left footer: account + brand/version/build/github ---- */
+    .sidebar-foot {
+        flex-shrink: 0; padding: 10px 12px 12px;
+        border-top: 1px solid var(--border-hair);
+        display: flex; flex-direction: column; gap: 8px;
     }
-    .emkraan-tag:hover { background: var(--accent-veil); color: var(--text-secondary); }
-    .emkraan-tag:focus-visible { outline: none; box-shadow: var(--focus-ring-tight); }
-    .emkraan-mark { width: 20px; height: 20px; display: block; flex-shrink: 0; object-fit: contain;
-        filter: drop-shadow(0 1px 4px rgba(0,0,0,.5)); }
-    .emkraan-text b { color: var(--accent-bright); font-weight: 600; }
+
+    /* Account row */
+    .acct-row {
+        display: flex; align-items: center; gap: 10px;
+        padding: 8px 9px; border-radius: var(--radius-sm);
+        background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--border-hair);
+    }
+    .acct-avatar {
+        width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
+        display: grid; place-items: center;
+        font-family: var(--font-display); font-size: 13px; font-weight: 600;
+        color: #fff; letter-spacing: 0;
+        background: var(--surface-4); box-shadow: var(--elev-0), inset 0 1px 0 rgba(255,255,255,.08);
+    }
+    .acct-meta { display: flex; flex-direction: column; min-width: 0; flex: 1; line-height: 1.25; }
+    .acct-name {
+        font-size: 13px; font-weight: 600; color: var(--text-primary);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .acct-role {
+        font-size: 10px; font-weight: 600; letter-spacing: var(--track-caps);
+        text-transform: uppercase; color: var(--text-dim); margin-top: 1px;
+    }
+    .acct-logout {
+        flex-shrink: 0; width: 28px; height: 28px; display: grid; place-items: center;
+        border-radius: var(--radius-sm); color: var(--text-dim); text-decoration: none; font-size: 13px;
+        transition: background-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+    }
+    .acct-logout:hover { background: var(--danger-veil, rgba(239,68,68,.12)); color: var(--danger-bright, #f87171); }
+    .acct-logout:focus-visible { outline: none; box-shadow: var(--focus-ring-tight); }
+
+    /* Brand + version/build + GitHub */
+    .brand-foot { display: flex; align-items: center; gap: 9px; padding: 2px 4px 0; }
+    .emkraan-mark {
+        width: 18px; height: 18px; display: block; flex-shrink: 0; object-fit: contain;
+        filter: drop-shadow(0 1px 4px rgba(0,0,0,.5));
+    }
+    .brand-meta { display: flex; flex-direction: column; min-width: 0; flex: 1; line-height: 1.3; }
+    .brand-line {
+        font-size: 10px; font-weight: 600; letter-spacing: var(--track-caps);
+        text-transform: uppercase; color: var(--text-dim);
+    }
+    .brand-line b { color: var(--accent-bright); font-weight: 700; }
+    .brand-build {
+        font-size: 10.5px; color: var(--text-dim); margin-top: 2px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .brand-build #snagarrBuild { color: var(--text-secondary); }
+    .brand-gh {
+        flex-shrink: 0; width: 26px; height: 26px; display: grid; place-items: center;
+        border-radius: var(--radius-sm); color: var(--text-dim); text-decoration: none; font-size: 15px;
+        transition: background-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease),
+                    transform var(--t-fast) var(--ease-out);
+    }
+    .brand-gh:hover { background: var(--accent-veil); color: var(--accent-bright); }
+    .brand-gh:focus-visible { outline: none; box-shadow: var(--focus-ring-tight); }
+    @media (hover: hover) and (pointer: fine) { .brand-gh:hover { transform: translateY(-1px); } }
 
     /* ---- Mobile: collapse to an icon rail (labels hidden) ---- */
     @media (max-width: 768px) {
@@ -181,8 +252,11 @@
         .nav-group-title { display: none; }
         .nav-item { justify-content: center; padding: 10px 0; width: 46px; margin: 0 auto; }
         .nav-item span { display: none; }
-        .emkraan-tag { justify-content: center; margin: 0 auto 14px; padding: 8px; }
-        .emkraan-text { display: none; }
+        .sidebar-foot { padding: 8px 6px 10px; align-items: center; }
+        .acct-row { padding: 6px; gap: 0; background: transparent; box-shadow: none; }
+        .acct-meta, .acct-logout { display: none; }
+        .brand-foot { justify-content: center; padding: 0; }
+        .brand-meta { display: none; }
     }
 </style>
 
@@ -209,4 +283,54 @@
     }
     document.addEventListener('DOMContentLoaded', setActiveNavItem);
     window.addEventListener('hashchange', setActiveNavItem);
+
+    // Bottom-left footer: account avatar, version/build, and a self-contained
+    // logout so it works on every page that includes the sidebar (index + /user),
+    // independent of which page controller is loaded.
+    (function () {
+        var nameEl = document.getElementById('username');
+        var avEl = document.getElementById('acctAvatar');
+
+        function paintAvatar(t) {
+            if (!avEl) return;
+            t = (t || 'U').trim() || 'U';
+            avEl.textContent = (t.charAt(0) || 'U').toUpperCase();
+            var h = 0;
+            for (var i = 0; i < t.length; i++) { h = (h * 31 + t.charCodeAt(i)) >>> 0; }
+            avEl.style.background = 'hsl(' + (h % 360) + ', 44%, 38%)';
+        }
+
+        paintAvatar(nameEl ? nameEl.textContent : 'User');
+        if (nameEl) {
+            new MutationObserver(function () { paintAvatar(nameEl.textContent); })
+                .observe(nameEl, { childList: true, characterData: true, subtree: true });
+        }
+        // Self-contained name fetch (idempotent alongside other controllers).
+        fetch('/api/user/info').then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (d) {
+                if (d && d.username) { if (nameEl) nameEl.textContent = d.username; paintAvatar(d.username); }
+            }).catch(function () {});
+
+        // Version + build number.
+        fetch('/api/version').then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (d) {
+                if (!d) return;
+                var v = document.getElementById('snagarrVersion');
+                var b = document.getElementById('snagarrBuild');
+                if (v && d.version) { v.textContent = 'v' + String(d.version).replace(/^v/, ''); }
+                if (b && d.build) { b.textContent = String(d.build).slice(0, 7); }
+            }).catch(function () {});
+
+        // Logout: sidebar owns it; new-main.js defers via the data-bound guard.
+        var lo = document.getElementById('logoutLink');
+        if (lo && !lo.dataset.bound) {
+            lo.dataset.bound = '1';
+            lo.addEventListener('click', function (e) {
+                e.preventDefault();
+                fetch('/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+                    .then(function () { window.location.href = '/login'; })
+                    .catch(function () { window.location.href = '/login'; });
+            });
+        }
+    })();
 </script>

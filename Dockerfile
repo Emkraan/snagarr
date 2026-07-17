@@ -17,6 +17,11 @@ RUN pip install --no-cache-dir --upgrade pip \
 # Copy the application source.
 COPY . /app/
 
+# Build provenance: the short git SHA, injected by CI (docker build --build-arg GIT_SHA=<sha>).
+# Surfaced by the /api/version endpoint and rendered as the sidebar footer build number.
+ARG GIT_SHA=dev
+ENV SNAGARR_BUILD=${GIT_SHA}
+
 # Create a non-root user (uid/gid 1000) and the /config data tree it must own.
 # /config is a bind mount at runtime; the host directory must be owned by
 # 1000:1000 (e.g. `chown -R 1000:1000 ./config`) so the app can write to it.

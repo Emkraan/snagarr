@@ -897,6 +897,22 @@ def api_reset_stats_public():
         web_logger.error(f"Error resetting statistics (public): {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route('/api/version')
+def api_version():
+    """Return the app version (root VERSION file) and build (short git SHA baked
+    into the image at build time). Backs the sidebar footer version/build line."""
+    version = "0.0.0"
+    try:
+        version_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'VERSION')
+        if os.path.exists(version_path):
+            with open(version_path, 'r') as f:
+                version = f.read().strip()
+    except Exception as e:
+        get_logger("web_server").error(f"Error reading VERSION for /api/version: {e}")
+    build = os.environ.get('SNAGARR_BUILD', 'dev').strip() or 'dev'
+    return jsonify({"version": version, "build": build}), 200, {'Cache-Control': 'no-cache'}
+
+
 @app.route('/version.txt')
 def version_txt():
     """Serve the app version, read from the root VERSION file."""
