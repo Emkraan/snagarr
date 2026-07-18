@@ -135,8 +135,10 @@ def _normalize_urls(settings_data):
 
 
 def _version():
+    # This module lives at src/primary/routes/, so walk up FOUR levels to the
+    # repo root that holds VERSION (routes -> primary -> src -> root).
     try:
-        root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
         with open(os.path.join(root, "VERSION")) as f:
             return f.read().strip()
     except Exception:
