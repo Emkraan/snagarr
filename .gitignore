@@ -7,7 +7,8 @@ __pycache__/
 # Environment
 .env
 .env.*
-!.env.example          # ship the placeholder template (no real secrets)
+# Ship the placeholder template (no real secrets); gitignore has no inline comments.
+!.env.example
 .venv/
 
 # Local data volume (a local ./config dir is never committed)
