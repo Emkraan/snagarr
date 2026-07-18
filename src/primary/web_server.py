@@ -183,6 +183,12 @@ def user():
     # User account screen
     return render_template('user.html')
 
+@app.route('/api/docs')
+def api_docs():
+    # Interactive API reference (Swagger UI) + API-key console. Session-gated by
+    # the global before_request guard; the spec at /api/v1/openapi.json is public.
+    return render_template('api_docs.html')
+
 # Removed /settings and /logs routes if handled by index.html and JS routing
 # Keep /logs if it's the actual SSE endpoint
 

@@ -66,6 +66,11 @@
                 <div class="nav-icon-wrapper"><i class="fas fa-sliders"></i></div>
                 <span>Settings</span>
             </a>
+            <a href="/api/docs" class="nav-item" id="apiNav">
+                <span class="nav-rail"></span>
+                <div class="nav-icon-wrapper"><i class="fas fa-code"></i></div>
+                <span>API</span>
+            </a>
             <a href="/user" class="nav-item" id="userNav">
                 <span class="nav-rail"></span>
                 <div class="nav-icon-wrapper"><i class="fas fa-user-gear"></i></div>
@@ -322,6 +327,10 @@
 
         if (window.location.pathname === '/user') {
             document.getElementById('userNav')?.classList.add('active');
+            return;
+        }
+        if (window.location.pathname === '/api/docs') {
+            document.getElementById('apiNav')?.classList.add('active');
             return;
         }
 

@@ -56,9 +56,25 @@ const historyModule = {
             historyPrevPage: document.getElementById('historyPrevPage'),
             historyNextPage: document.getElementById('historyNextPage'),
             historyCurrentPage: document.getElementById('historyCurrentPage'),
-            historyTotalPages: document.getElementById('historyTotalPages')
+            historyTotalPages: document.getElementById('historyTotalPages'),
+
+            // Stat strip (lively hero)
+            statStrip: document.getElementById('historyStatStrip'),
+            hstTotal: document.getElementById('hstTotal'),
+            hstTotalSub: document.getElementById('hstTotalSub'),
+            hstSearches: document.getElementById('hstSearches'),
+            hstSearchesSub: document.getElementById('hstSearchesSub'),
+            hstUpgrades: document.getElementById('hstUpgrades'),
+            hstUpgradesSub: document.getElementById('hstUpgradesSub'),
+            hstApps: document.getElementById('hstApps'),
+            hstAppsSub: document.getElementById('hstAppsSub')
         };
     },
+
+    // Stat-strip state: last filter signature we summarised, and a one-shot
+    // force flag (set after a clear, when counts change without the filter).
+    _summarySig: null,
+    _summaryForce: false,
 
     // Set up event listeners
     setupEventListeners: function() {
@@ -173,6 +189,10 @@ const historyModule = {
                 this.renderHistoryData(data);
                 this.updatePaginationUI();
                 this.setLoading(false);
+                // Refresh the lively stat strip. Only re-aggregates when the
+                // filter (app + search) changed or a clear forced it - plain
+                // pagination reuses the last summary.
+                this.refreshStatStrip();
             })
             .catch(error => {
                 console.error('Error fetching history data:', error);
@@ -184,6 +204,8 @@ const historyModule = {
     // Clear history
     clearHistory: function() {
         this.setLoading(true);
+        // Counts change without the filter changing - force a re-aggregate.
+        this._summaryForce = true;
 
         fetch(`/api/history/${this.currentApp}`, { method: 'DELETE' })
             .then(response => {
@@ -287,6 +309,103 @@ const historyModule = {
     showEmptyState: function() {
         if (this.elements.tableWrap) this.elements.tableWrap.hidden = true;
         if (this.elements.historyEmptyState) this.elements.historyEmptyState.hidden = false;
+    },
+
+    // ── Stat strip (lively hero) ─────────────────────────────────────────────
+    // Aggregates REAL counts from the same /api/history/<app> endpoint the table
+    // uses, honouring the active app + search filter. Hidden when zero records.
+
+    // Ease a numeric node from its current value to `target`.
+    animateStat: function(node, target) {
+        if (!node) return;
+        target = parseInt(target, 10) || 0;
+        const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const start = parseInt(String(node.textContent).replace(/[^\d-]/g, ''), 10) || 0;
+        if (reduce || start === target) { node.textContent = target.toLocaleString(); return; }
+        const t0 = performance.now(), dur = 800;
+        const step = (now) => {
+            const k = Math.min(1, (now - t0) / dur), e = k * (2 - k);
+            node.textContent = Math.floor(start + (target - start) * e).toLocaleString();
+            if (k < 1) requestAnimationFrame(step); else node.textContent = target.toLocaleString();
+        };
+        requestAnimationFrame(step);
+    },
+
+    hideStatStrip: function() {
+        if (this.elements.statStrip) this.elements.statStrip.hidden = true;
+    },
+
+    // Fetch a summary for the current filter and paint the strip. Skips the
+    // network round-trip when neither the filter nor a clear changed the data.
+    refreshStatStrip: function() {
+        if (!this.elements.statStrip) return; // markup absent - nothing to do
+
+        const sig = this.currentApp + '|' + this.searchQuery;
+        if (sig === this._summarySig && !this._summaryForce) return;
+        this._summarySig = sig;
+        this._summaryForce = false;
+
+        // Large page_size: the backend already loads every entry into memory
+        // before paginating, so this returns the full filtered set for exact
+        // per-operation counts rather than a single visible page.
+        let url = `/api/history/${this.currentApp}?page=1&page_size=100000`;
+        if (this.searchQuery) url += `&search=${encodeURIComponent(this.searchQuery)}`;
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                return response.json();
+            })
+            .then(data => this.renderStatStrip(data))
+            .catch(error => {
+                // Never break the view on a summary failure - just hide the strip.
+                console.error('Error building history stat strip:', error);
+                this._summarySig = null; // allow a retry on the next reload
+                this.hideStatStrip();
+            });
+    },
+
+    renderStatStrip: function(data) {
+        const e = this.elements;
+        if (!e.statStrip) return;
+
+        const entries = (data && Array.isArray(data.entries)) ? data.entries : [];
+        const total = (data && typeof data.total_entries === 'number')
+            ? data.total_entries : entries.length;
+
+        // Zero records for this filter: hide rather than show a broken row of 0s.
+        if (!total || entries.length === 0) { this.hideStatStrip(); return; }
+
+        let upgrades = 0;
+        const apps = new Set(), instances = new Set();
+        entries.forEach(entry => {
+            if (String(entry.operation_type || '').toLowerCase() === 'upgrade') upgrades++;
+            if (entry.app_type) apps.add(entry.app_type);
+            if (entry.instance_name) instances.add(entry.instance_name);
+        });
+        const searches = Math.max(0, entries.length - upgrades);
+        const pct = (n) => entries.length ? Math.round((n / entries.length) * 100) : 0;
+
+        this.animateStat(e.hstTotal, total);
+        this.animateStat(e.hstSearches, searches);
+        this.animateStat(e.hstUpgrades, upgrades);
+        this.animateStat(e.hstApps, apps.size);
+
+        // Real, derived sub-labels.
+        if (e.hstTotalSub) {
+            const scope = this.currentApp === 'all'
+                ? 'across all apps'
+                : 'in ' + this.currentApp.charAt(0).toUpperCase() + this.currentApp.slice(1);
+            e.hstTotalSub.textContent = this.searchQuery ? scope + ' (filtered)' : scope;
+        }
+        if (e.hstSearchesSub) e.hstSearchesSub.textContent = pct(searches) + '% of processed';
+        if (e.hstUpgradesSub) e.hstUpgradesSub.textContent = pct(upgrades) + '% of processed';
+        if (e.hstAppsSub) {
+            const n = instances.size;
+            e.hstAppsSub.textContent = n + (n === 1 ? ' instance' : ' instances');
+        }
+
+        e.statStrip.hidden = false;
     },
 
     // Show error via the shared toast/notification systems

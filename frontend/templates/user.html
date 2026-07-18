@@ -17,6 +17,30 @@
             gap: 16px;
             align-items: start;
         }
+        /* Profile hero: spans the full grid row above the settings cards. */
+        .profile-hero {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+        .profile-avatar {
+            width: 64px; height: 64px; border-radius: 16px; flex-shrink: 0;
+            display: grid; place-items: center;
+            font-family: var(--font-display); font-size: 26px; font-weight: 700;
+            color: #fff; letter-spacing: 0;
+            background: var(--surface-4);
+            box-shadow: var(--elev-0), inset 0 1px 0 rgba(255,255,255,.10);
+        }
+        .profile-id { display: flex; flex-direction: column; min-width: 0; flex: 1; gap: 3px; }
+        .profile-id .ph-title { font-size: 24px; line-height: 1.1; }
+        .profile-role {
+            font-size: 10.5px; font-weight: 600; letter-spacing: var(--track-caps);
+            text-transform: uppercase; color: var(--text-dim);
+        }
+        .profile-2fa { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
         .user-card .card-fields { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; }
         .user-card .card-actions { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
 
@@ -79,6 +103,9 @@
         @media (max-width: 768px) {
             .user-section { padding: 18px 16px 40px; grid-template-columns: 1fr; }
             .secret-row { flex-direction: column; }
+            .profile-hero { gap: 14px; }
+            .profile-id { flex-basis: calc(100% - 82px); }
+            .profile-2fa { width: 100%; justify-content: space-between; }
         }
     </style>
 </head>
@@ -88,6 +115,24 @@
 
         <div class="main-content">
             <div class="user-section">
+
+                {# ── Profile hero (identity + 2FA status) ─────────────────
+                   Hidden until /api/user/info resolves (new-user.js reveals it).
+                   Avatar hue is hashed from the username to match sidebar. #}
+                {% call ui.card(klass='profile-hero', attrs='id="profileHero" style="display:none"') %}
+                    <span class="profile-avatar" id="profileAvatar" aria-hidden="true">U</span>
+                    <div class="profile-id">
+                        <div class="ph-title" id="profileName">&nbsp;</div>
+                        <div class="profile-role">Administrator</div>
+                    </div>
+                    <div class="profile-2fa">
+                        <div class="ringstat">
+                            <span class="dial" id="profile2faDial" style="--v:0"><b id="profile2faDialVal">--</b></span>
+                            <span class="rl">Two-factor<br><b id="profile2faState">Checking</b></span>
+                        </div>
+                        <span class="badge" id="profile2faBadge"><span class="badge-dot"></span>Loading</span>
+                    </div>
+                {% endcall %}
 
                 {# ── Change Username ─────────────────────────────────────── #}
                 {% call ui.card(klass='user-card') %}

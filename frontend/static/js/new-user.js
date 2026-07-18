@@ -5,6 +5,11 @@
 
 // Immediately execute this function to avoid global scope pollution
 (function() {
+    // Profile-hero state. Kept in the closure so the hero can be repainted from
+    // either the username source or the 2FA source, whichever resolves last.
+    let heroUsername = null;   // string once /api/user/info (or a rename) resolves
+    let hero2fa = null;        // bool once the 2FA state is known
+
     // Wait for the DOM to be fully loaded
     document.addEventListener('DOMContentLoaded', function() {
         console.log('User settings page loaded');
@@ -323,29 +328,79 @@
     // Helper functions
     function updateUsernameElements(username) {
         if (!username) return;
-        
+
         const usernameElements = [
             document.getElementById('username'),
             document.getElementById('currentUsername')
         ];
-        
+
         usernameElements.forEach(element => {
             if (element) {
                 element.textContent = username;
             }
         });
+
+        heroUsername = username;
+        renderProfileHero();
     }
-    
+
     function update2FAStatus(isEnabled) {
         const statusElement = document.getElementById('twoFactorEnabled');
         if (statusElement) {
             statusElement.textContent = isEnabled ? 'Enabled' : 'Disabled';
         }
-        
+
         // Update visibility of relevant sections
         updateVisibility('enableTwoFactorSection', !isEnabled);
         updateVisibility('setupTwoFactorSection', false);
         updateVisibility('disableTwoFactorSection', isEnabled);
+
+        hero2fa = !!isEnabled;
+        renderProfileHero();
+    }
+
+    // Paint the profile hero from real /api/user/info data. Reveals the card only
+    // once the username is known, and only fills the 2FA ring once its state is
+    // known, so nothing ever renders as a broken zero. Every lookup is guarded.
+    function renderProfileHero() {
+        const hero = document.getElementById('profileHero');
+        if (!hero || !heroUsername) return; // no data yet -> stay hidden
+
+        const avatar = document.getElementById('profileAvatar');
+        if (avatar) {
+            const t = String(heroUsername).trim() || 'U';
+            avatar.textContent = (t.charAt(0) || 'U').toUpperCase();
+            // Same hash the sidebar avatar uses, so the two agree per user.
+            let h = 0;
+            for (let i = 0; i < t.length; i++) { h = (h * 31 + t.charCodeAt(i)) >>> 0; }
+            avatar.style.background = 'hsl(' + (h % 360) + ', 44%, 38%)';
+        }
+
+        const nameEl = document.getElementById('profileName');
+        if (nameEl) nameEl.textContent = heroUsername;
+
+        if (hero2fa !== null) {
+            const on = hero2fa === true;
+            const dial = document.getElementById('profile2faDial');
+            if (dial) {
+                // Full green ring when on; a thin amber arc when off (never empty).
+                dial.style.setProperty('--v', on ? 100 : 15);
+                dial.style.setProperty('--rc', on ? 'var(--success)' : 'var(--warning)');
+            }
+            const dialVal = document.getElementById('profile2faDialVal');
+            if (dialVal) dialVal.textContent = on ? 'ON' : 'OFF';
+
+            const state = document.getElementById('profile2faState');
+            if (state) state.textContent = on ? 'Enabled' : 'Disabled';
+
+            const badge = document.getElementById('profile2faBadge');
+            if (badge) {
+                badge.className = 'badge ' + (on ? 'tone-success' : 'tone-warning');
+                badge.innerHTML = '<span class="badge-dot"></span>' + (on ? '2FA on' : '2FA off');
+            }
+        }
+
+        hero.style.display = 'flex';
     }
     
     function updateVisibility(elementId, isVisible) {

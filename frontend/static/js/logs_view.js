@@ -47,10 +47,83 @@
   };
 
   function setStatus(ui, text, cls) {
+    updateStreamDot(cls);
     var el = ui.elements && ui.elements.logConnectionStatus;
     if (!el) return;
     el.textContent = text;
     el.className = cls || "";
+  }
+
+  // ── Level-distribution strip (header hero) ──────────────────────────────
+  // Counts are derived from the REAL loaded buffer: we scan the tone-classed
+  // .log-entry nodes already appended to #logsContainer. A MutationObserver
+  // keeps the strip in sync on append AND on Clear / app-switch (childList
+  // shrinks), so an empty buffer hides the strip instead of showing zeros.
+  var stripTimer = null;
+  var stripObserver = null;
+
+  function getLogContainer() {
+    return (window.snagarrUI && window.snagarrUI.elements && window.snagarrUI.elements.logsContainer) ||
+      document.getElementById("logsContainer");
+  }
+
+  // Mirror the SSE connection state onto the pulse dot: accent + live pulse
+  // while streaming, danger on error, muted otherwise. No pulse when not live.
+  function updateStreamDot(cls) {
+    var dot = document.getElementById("logStreamDot");
+    if (!dot) return;
+    var tone = "tone-muted", live = false;
+    if (cls === "status-connected") { tone = "tone-accent"; live = true; }
+    else if (cls === "status-error") { tone = "tone-danger"; }
+    dot.className = "status-dot " + tone + (live ? " dot-live" : "");
+  }
+
+  function setChip(id, val) {
+    var v = document.getElementById(id);
+    if (!v) return;
+    v.textContent = String(val);
+    var chip = v.closest ? v.closest(".lls-chip") : null;
+    if (chip) chip.classList.toggle("is-zero", val === 0);
+  }
+
+  function renderStrip() {
+    stripTimer = null;
+    var strip = document.getElementById("logLevelStrip");
+    if (!strip) return;
+    var c = getLogContainer();
+    var error = 0, warn = 0, info = 0, debug = 0;
+    if (c) {
+      error = c.querySelectorAll(".log-error").length;
+      warn = c.querySelectorAll(".log-warning, .log-warn").length;
+      info = c.querySelectorAll(".log-info").length;
+      debug = c.querySelectorAll(".log-debug").length;
+    }
+    // Hide entirely when the buffer holds none of the four tracked levels, so
+    // an empty (or cleared) stream never shows a row of zeros as if broken.
+    if (error + warn + info + debug <= 0) { strip.hidden = true; return; }
+    strip.hidden = false;
+    setChip("llsError", error);
+    setChip("llsWarn", warn);
+    setChip("llsInfo", info);
+    setChip("llsDebug", debug);
+  }
+
+  // Throttle: coalesce bursts of incoming lines into one recompute.
+  function scheduleStrip() {
+    if (stripTimer != null) return;
+    stripTimer = setTimeout(renderStrip, 220);
+  }
+
+  function setupStrip() {
+    var c = getLogContainer();
+    if (!c) return;
+    if (!stripObserver) {
+      try {
+        stripObserver = new MutationObserver(scheduleStrip);
+        stripObserver.observe(c, { childList: true });
+      } catch (e) { /* MutationObserver unavailable: fall back to onmessage-driven updates */ }
+    }
+    renderStrip();
   }
 
   function classifyApp(logString, match) {
@@ -173,6 +246,7 @@
           if (!shouldDisplay) return;
 
           container.appendChild(buildEntry(logString, match));
+          scheduleStrip();
 
           if (logAppType === "swaparr" && self.currentLogApp === "swaparr") {
             document.dispatchEvent(new CustomEvent("swaparrLogReceived", {
@@ -220,5 +294,12 @@
   // fall back to DOMContentLoaded just in case script order changes.
   if (!install()) {
     document.addEventListener("DOMContentLoaded", install);
+  }
+
+  // Wire the header level-strip once the server-rendered DOM is available.
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setupStrip);
+  } else {
+    setupStrip();
   }
 })();

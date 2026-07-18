@@ -145,6 +145,14 @@ def _version():
 
 # --- meta / health ---------------------------------------------------------
 
+@api_v1.route("/openapi.json", methods=["GET"])
+def openapi_json():
+    """The OpenAPI 3.0 spec for this API. Public (schema only) so the docs page
+    can load it before sign-in; it is under the /api/v1/ allow-listed prefix."""
+    from src.primary.openapi_spec import build_spec
+    return jsonify(build_spec())
+
+
 @api_v1.route("/health", methods=["GET"])
 def health():
     return _ok({"status": "ok", "version": _version()})

@@ -18,7 +18,26 @@
 
 <section id="schedulingSection" class="settings-section" style="display: none;">
 
-  {{ ui.page_header('Scheduling', 'Automate when Snagarr apps run, pause, or change API limits.') }}
+  {% call ui.page_header('Scheduling', 'Automate when Snagarr apps run, pause, or change API limits.') %}
+    {# Live schedule posture. Populated by scheduling.js renderSchedHero() from the
+       already-loaded /api/scheduler/load payload; stays hidden until a schedule exists. #}
+    <div class="sched-hero" id="schedHero" hidden aria-hidden="true">
+      <div class="ringstat">
+        <span class="dial" id="schedCoverDial" style="--v:0;--rc:var(--accent-bright)"><b id="schedCoverVal">0/7</b></span>
+        <span class="rl">Weekdays<br><b>covered</b></span>
+      </div>
+      <div class="ringstat">
+        <span class="hero-num sched-count" id="schedActiveVal">0</span>
+        <span class="rl">Active<br><b>schedules</b></span>
+      </div>
+      <div class="sched-week">
+        <div class="sched-week-strip">
+          {% for d in day_defs %}<span class="badge chip-toggle sched-week-chip" data-week-day="{{ d.id }}" title="{{ d.label }}">{{ d.label }}</span>{% endfor %}
+        </div>
+        <span class="badge mono tone-accent sched-next" id="schedNext" hidden></span>
+      </div>
+    </div>
+  {% endcall %}
 
   <div class="scheduling-grid">
 
@@ -123,4 +142,14 @@
   #schedulingSection .sched-table-wrap { margin-top: 14px; }
   #schedulingSection .sched-time-cell { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--accent-bright); font-weight: 600; }
   #schedulingSection .sched-row-actions { display: inline-flex; gap: 6px; justify-content: flex-end; }
+
+  /* Header posture strip (layout only; colours stay on cobalt tokens). */
+  #schedulingSection .sched-hero { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  #schedulingSection .sched-hero .sched-count { font-size: 30px; line-height: 1; font-weight: 700; }
+  #schedulingSection .sched-week { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  #schedulingSection .sched-week-strip { display: flex; flex-wrap: wrap; gap: 6px; }
+  #schedulingSection .sched-week-chip { pointer-events: none; min-width: 34px; justify-content: center; opacity: .42; transition: opacity var(--t) var(--ease); }
+  #schedulingSection .sched-week-chip.active { opacity: 1; }
+  #schedulingSection .sched-next { align-self: flex-start; }
+  @media (max-width: 768px) { #schedulingSection .sched-hero { gap: 14px; } }
 </style>
