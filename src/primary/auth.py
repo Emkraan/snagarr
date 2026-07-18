@@ -17,8 +17,9 @@ import io
 import qrcode
 import pyotp # Ensure pyotp is imported
 import re # Import the re module for regex
+from functools import wraps
 from typing import Dict, Any, Optional, Tuple
-from flask import request, redirect, url_for, session
+from flask import request, redirect, url_for, session, jsonify
 from .utils.logger import logger # Ensure logger is imported
 
 # User directory setup (env-overridable, mainly for tests; default unchanged)
@@ -258,18 +259,22 @@ def verify_user(username: str, password: str, otp_code: str = None) -> Tuple[boo
     logger.warning(f"Login attempt failed for user '{username}': Username not found or other error.")
     return False, False
 
-def create_session(username: str) -> str:
-    """Create a new session for an authenticated user"""
+def create_session(username: str, role: str = "admin", profile: Optional[dict] = None) -> str:
+    """Create a new session for an authenticated user.
+
+    role: 'admin' (full control) or 'member' (read-only). Local login and any
+    caller that omits it default to 'admin' (the local operator / backward compat);
+    SSO passes the role derived from the IdP's admin_groups. profile carries the
+    IdP-supplied {name, email, picture} for display."""
     session_id = secrets.token_hex(32)
-    # Store the actual username, not the hash
-    
-    # Store session data
     active_sessions[session_id] = {
         "username": username, # Store actual username
+        "role": role if role in ("admin", "member") else "admin",
+        "profile": profile or {},
         "created_at": time.time(),
         "expires_at": time.time() + SESSION_EXPIRY
     }
-    
+
     return session_id
 
 def verify_session(session_id: str) -> bool:
@@ -293,9 +298,56 @@ def get_username_from_session(session_id: str) -> Optional[str]:
     """Get the username from a session"""
     if not session_id or session_id not in active_sessions:
         return None
-    
+
     # Return the stored username
     return active_sessions[session_id].get("username")
+
+def get_role_from_session(session_id: str) -> Optional[str]:
+    """Get the RBAC role ('admin'|'member') from a session, or None if unknown."""
+    if not session_id or session_id not in active_sessions:
+        return None
+    return active_sessions[session_id].get("role", "admin")
+
+def get_profile_from_session(session_id: str) -> dict:
+    """Get the IdP profile ({name, email, picture, ...}) for a session."""
+    if not session_id or session_id not in active_sessions:
+        return {}
+    return active_sessions[session_id].get("profile") or {}
+
+# --- RBAC -------------------------------------------------------------------
+# Admin = full control. Member = read-only. Enforcement is centralized in
+# enforce_rbac (a before_request): any mutating request (POST/PUT/PATCH/DELETE)
+# from a MEMBER session is rejected. Sessions with no role, local login, and the
+# deployment-level bypass modes are all treated as admin, so enabling SSO groups
+# is what actually turns on differentiated access - nothing breaks by default.
+
+# Mutating requests always allowed even for members (self-service / auth flow).
+_RBAC_METHOD_EXEMPT = {"GET", "HEAD", "OPTIONS"}
+
+def session_role() -> Optional[str]:
+    """Role of the current request's session cookie, or None if not a session."""
+    sid = request.cookies.get(SESSION_COOKIE_NAME)
+    if sid and verify_session(sid):
+        return get_role_from_session(sid) or "member"
+    return None
+
+def enforce_rbac():
+    """before_request: block writes from read-only (member) SSO users. Runs after
+    authenticate_request, so unauthenticated requests were already redirected."""
+    if request.method in _RBAC_METHOD_EXEMPT:
+        return None
+    # Bearer-key API calls carry their own scope check (api_v1.require_api_key).
+    if request.headers.get("Authorization", "").startswith("Bearer "):
+        return None
+    role = session_role()
+    # No session -> a bypass mode vetted this caller (no per-user identity) = admin.
+    if role is None or role == "admin":
+        return None
+    # Member: allow only ending their own session.
+    if request.path == f"{request.script_root}/logout":
+        return None
+    logger.info(f"RBAC: blocked {request.method} {request.path} for read-only member session.")
+    return jsonify({"success": False, "error": "This account is read-only. Admin access is required."}), 403
 
 _proxy_bypass_cache = {"value": None, "expires": 0}
 

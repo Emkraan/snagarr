@@ -53,35 +53,42 @@ def _read_secret(env_name: str):
 
 
 def _preset(cfg: dict) -> dict:
-    """Default endpoints/scopes/claims for a provider type (admin values win)."""
+    """Default endpoints/scopes/claims for a provider type (admin values win).
+
+    Profile claims (name/email/picture) are OIDC-standard for the id_token /
+    userinfo. Admins can override any of these per provider in the SSO editor;
+    role assignment is by admin_groups (see _is_admin)."""
     pt = cfg.get("provider_type")
     tenant = (cfg.get("tenant") or "").strip()
     issuer = (cfg.get("issuer") or "").strip().rstrip("/")
+    # OIDC-standard profile claim names, applied unless a provider overrides them.
+    std = {"name_claim": "name", "email_claim": "email", "picture_claim": "picture"}
     if pt == "microsoft":
         return {"flow": "oidc",
                 "discovery_url": f"https://login.microsoftonline.com/{tenant}/v2.0/.well-known/openid-configuration" if tenant else "",
                 "scopes": ["openid", "profile", "email"],
-                "username_claim": "preferred_username", "groups_claim": "groups"}
+                "username_claim": "preferred_username", "groups_claim": "groups", **std}
     if pt == "google":
         return {"flow": "oidc",
                 "discovery_url": "https://accounts.google.com/.well-known/openid-configuration",
-                "scopes": ["openid", "email", "profile"], "username_claim": "email", "groups_claim": ""}
+                "scopes": ["openid", "email", "profile"], "username_claim": "email", "groups_claim": "", **std}
     if pt == "github":
         return {"flow": "oauth2",
                 "authorize_url": "https://github.com/login/oauth/authorize",
                 "token_url": "https://github.com/login/oauth/access_token",
                 "userinfo_url": "https://api.github.com/user",
-                "scopes": ["read:user", "user:email"], "username_claim": "login", "groups_claim": ""}
+                "scopes": ["read:user", "user:email"], "username_claim": "login", "groups_claim": "",
+                "name_claim": "name", "email_claim": "email", "picture_claim": "avatar_url"}
     if pt in ("keycloak", "authentik", "okta"):
         return {"flow": "oidc",
                 "discovery_url": (issuer + "/.well-known/openid-configuration") if issuer else "",
                 "scopes": ["openid", "profile", "email"],
-                "username_claim": "preferred_username", "groups_claim": "groups"}
+                "username_claim": "preferred_username", "groups_claim": "groups", **std}
     if pt == "oauth2":
-        return {"flow": "oauth2", "username_claim": "preferred_username", "groups_claim": "groups"}
+        return {"flow": "oauth2", "username_claim": "preferred_username", "groups_claim": "groups", **std}
     # generic oidc
     return {"flow": "oidc", "scopes": ["openid", "profile", "email"],
-            "username_claim": "preferred_username", "groups_claim": "groups"}
+            "username_claim": "preferred_username", "groups_claim": "groups", **std}
 
 
 def resolve(cfg: dict) -> dict:
@@ -230,6 +237,32 @@ def _fetch_userinfo_oauth2(client, token, m) -> dict:
     return profile
 
 
+def _display_name(claims, m) -> str:
+    """The user's full name from the configured name claim, falling back to
+    given_name + family_name. Empty string if the IdP sent none."""
+    name = claims.get(m.get("name_claim") or "name")
+    if not name:
+        parts = [claims.get("given_name"), claims.get("family_name")]
+        name = " ".join(p for p in parts if p).strip()
+    return (name or "").strip()
+
+
+def _fetch_graph_photo(client, token) -> str:
+    """Microsoft Entra puts no photo in the id_token; fetch it from Graph as a
+    data: URI. Requires the access token to carry a Graph scope (e.g. User.Read);
+    fails soft to '' so the UI falls back to an initials avatar. Provider-agnostic:
+    only attempted for the microsoft provider type."""
+    try:
+        r = client.get("https://graph.microsoft.com/v1.0/me/photo/$value", token=token)
+        if getattr(r, "status_code", 0) == 200 and r.content and len(r.content) <= 400_000:
+            import base64
+            ct = r.headers.get("Content-Type", "image/jpeg")
+            return f"data:{ct};base64," + base64.b64encode(r.content).decode()
+    except Exception as e:
+        logger.info(f"Graph photo unavailable (fine; using initials avatar): {e}")
+    return ""
+
+
 def _callback_url() -> str:
     """The single https callback (matches every provider's registered redirect)."""
     override = os.environ.get("OIDC_REDIRECT_URI")
@@ -299,11 +332,18 @@ def oidc_callback():
         return "Access denied: your account is not in an allowed group.", 403
     username = (claims.get(m.get("username_claim") or "preferred_username")
                 or claims.get("email") or claims.get("login") or claims.get("sub"))
-    session_token = create_session(username)
+    display_name = _display_name(claims, m)
+    email = claims.get(m.get("email_claim") or "email") or ""
+    picture = claims.get(m.get("picture_claim") or "picture") or ""
+    if not picture and m.get("provider_type") == "microsoft":
+        picture = _fetch_graph_photo(client, token)
+    role = "admin" if _is_admin(claims, m) else "member"
+    profile = {"name": display_name, "email": email, "picture": picture, "provider": name}
+    session_token = create_session(username, role=role, profile=profile)
     session[SESSION_COOKIE_NAME] = session_token
     resp = redirect("/")
     resp.set_cookie(SESSION_COOKIE_NAME, session_token, httponly=True, samesite="Lax", path="/")
-    logger.info(f"SSO sign-in for '{username}' via '{name}' (admin={_is_admin(claims, m)}).")
+    logger.info(f"SSO sign-in for '{username}' ({display_name or 'no-name'}) via '{name}' role={role}.")
     return resp
 
 

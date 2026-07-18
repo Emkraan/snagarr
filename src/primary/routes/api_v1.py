@@ -101,8 +101,13 @@ def require_api_key(scope="read"):
 
             sid = session.get(SESSION_COOKIE_NAME) or request.cookies.get(SESSION_COOKIE_NAME)
             if sid and verify_session(sid):
-                g.api_scope = "admin"  # the logged-in operator
-                return fn(*args, **kwargs)
+                # A logged-in operator maps to their RBAC role: admin -> admin
+                # scope, member -> read-only.
+                from src.primary.auth import get_role_from_session
+                g.api_scope = "admin" if get_role_from_session(sid) == "admin" else "read"
+                if api_keys.scope_satisfies(g.api_scope, scope):
+                    return fn(*args, **kwargs)
+                return _err("forbidden", "This session is read-only.", 403)
 
             try:
                 if settings_manager.load_settings("general").get("proxy_auth_bypass", False):
