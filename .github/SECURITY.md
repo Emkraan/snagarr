@@ -15,20 +15,21 @@ reporting an issue.
 
 Please do NOT open a public issue for security vulnerabilities.
 
-**Email the maintainer at [richard.pierre@emkraan.com](mailto:richard.pierre@emkraan.com)** with as much detail as you can:
+**Preferred:** use GitHub's built-in private vulnerability reporting. Open the
+repository's **Security** tab and click **Report a vulnerability** under
+Advisories. This is the primary channel on the public repository and needs no
+email address.
+
+**Fallback:** if the Security tab is not available to you (for example while the
+repository is private, where it is reachable only by collaborators), email
+[github-admins@emkraan.com](mailto:github-admins@emkraan.com).
+
+Include as much detail as you can either way:
 
 - a description of the vulnerability and its impact,
 - the affected version or image tag,
 - clear steps to reproduce (a proof of concept if available),
 - any suggested remediation.
-
-Email is the reliable channel and works whether or not the repository is public.
-
-If you are viewing this on the public repository, you may instead use GitHub's
-built-in private vulnerability reporting: open the repository's **Security** tab
-and click **Report a vulnerability** under Advisories. (This route is
-unavailable while the repository is private, since the Security tab is not
-reachable by non-collaborators.)
 
 ## What to Expect
 
