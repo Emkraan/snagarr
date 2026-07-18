@@ -92,12 +92,12 @@
     }
     
     .cleanuperr-info-box {
-        background: linear-gradient(135deg, rgba(28, 36, 54, 0.9), rgba(24, 32, 48, 0.8));
+        background: linear-gradient(135deg, var(--surface-3), var(--bg-card));
         border-radius: 10px;
         padding: 20px;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         margin-bottom: 20px;
-        border: 1px solid rgba(90, 109, 137, 0.2);
+        border: 1px solid var(--border-subtle);
     }
     
     .cleanuperr-header {
@@ -128,9 +128,9 @@
         gap: 10px;
         margin: 15px 0;
         padding: 15px;
-        background: rgba(0, 0, 0, 0.2);
+        background: var(--surface-inset);
         border-radius: 8px;
-        border: 1px solid rgba(90, 109, 137, 0.2);
+        border: 1px solid var(--border-subtle);
     }
     
     .github-stars {
@@ -152,38 +152,38 @@
         margin-top: 0;
         margin-bottom: 10px;
         font-size: 24px;
-        color: #e0e6ed;
+        color: var(--text-secondary);
     }
-    
+
     .github-link {
         display: inline-flex;
         align-items: center;
         gap: 6px;
         padding: 6px 12px;
-        background: linear-gradient(135deg, #2c3e50, #1a2632);
+        background: linear-gradient(135deg, var(--surface-3), var(--bg-card));
         border-radius: 6px;
-        color: #e0e6ed;
+        color: var(--text-secondary);
         text-decoration: none;
         font-size: 14px;
         transition: all 0.3s ease;
-        border: 1px solid rgba(90, 109, 137, 0.3);
+        border: 1px solid var(--border-subtle);
     }
-    
+
     .github-link:hover {
-        background: linear-gradient(135deg, #34495e, #2c3e50);
+        background: linear-gradient(135deg, var(--surface-4), var(--surface-3));
         transform: translateY(-2px);
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     }
-    
+
     .cleanuperr-description {
-        color: #e0e6ed;
+        color: var(--text-secondary);
         line-height: 1.6;
     }
-    
+
     .cleanuperr-description h4 {
         margin-top: 20px;
         margin-bottom: 10px;
-        color: #3498db;
+        color: var(--accent-bright);
     }
     
     .cleanuperr-description ul {
@@ -198,9 +198,9 @@
     .author-section {
         margin: 30px 0;
         padding: 20px;
-        background: rgba(0, 0, 0, 0.2);
+        background: var(--surface-inset);
         border-radius: 8px;
-        border: 1px solid rgba(90, 109, 137, 0.2);
+        border: 1px solid var(--border-subtle);
     }
     
     .author-info {
@@ -214,7 +214,7 @@
         width: 100px;
         height: 100px;
         border-radius: 50%;
-        border: 3px solid #3498db;
+        border: 3px solid var(--accent);
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     }
     
@@ -224,22 +224,22 @@
     
     .author-details h4 {
         margin-top: 0;
-        color: #3498db;
+        color: var(--accent-bright);
     }
-    
+
     .origin-section {
         margin: 25px 0;
         padding: 15px;
-        background: rgba(41, 128, 185, 0.1);
+        background: var(--surface-inset);
         border-radius: 8px;
-        border: 1px solid rgba(41, 128, 185, 0.2);
+        border: 1px solid var(--border-subtle);
     }
-    
+
     .collaboration-note {
         margin: 30px 0;
         padding: 15px;
-        background: rgba(52, 152, 219, 0.1);
-        border-left: 4px solid #3498db;
+        background: var(--surface-inset);
+        border-left: 4px solid var(--accent);
         border-radius: 0 8px 8px 0;
     }
     
@@ -250,7 +250,8 @@
         flex-wrap: wrap;
     }
     
-    .button, .back-button {
+    #cleanuperrSection .button,
+    #cleanuperrSection .back-button {
         padding: 10px 20px;
         border-radius: 8px;
         font-weight: bold;
@@ -258,10 +259,10 @@
         text-align: center;
         transition: all 0.3s ease;
     }
-    
-    .back-button {
-        background: linear-gradient(135deg, #34495e, #2c3e50);
-        color: white;
+
+    #cleanuperrSection .back-button {
+        background: linear-gradient(135deg, var(--surface-4), var(--surface-3));
+        color: var(--text-primary);
         border: none;
         display: flex;
         align-items: center;
@@ -269,73 +270,86 @@
         cursor: pointer;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
-    
-    .back-button:hover {
-        background: linear-gradient(135deg, #3a536b, #34495e);
+
+    #cleanuperrSection .back-button:hover {
+        background: linear-gradient(135deg, var(--surface-5), var(--surface-4));
         transform: translateY(-2px);
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
     }
-    
-    .header-buttons {
+
+    #cleanuperrSection .header-buttons {
         margin-right: 20px;
     }
-    
-    .primary-button {
-        background: linear-gradient(135deg, #3498db, #2980b9);
-        color: white;
+
+    #cleanuperrSection .primary-button {
+        background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+        color: var(--text-primary);
         border: none;
     }
-    
-    .primary-button:hover {
-        background: linear-gradient(135deg, #2980b9, #2471a3);
+
+    #cleanuperrSection .primary-button:hover {
+        background: linear-gradient(135deg, var(--accent-hover), var(--accent-press));
         transform: translateY(-2px);
-        box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
     }
-    
-    .discord-button {
+
+    #cleanuperrSection .discord-button {
         background: linear-gradient(135deg, #5865F2, #4752C4);
-        color: white;
+        color: var(--text-primary);
         border: none;
     }
-    
-    .discord-button:hover {
+
+    #cleanuperrSection .discord-button:hover {
         background: linear-gradient(135deg, #4752C4, #3C45A5);
         transform: translateY(-2px);
         box-shadow: 0 4px 10px rgba(88, 101, 242, 0.4);
     }
-    
-    .secondary-button {
+
+    #cleanuperrSection .secondary-button {
         background: transparent;
-        color: #3498db;
-        border: 1px solid #3498db;
+        color: var(--accent-bright);
+        border: 1px solid var(--accent);
     }
-    
-    .secondary-button:hover {
-        background: rgba(52, 152, 219, 0.1);
+
+    #cleanuperrSection .secondary-button:hover {
+        background: var(--surface-inset);
         transform: translateY(-2px);
-        box-shadow: 0 4px 10px rgba(52, 152, 219, 0.2);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     }
-    
+
     @media (max-width: 768px) {
+        #cleanuperrSection {
+            padding: 16px;
+        }
+
+        .cleanuperr-info-box {
+            padding: 16px;
+        }
+
         .cleanuperr-header {
             flex-direction: column;
+            align-items: center;
+            text-align: center;
         }
-        
+
         .cleanuperr-logo {
             width: 100%;
         }
-        
+
+        .github-info-container,
+        .author-section,
+        .origin-section,
+        .collaboration-note {
+            padding: 12px;
+        }
+
         .author-info {
             flex-direction: column;
             text-align: center;
         }
-        
+
         .cleanuperr-cta {
             flex-direction: column;
-        }
-        
-        .button {
-            width: 100%;
         }
     }
 </style>
