@@ -7,6 +7,7 @@ __pycache__/
 # Environment
 .env
 .env.*
+!.env.example          # ship the placeholder template (no real secrets)
 .venv/
 
 # Local data volume (a local ./config dir is never committed)
