@@ -115,6 +115,7 @@
             field("Picture claim", input("m_picture_claim", p.picture_claim || "picture", { mono: true }), "Photo-URL claim. Entra fetches from Graph when this is empty.") + "</div>" +
           '<div class="sso-mgrid">' + field("Groups claim", input("m_groups_claim", p.groups_claim || "groups", { mono: true }), "Token claim carrying group / role membership.") +
             field("Email claim", input("m_email_claim", p.email_claim || "email", { mono: true })) + "</div>" +
+          field("Scopes", input("m_scopes", (p.scopes || []).join(" "), { mono: true, ph: "openid profile email User.Read" }), "Space-separated OAuth scopes. For Entra, User.Read enables the Graph profile photo.") +
           '<div class="sso-switch-row">' + sw("m_enabled", p.enabled !== false, "Enabled") + sw("m_show_on_login", p.show_on_login !== false, "Show on login") + sw("m_is_default", !!p.is_default, "Default provider") + "</div>" +
           field("Redirect URI — add this at your provider", '<div class="copyrow">' + input("m_redirect", state.redirect, { mono: true, ro: true }) + '<button class="btn btn-default" data-msso="copy"><i class="fas fa-copy"></i> Copy</button></div>') +
         "</div>" +
@@ -153,6 +154,8 @@
       allowed_groups: mcsv("m_allowed_groups"), admin_groups: mcsv("m_admin_groups"),
       name_claim: mval("m_name_claim") || "name", picture_claim: mval("m_picture_claim") || "picture",
       email_claim: mval("m_email_claim") || "email", groups_claim: mval("m_groups_claim") };
+    var scopes = mval("m_scopes").split(/\s+/).filter(Boolean);
+    if (scopes.length) p.scopes = scopes;
     if (t === "microsoft") p.tenant = mval("m_tenant");
     if (t === "okta" || t === "keycloak" || t === "authentik") p.issuer = mval("m_issuer");
     if (t === "oidc") p.discovery_url = mval("m_discovery_url");
