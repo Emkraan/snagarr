@@ -15,17 +15,20 @@ reporting an issue.
 
 Please do NOT open a public issue for security vulnerabilities.
 
-Report privately through GitHub's built-in private vulnerability reporting:
+**Email the maintainer at [github-admins@emkraan.com](mailto:github-admins@emkraan.com)** with as much detail as you can:
 
-1. Go to the repository's **Security** tab.
-2. Click **Report a vulnerability** (under "Advisories").
-3. Fill in the advisory form with as much detail as you can:
-   - a description of the vulnerability and its impact,
-   - the affected version or image tag,
-   - clear steps to reproduce (proof of concept if available),
-   - any suggested remediation.
+- a description of the vulnerability and its impact,
+- the affected version or image tag,
+- clear steps to reproduce (a proof of concept if available),
+- any suggested remediation.
 
-Direct link: https://github.com/Emkraan/snagarr/security/advisories/new
+Email is the reliable channel and works whether or not the repository is public.
+
+If you are viewing this on the public repository, you may instead use GitHub's
+built-in private vulnerability reporting: open the repository's **Security** tab
+and click **Report a vulnerability** under Advisories. (This route is
+unavailable while the repository is private, since the Security tab is not
+reachable by non-collaborators.)
 
 ## What to Expect
 
