@@ -66,7 +66,9 @@ def _preset(cfg: dict) -> dict:
     if pt == "microsoft":
         return {"flow": "oidc",
                 "discovery_url": f"https://login.microsoftonline.com/{tenant}/v2.0/.well-known/openid-configuration" if tenant else "",
-                "scopes": ["openid", "profile", "email"],
+                # User.Read (a default delegated Graph permission) yields a Graph
+                # access token so _fetch_graph_photo can pull the user's photo.
+                "scopes": ["openid", "profile", "email", "User.Read"],
                 "username_claim": "preferred_username", "groups_claim": "groups", **std}
     if pt == "google":
         return {"flow": "oidc",
