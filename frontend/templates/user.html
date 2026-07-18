@@ -6,9 +6,8 @@
     <title>User Settings - Snagarr</title>
     {% include 'components/head.html' %}
     <style>
-        /* Layout + tokens only. All colour comes from cobalt.css variables. */
-        .main-content { overflow-y: auto; max-height: 100vh; }
-
+        /* Layout + tokens only. All colour comes from cobalt.css variables.
+           (.main-content scrolling + mobile top-bar padding are owned by cobalt.css.) */
         .user-section {
             padding: 24px;
             max-width: 1200px;
@@ -77,14 +76,14 @@
             user-select: all;
         }
 
-        @media (max-width: 720px) {
-            .user-section { padding: 16px; }
+        @media (max-width: 768px) {
+            .user-section { padding: 18px 16px 40px; grid-template-columns: 1fr; }
             .secret-row { flex-direction: column; }
         }
     </style>
 </head>
 <body>
-    <div class="app-container mobile-optimized">
+    <div class="app-container">
         {% include 'components/sidebar.html' %}
 
         <div class="main-content">

@@ -104,6 +104,11 @@
   /* ---- Spacing scale (4px base) ---- */
   --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:20px; --space-6:24px; --space-8:32px; --space-10:40px;
 
+  /* ---- Mobile shell: single source for the drawer top-bar height. The fixed
+     .mobile-topbar height, the .main-content padding-top, and the sticky-table
+     head offset all read this so they can never drift. ---- */
+  --mobile-topbar-h:56px;
+
   /* ---- Body ambient wash (dark-but-not-black canvas the glow fades into) ---- */
   --body-wash: radial-gradient(120% 75% at 50% -10%, rgba(36,134,185,0.10) 0%, rgba(11,18,32,0) 55%),
                var(--bg-canvas);
@@ -292,22 +297,20 @@ code,pre,kbd,samp{font-family:var(--font-mono);}
 /* =========================================================================
    7. App shell + sidebar + mobile bar/drawer
    ========================================================================= */
-.app-shell{display:flex;height:100vh;overflow:hidden;position:relative;z-index:1;}
-.content-col{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0;}
-.scroll-col{flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;padding:24px;}
 
 /* -------------------------------------------------------------------------
    AUTHORITATIVE APP SHELL (v3 - supersedes the legacy new-style/style sheets,
    which are no longer linked). cobalt.css is the single design system.
-   Layout: .app-container [ .sidebar | .main-content [ .top-bar + sections ] ].
-   main-content is the scroller; the top bar is sticky; each .content-section is
-   a centred, padded content column shown/hidden by .active.
+   Layout: .app-container [ .sidebar | .main-content [ sections ] ]. There is no
+   top bar on desktop (retired); each view's own .page-header carries the title.
+   main-content is the scroller; each .content-section is a centred, padded
+   column shown/hidden by .active. On mobile (<=900px) .sidebar becomes an
+   off-canvas drawer behind a fixed .mobile-topbar (see sidebar.html).
    ------------------------------------------------------------------------- */
 html,body{height:100%;margin:0;}
 body{overflow:hidden;background:var(--bg-primary);}
 .app-container{display:flex;height:100vh;overflow:hidden;position:relative;z-index:1;}
 .main-content{flex:1;min-width:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;}
-.top-bar{position:sticky;top:0;z-index:50;flex-shrink:0;}
 .content-section{display:none;width:100%;max-width:1180px;margin:0 auto;padding:26px 30px 56px;}
 .content-section.active{display:block;animation:fadeIn .28s var(--ease-out);}
 .content-section.wide{max-width:1480px;}
@@ -361,23 +364,13 @@ body{overflow:hidden;background:var(--bg-primary);}
   transition:color var(--t-fast) var(--ease),transform var(--t-fast) var(--ease);}
 .sidebar-footer .gh-link:hover{color:var(--accent-bright);transform:translateY(-1px);}
 
-/* Mobile bar + drawer - hidden on desktop */
-.mobile-bar{display:none;}
-.drawer,.drawer-backdrop{display:none;}
-.brand-cluster{display:flex;align-items:center;gap:9px;min-width:0;}
-@media (max-width:900px){
-  .sidebar{display:none;}                 /* desktop sidebar removed, not shrunk */
-  .mobile-bar{display:flex;position:fixed;top:0;left:0;right:0;height:54px;z-index:30;align-items:center;gap:11px;
-    padding:0 14px;background:rgba(14,15,18,.82);backdrop-filter:blur(10px) saturate(120%);
-    -webkit-backdrop-filter:blur(10px) saturate(120%);border-bottom:1px solid var(--border-subtle);box-shadow:var(--shadow-sm);}
-  .content-col{padding-top:54px;}         /* clear the fixed bar */
-  .scroll-col{padding:16px;}              /* tighter mobile gutter */
-  .drawer-backdrop{display:block;position:fixed;inset:0;z-index:40;animation:fadeIn .2s var(--ease-out);}
-  .drawer{display:block;position:fixed;top:0;left:0;bottom:0;width:224px;max-width:86vw;z-index:50;
-    box-shadow:var(--shadow-lg);animation:drawerIn .28s var(--ease-out);}
-  .drawer[hidden],.drawer-backdrop[hidden]{display:none;}
-  .drawer-close{position:absolute;top:12px;right:-44px;width:34px;height:34px;}
-}
+/* Mobile drawer shell: base hidden state. The <=900px drawer rules that turn
+   .sidebar into an off-canvas panel live in sidebar.html's inline <style>, which
+   loads AFTER cobalt.css and so out-orders sidebar.html's own base .sidebar rule
+   (position/width/z-index). The shell markup + JS toggle live there too, so the
+   whole drawer ships from one include that both index.html and /user inherit. */
+.mobile-topbar{display:none;}
+.sidebar-backdrop{display:none;}
 
 /* =========================================================================
    8. Buttons
@@ -619,8 +612,8 @@ body{overflow:hidden;background:var(--bg-primary);}
 .section-label .sl-ico{display:flex;color:var(--accent-bright);}
 .section-label .sl-count{font-size:11px;font-weight:600;padding:1px 7px;border-radius:var(--radius-pill);
   background:var(--bg-hover);border:1px solid var(--border);color:var(--text-secondary);letter-spacing:0;font-variant-numeric:tabular-nums;}
-@media (max-width:600px){
-  .page-header{flex-direction:column;align-items:stretch;padding:14px 16px;}
+@media (max-width:768px){
+  .page-header{flex-direction:column;align-items:stretch;padding:0 0 16px;}
   .page-header .ph-actions{width:100%;}
   .panel-head{flex-direction:column;align-items:stretch;gap:12px;}
 }
@@ -669,7 +662,7 @@ body{overflow:hidden;background:var(--bg-primary);}
 /* Gradient KPI cards (the signature premium element) */
 .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
 @media(max-width:1000px){.kpi-row{grid-template-columns:repeat(2,1fr);}}
-@media(max-width:560px){.kpi-row{grid-template-columns:1fr;}}
+@media(max-width:768px){.kpi-row{grid-template-columns:1fr;}}
 .gkpi{position:relative;overflow:hidden;border-radius:var(--radius-xl);padding:18px 18px 16px;color:#fff;
   box-shadow:var(--shadow-md);
   transition:transform var(--t) var(--ease-out),box-shadow var(--t) var(--ease-out);}
@@ -747,7 +740,8 @@ body{overflow:hidden;background:var(--bg-primary);}
 .sso-modal-foot{display:flex;align-items:center;gap:10px;padding:14px 22px;border-top:1px solid var(--border-subtle);flex-shrink:0;}
 .sso-modal-foot .spacer{flex:1;}
 .sso-pick{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
-@media(max-width:640px){.sso-pick{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:768px){.sso-pick{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:380px){.sso-pick{grid-template-columns:1fr;}}
 .sso-pick-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;padding:15px 8px;border-radius:var(--radius-md);
   background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--border-subtle);cursor:pointer;text-align:center;
   transition:transform var(--t-fast) var(--ease-out),box-shadow var(--t-fast) ease,background-color var(--t-fast) ease;}
@@ -758,7 +752,58 @@ body{overflow:hidden;background:var(--bg-primary);}
 .sso-pick-card .pn{font-size:11.5px;font-weight:500;color:var(--text-secondary);line-height:1.25;}
 .sso-pick-card.on .pn{color:var(--text-primary);}
 .sso-mgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-@media(max-width:640px){.sso-mgrid{grid-template-columns:1fr;}}
+@media(max-width:768px){.sso-mgrid{grid-template-columns:1fr;}}
 .sso-switch-row{display:flex;gap:22px;flex-wrap:wrap;padding-top:2px;}
 .sso-switch-row .swx{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text-secondary);cursor:pointer;}
 .sso-sublabel{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin-bottom:2px;}
+
+/* Copy row (redirect-URI etc.) - emitted by sso.js, was styled nowhere. */
+.copyrow{display:flex;gap:8px;align-items:center;}
+.copyrow .input{flex:1;min-width:0;}
+.copyrow .btn{flex:none;white-space:nowrap;}
+
+/* =========================================================================
+   25. Responsive layer  (canonical breakpoints: 1024 grid-drop, 900 shell
+   drawer + sticky-head offset, 768 primary mobile, 480 smallest-phone).
+   Appended last so tap-target/gutter overrides out-order the base components.
+   The drawer shell itself lives in sidebar.html (loads after this file so it
+   can beat sidebar.html's own base .sidebar rule).
+   ========================================================================= */
+
+/* Sticky table heads must pin BELOW the fixed mobile top bar, not under it. */
+@media (max-width:900px){
+  .table thead{top:var(--mobile-topbar-h);}
+}
+
+/* Primary mobile treatment - shared across every view. */
+@media (max-width:768px){
+  /* Tighter content gutters (~16px) for narrow viewports. */
+  .content-section{padding:18px 16px 40px;}
+
+  /* Comfortable tap targets + 16px input font (kills iOS focus-zoom) app-wide. */
+  .btn{min-height:44px;}
+  .btn-sm{min-height:40px;padding:10px 14px;}
+  .input,.textarea,.select{min-height:44px;font-size:16px;padding:11px 12px;}
+  .icon-btn{width:40px;height:40px;}
+  .switch .switch-label{min-height:40px;display:inline-flex;align-items:center;}
+  .badge.chip-toggle{min-height:40px;min-width:44px;padding:9px 12px;}
+
+  /* Slightly denser table cells so wide tables scroll less. */
+  .table th,.table td{padding:9px 10px;}
+
+  /* SSO editor modal gets the same bottom-sheet treatment as the generic modal
+     (it uses a separate .sso-modal family and inherited none of it). */
+  .sso-modal-backdrop{align-items:flex-end;padding:0;}
+  .sso-modal{max-width:100%;max-height:92vh;border:none;
+    border-radius:var(--radius-xl) var(--radius-xl) 0 0;}
+  .sso-modal-head{padding:12px 16px;}
+  .sso-modal-body{padding:16px;}
+  .sso-modal-foot{flex-wrap:wrap;padding:12px 16px calc(12px + env(safe-area-inset-bottom));}
+  .sso-modal-foot .spacer{display:none;}
+  .sso-modal-foot .btn{flex:1 1 auto;min-width:0;}
+  .sso-modal-head .x{width:40px;height:40px;}
+
+  /* Copy row stacks so the button never clips off-screen. */
+  .copyrow{flex-wrap:wrap;}
+  .copyrow .btn{flex:1 1 100%;}
+}

@@ -1,3 +1,17 @@
+<!-- Mobile top bar + backdrop (shell): shown <=900px; hamburger opens the
+     sidebar as an off-canvas drawer. Included on both index and /user. -->
+<div class="mobile-topbar">
+    <button class="mt-burger" id="mtBurger" type="button" aria-label="Open navigation"
+            aria-controls="sidebar" aria-expanded="false">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div class="mt-brand">
+        <i class="fas fa-dragon" aria-hidden="true"></i>
+        <span class="mt-title">Snagarr</span>
+    </div>
+</div>
+<div class="sidebar-backdrop" id="sidebarBackdrop" hidden></div>
+
 <div class="sidebar" id="sidebar" data-sidebar>
     <div class="sidebar-top-line"></div>
     <div class="logo-container">
@@ -243,20 +257,60 @@
     .brand-gh:focus-visible { outline: none; box-shadow: var(--focus-ring-tight); }
     @media (hover: hover) and (pointer: fine) { .brand-gh:hover { transform: translateY(-1px); } }
 
-    /* ---- Mobile: collapse to an icon rail (labels hidden) ---- */
-    @media (max-width: 768px) {
-        .sidebar { width: 72px; overflow-x: hidden; }
-        .logo-container { padding: 16px 0; justify-content: center; }
-        .logo-text { display: none; }
-        .nav-menu { padding: 6px; align-items: center; }
-        .nav-group-title { display: none; }
-        .nav-item { justify-content: center; padding: 10px 0; width: 46px; margin: 0 auto; }
-        .nav-item span { display: none; }
-        .sidebar-foot { padding: 8px 6px 10px; align-items: center; }
-        .acct-row { padding: 6px; gap: 0; background: transparent; box-shadow: none; }
-        .acct-meta, .acct-logout { display: none; }
-        .brand-foot { justify-content: center; padding: 0; }
-        .brand-meta { display: none; }
+    /* ---- Mobile drawer shell (<=900px) ------------------------------------
+       The full-label sidebar becomes an off-canvas drawer that slides in over a
+       dimmed backdrop. These rules live here (not cobalt.css) so they load AFTER
+       cobalt.css and beat this file's own base .sidebar rule for position/width/
+       z-index. Desktop (>900px) is untouched. ---------------------------------- */
+    @media (max-width: 900px) {
+        .mobile-topbar {
+            display: flex; position: fixed; top: 0; left: 0; right: 0;
+            height: var(--mobile-topbar-h); z-index: 60; align-items: center; gap: 12px; padding: 0 12px;
+            background: rgba(11, 18, 32, .86);
+            backdrop-filter: blur(10px) saturate(120%); -webkit-backdrop-filter: blur(10px) saturate(120%);
+            border-bottom: 1px solid var(--border-subtle); box-shadow: var(--elev-1);
+        }
+        .mt-burger {
+            width: 44px; height: 44px; flex-shrink: 0; display: grid; place-items: center;
+            border: 1px solid var(--border); border-radius: 10px;
+            background: var(--surface-2); color: var(--text-primary); font-size: 18px; cursor: pointer;
+            transition: background-color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+        }
+        .mt-burger:active { transform: scale(.95); }
+        .mt-burger:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+        .mt-brand { display: flex; align-items: center; gap: 9px; min-width: 0; }
+        .mt-brand i { color: var(--accent-bright); font-size: 18px; flex-shrink: 0; }
+        .mt-title {
+            font-family: var(--font-display); font-size: 15px; font-weight: 700;
+            color: var(--text-primary); letter-spacing: var(--track-title);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        /* .sidebar => off-canvas drawer (full labels retained). */
+        .sidebar {
+            position: fixed; top: 0; left: 0; bottom: 0;
+            height: 100vh; height: 100dvh;
+            width: 288px; max-width: 86vw; min-width: 0;
+            z-index: 80; transform: translateX(-100%);
+            transition: transform var(--dur-slow) var(--ease-out);
+            box-shadow: none;
+        }
+        .sidebar.open { transform: translateX(0); box-shadow: var(--elev-4); }
+
+        /* Dimmed backdrop behind the drawer. */
+        .sidebar-backdrop {
+            display: block; position: fixed; inset: 0; z-index: 70;
+            background: rgba(0, 0, 0, .55); opacity: 0; pointer-events: none;
+            transition: opacity var(--t-slow) var(--ease-out);
+        }
+        .sidebar-backdrop.open { opacity: 1; pointer-events: auto; }
+
+        /* Content clears the fixed bar; body scroll locks while the drawer is open. */
+        .main-content { padding-top: var(--mobile-topbar-h); }
+        body.drawer-locked { overflow: hidden; }
+
+        /* Drawer-foot tap targets. */
+        .acct-logout, .brand-gh { width: 40px; height: 40px; }
     }
 </style>
 
@@ -332,5 +386,46 @@
                     .catch(function () { window.location.href = '/login'; });
             });
         }
+    })();
+
+    // Mobile drawer: hamburger toggles the off-canvas sidebar. Self-contained and
+    // idempotent (dataset.bound), so it is safe on index.html and /user alike.
+    (function () {
+        var sidebar = document.getElementById('sidebar');
+        var burger = document.getElementById('mtBurger');
+        var backdrop = document.getElementById('sidebarBackdrop');
+        if (!sidebar || !burger || !backdrop || burger.dataset.bound) return;
+        burger.dataset.bound = '1';
+
+        function open() {
+            sidebar.classList.add('open');
+            backdrop.hidden = false;
+            requestAnimationFrame(function () { backdrop.classList.add('open'); });
+            burger.setAttribute('aria-expanded', 'true');
+            document.body.classList.add('drawer-locked');
+        }
+        function close() {
+            sidebar.classList.remove('open');
+            backdrop.classList.remove('open');
+            burger.setAttribute('aria-expanded', 'false');
+            document.body.classList.remove('drawer-locked');
+            // Hide the backdrop after its fade so it stops catching taps.
+            setTimeout(function () { if (!sidebar.classList.contains('open')) backdrop.hidden = true; }, 260);
+        }
+        function toggle() { sidebar.classList.contains('open') ? close() : open(); }
+
+        burger.addEventListener('click', toggle);
+        backdrop.addEventListener('click', close);
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && sidebar.classList.contains('open')) close();
+        });
+        // Close after tapping any nav link or the sign-out control (SPA + real nav).
+        sidebar.querySelectorAll('.nav-item, .acct-logout').forEach(function (a) {
+            a.addEventListener('click', close);
+        });
+        // Auto-close if the viewport grows back to desktop.
+        window.addEventListener('resize', function () {
+            if (window.innerWidth > 900 && sidebar.classList.contains('open')) close();
+        });
     })();
 </script>

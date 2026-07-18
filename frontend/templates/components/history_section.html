@@ -81,4 +81,21 @@
   #historySection .history-state { margin-top: 14px; }
   #historySection .history-pagination { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 16px; flex-wrap: wrap; }
   #historySection .history-page-info { font-size: 13px; color: var(--text-muted); }
+
+  @media (max-width: 768px) {
+    /* Stack the filter row: every control spans full width. */
+    #historySection .history-filter { flex-direction: column; align-items: stretch; gap: 10px; }
+    #historySection .history-filter-field,
+    #historySection .history-search,
+    #historySection .history-page-size { width: 100%; min-width: 0; flex: none; }
+    #historySection .history-filter .btn { width: 100%; }
+    #historySection .filter-spacer { display: none; }
+    /* Redundant standalone search button duplicates Enter-to-search. */
+    #historySection #historySearchButton { display: none; }
+
+    /* Stack pagination: page-info on its own centred row above the buttons. */
+    #historySection .history-pagination { gap: 10px; }
+    #historySection .history-pagination .btn { flex: 1; }
+    #historySection .history-page-info { flex-basis: 100%; text-align: center; order: -1; }
+  }
 </style>
