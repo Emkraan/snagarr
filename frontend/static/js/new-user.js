@@ -9,6 +9,9 @@
     // either the username source or the 2FA source, whichever resolves last.
     let heroUsername = null;   // string once /api/user/info (or a rename) resolves
     let hero2fa = null;        // bool once the 2FA state is known
+    let heroName = null;       // IdP full name (falls back to username)
+    let heroPicture = null;    // IdP photo (data URI or url); initials if absent
+    let heroRole = null;       // 'admin' | 'member'
 
     // Wait for the DOM to be fully loaded
     document.addEventListener('DOMContentLoaded', function() {
@@ -312,9 +315,15 @@
                 return response.json();
             })
             .then(data => {
+                // IdP identity for the profile hero.
+                heroName = data.name || null;
+                heroPicture = data.picture || null;
+                heroRole = data.role || null;
+                if (data.role === 'member') { document.body.classList.add('role-member'); }
+
                 // Update username elements
                 updateUsernameElements(data.username);
-                
+
                 // Update 2FA status
                 update2FAStatus(data.is_2fa_enabled);
             })
@@ -366,18 +375,30 @@
         const hero = document.getElementById('profileHero');
         if (!hero || !heroUsername) return; // no data yet -> stay hidden
 
+        const display = heroName || heroUsername;
+
         const avatar = document.getElementById('profileAvatar');
         if (avatar) {
-            const t = String(heroUsername).trim() || 'U';
-            avatar.textContent = (t.charAt(0) || 'U').toUpperCase();
-            // Same hash the sidebar avatar uses, so the two agree per user.
-            let h = 0;
-            for (let i = 0; i < t.length; i++) { h = (h * 31 + t.charCodeAt(i)) >>> 0; }
-            avatar.style.background = 'hsl(' + (h % 360) + ', 44%, 38%)';
+            if (heroPicture) {
+                // Real IdP photo.
+                avatar.textContent = '';
+                avatar.style.background = 'center/cover no-repeat url("' + String(heroPicture).replace(/"/g, '%22') + '")';
+            } else {
+                const t = String(display).trim() || 'U';
+                avatar.textContent = (t.charAt(0) || 'U').toUpperCase();
+                // Same hash the sidebar avatar uses, so the two agree per user.
+                let h = 0;
+                for (let i = 0; i < t.length; i++) { h = (h * 31 + t.charCodeAt(i)) >>> 0; }
+                avatar.style.background = 'hsl(' + (h % 360) + ', 44%, 38%)';
+            }
         }
 
         const nameEl = document.getElementById('profileName');
-        if (nameEl) nameEl.textContent = heroUsername;
+        if (nameEl) nameEl.textContent = display;
+
+        // Role label (the .profile-role element in the hero).
+        const roleEl = document.querySelector('#profileHero .profile-role');
+        if (roleEl && heroRole) roleEl.textContent = heroRole === 'member' ? 'Member' : 'Administrator';
 
         if (hero2fa !== null) {
             const on = hero2fa === true;

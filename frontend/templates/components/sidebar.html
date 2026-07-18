@@ -262,6 +262,19 @@
     .brand-gh:focus-visible { outline: none; box-shadow: var(--focus-ring-tight); }
     @media (hover: hover) and (pointer: fine) { .brand-gh:hover { transform: translateY(-1px); } }
 
+    /* IdP photo avatar (falls back to hashed initials when absent). */
+    .acct-avatar.has-photo { color: transparent; box-shadow: var(--elev-0), inset 0 0 0 1px var(--border-hair); }
+
+    /* RBAC: read-only members lose the admin nav items + mutating controls.
+       The backend (enforce_rbac) is the real boundary; this is a clean UX. */
+    body.role-member #appsNav,
+    body.role-member #schedulingNav,
+    body.role-member #settingsNav,
+    body.role-member #apiNav,
+    body.role-member #dashboardResetStats,
+    body.role-member #clearLogsButton,
+    body.role-member #clearHistoryButton { display: none !important; }
+
     /* ---- Mobile drawer shell (<=900px) ------------------------------------
        The full-label sidebar becomes an off-canvas drawer that slides in over a
        dimmed backdrop. These rules live here (not cobalt.css) so they load AFTER
@@ -354,8 +367,11 @@
         var nameEl = document.getElementById('username');
         var avEl = document.getElementById('acctAvatar');
 
+        var roleEl = document.querySelector('.acct-row .acct-role');
+
         function paintAvatar(t) {
-            if (!avEl) return;
+            // A real IdP photo (has-photo) always wins over hashed initials.
+            if (!avEl || avEl.classList.contains('has-photo')) return;
             t = (t || 'U').trim() || 'U';
             avEl.textContent = (t.charAt(0) || 'U').toUpperCase();
             var h = 0;
@@ -368,10 +384,24 @@
             new MutationObserver(function () { paintAvatar(nameEl.textContent); })
                 .observe(nameEl, { childList: true, characterData: true, subtree: true });
         }
-        // Self-contained name fetch (idempotent alongside other controllers).
+
+        // Identity from the IdP: full name, photo, and RBAC role. Idempotent
+        // alongside new-main.js (which also sets #username to name||username).
         fetch('/api/user/info').then(function (r) { return r.ok ? r.json() : null; })
             .then(function (d) {
-                if (d && d.username) { if (nameEl) nameEl.textContent = d.username; paintAvatar(d.username); }
+                if (!d) return;
+                var display = d.name || d.username || 'User';
+                if (nameEl) nameEl.textContent = display;
+                if (avEl && d.picture) {
+                    avEl.classList.add('has-photo');
+                    avEl.textContent = '';
+                    avEl.style.background = 'center/cover no-repeat url("' + String(d.picture).replace(/"/g, '%22') + '")';
+                } else {
+                    paintAvatar(display);
+                }
+                if (roleEl) roleEl.textContent = d.role === 'member' ? 'Member' : 'Administrator';
+                // Read-only members: hide admin nav + controls (backend also 403s).
+                document.body.classList.toggle('role-member', d.role === 'member');
             }).catch(function () {});
 
         // Version + build number.

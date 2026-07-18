@@ -199,11 +199,30 @@ body{
   -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; text-rendering:optimizeLegibility;
   overflow-x:hidden;                 /* global guard - nothing leaks a horizontal scrollbar */
 }
-/* Ambient cobalt wash behind the whole shell (from the logo blue). */
+/* Ambient cobalt wash behind the whole shell (from the logo blue). z-index:0 so
+   it paints above the body's own opaque background but below content (which is
+   z-index:1). A NEGATIVE z-index would hide it behind the body background. */
 body::before{
   content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
   background: radial-gradient(120% 75% at 50% -10%, rgba(36,134,185,0.10) 0%, rgba(11,18,32,0) 55%);
 }
+
+/* Emkraan animated background: slow-drifting blurred cobalt blobs. Fixed behind
+   ALL content (z-index:0; the shell + auth cards sit at z-index:1),
+   pointer-events:none, GPU-composited. Toned down from the marketing site so it
+   stays subtle behind a dense app UI. Markup = components/bg.html. */
+.bg-blobs{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;contain:strict;}
+.bg-blobs .blob{position:absolute;border-radius:50%;filter:blur(72px);will-change:transform;}
+.bg-blobs .b1{width:46vw;height:46vw;left:-10vw;top:-14vh;
+  background:radial-gradient(circle,rgba(36,134,185,.20),rgba(0,0,0,0) 66%);animation:drift1 15s ease-in-out infinite alternate;}
+.bg-blobs .b2{width:40vw;height:40vw;right:-8vw;top:2vh;
+  background:radial-gradient(circle,rgba(74,159,224,.16),rgba(0,0,0,0) 66%);animation:drift2 13s ease-in-out infinite alternate;}
+.bg-blobs .b3{width:52vw;height:52vw;left:6vw;bottom:-24vh;
+  background:radial-gradient(circle,rgba(27,111,184,.18),rgba(0,0,0,0) 66%);animation:drift3 18s ease-in-out infinite alternate;}
+.bg-blobs .b4{width:34vw;height:34vw;right:4vw;bottom:-10vh;
+  background:radial-gradient(circle,rgba(52,199,89,.11),rgba(0,0,0,0) 66%);animation:drift4 16s ease-in-out infinite alternate;}
+/* Auth pages (login/setup) have no .app-container; lift their card above the blobs. */
+.auth-page .auth-card{position:relative;z-index:1;}
 a{color:inherit;text-decoration:none;}
 button{font-family:var(--font-sans);}
 input,textarea,select{font-family:var(--font-sans);color:var(--text-primary);}
@@ -244,6 +263,11 @@ code,pre,kbd,samp{font-family:var(--font-mono);}
 @keyframes haloBreathe{0%,100%{opacity:.5;transform:scale(1);}50%{opacity:.85;transform:scale(1.04);}}
 @keyframes meterFill{from{transform:scaleX(0);}to{transform:scaleX(var(--meter-scale,1));}}
 @keyframes refreshSweep{0%{transform:translateX(-100%);}100%{transform:translateX(560%);}}
+/* Ambient background blobs (Emkraan motion-gradient standard) - slow drift+scale. */
+@keyframes drift1{0%{transform:translate3d(0,0,0) scale(1);}100%{transform:translate3d(26vw,20vh,0) scale(1.28);}}
+@keyframes drift2{0%{transform:translate3d(0,0,0) scale(1.15);}100%{transform:translate3d(-24vw,26vh,0) scale(.82);}}
+@keyframes drift3{0%{transform:translate3d(0,0,0) scale(.9);}100%{transform:translate3d(22vw,-24vh,0) scale(1.3);}}
+@keyframes drift4{0%{transform:translate3d(0,0,0) scale(1);}100%{transform:translate3d(-26vw,-18vh,0) scale(1.35);}}
 
 /* =========================================================================
    5. Utilities

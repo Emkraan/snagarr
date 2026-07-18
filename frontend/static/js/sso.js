@@ -107,8 +107,14 @@
             field("Provider key", input("m_name", p.name || state.type, { mono: true }), "Unique id in the callback URL. Lowercase.") + "</div>" +
           '<div class="sso-mgrid">' + field("Client ID", input("m_client_id", p.client_id, { mono: true, ph: "application (client) id" })) +
             field("Client secret", input("m_client_secret", secretSet ? SENTINEL : "", { type: "password", ph: secretSet ? "(unchanged)" : "client secret" }), secretSet ? "A secret is stored — leave unchanged to keep it." : "") + "</div>" +
-          '<div class="sso-mgrid">' + field("Allowed groups", input("m_allowed_groups", (p.allowed_groups || []).join(", "), { ph: "group-a, group-b" }), "Comma-separated. Empty = any authenticated user.") +
-            field("Admin groups", input("m_admin_groups", (p.admin_groups || []).join(", "), { ph: "snagarr-admins" }), "Granted admin access.") + "</div>" +
+          '<div class="sso-sublabel" style="margin-top:2px">Access &amp; roles</div>' +
+          '<div class="sso-mgrid">' + field("Allowed groups", input("m_allowed_groups", (p.allowed_groups || []).join(", "), { ph: "group-a, group-b" }), "Comma-separated. Empty = any authenticated user may sign in.") +
+            field("Admin groups", input("m_admin_groups", (p.admin_groups || []).join(", "), { ph: "snagarr-admins" }), "Members of these get admin; everyone else is read-only. Empty = all admin.") + "</div>" +
+          '<div class="sso-sublabel" style="margin-top:2px">Claim mapping</div>' +
+          '<div class="sso-mgrid">' + field("Name claim", input("m_name_claim", p.name_claim || "name", { mono: true }), "Token claim for the user's full name.") +
+            field("Picture claim", input("m_picture_claim", p.picture_claim || "picture", { mono: true }), "Photo-URL claim. Entra fetches from Graph when this is empty.") + "</div>" +
+          '<div class="sso-mgrid">' + field("Groups claim", input("m_groups_claim", p.groups_claim || "groups", { mono: true }), "Token claim carrying group / role membership.") +
+            field("Email claim", input("m_email_claim", p.email_claim || "email", { mono: true })) + "</div>" +
           '<div class="sso-switch-row">' + sw("m_enabled", p.enabled !== false, "Enabled") + sw("m_show_on_login", p.show_on_login !== false, "Show on login") + sw("m_is_default", !!p.is_default, "Default provider") + "</div>" +
           field("Redirect URI — add this at your provider", '<div class="copyrow">' + input("m_redirect", state.redirect, { mono: true, ro: true }) + '<button class="btn btn-default" data-msso="copy"><i class="fas fa-copy"></i> Copy</button></div>') +
         "</div>" +
@@ -144,7 +150,9 @@
     var p = { name: (mval("m_name") || t).toLowerCase().replace(/[^a-z0-9_-]/g, "-"), display_name: mval("m_display_name") || LABEL[t], provider_type: t,
       enabled: mchk("m_enabled"), show_on_login: mchk("m_show_on_login"), is_default: mchk("m_is_default"),
       client_id: mval("m_client_id"), client_secret: (document.getElementById("m_client_secret") || {}).value || "",
-      allowed_groups: mcsv("m_allowed_groups"), admin_groups: mcsv("m_admin_groups") };
+      allowed_groups: mcsv("m_allowed_groups"), admin_groups: mcsv("m_admin_groups"),
+      name_claim: mval("m_name_claim") || "name", picture_claim: mval("m_picture_claim") || "picture",
+      email_claim: mval("m_email_claim") || "email", groups_claim: mval("m_groups_claim") };
     if (t === "microsoft") p.tenant = mval("m_tenant");
     if (t === "okta" || t === "keycloak" || t === "authentik") p.issuer = mval("m_issuer");
     if (t === "oidc") p.discovery_url = mval("m_discovery_url");

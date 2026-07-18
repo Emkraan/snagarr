@@ -46,13 +46,45 @@
       {{ ui.section_label('New Schedule', icon=icons.plus(14)) }}
       <div class="sched-fields">
 
-        {% call ui.field('Time') %}
-          <div class="sched-time-row">
-            {{ ui.select('scheduleHour', hour_opts, attrs='id="scheduleHour"') }}
-            <span class="sched-time-sep">:</span>
-            {{ ui.select('scheduleMinute', minute_opts, attrs='id="scheduleMinute"') }}
-          </div>
-        {% endcall %}
+        {# Compact selects flow horizontally so the full-width card is not squished. #}
+        <div class="sched-form-grid">
+          {% call ui.field('Time') %}
+            <div class="sched-time-row">
+              {{ ui.select('scheduleHour', hour_opts, attrs='id="scheduleHour"') }}
+              <span class="sched-time-sep">:</span>
+              {{ ui.select('scheduleMinute', minute_opts, attrs='id="scheduleMinute"') }}
+            </div>
+          {% endcall %}
+
+          {% call ui.field('Action') %}
+            <select class="select" id="scheduleAction">
+              <optgroup label="Activity Control">
+                <option value="enable">Enable</option>
+                <option value="disable">Disable</option>
+              </optgroup>
+              <optgroup label="API Limits">
+                <option value="api-5">API Limits 5</option>
+                <option value="api-10">API Limits 10</option>
+                <option value="api-20">API Limits 20</option>
+                <option value="api-30">API Limits 30</option>
+                <option value="api-50">API Limits 50</option>
+                <option value="api-100">API Limits 100</option>
+              </optgroup>
+            </select>
+          {% endcall %}
+
+          {% call ui.field('App') %}
+            {{ ui.select('scheduleApp', [
+                 {'value': 'global',      'label': 'All Apps (Global)'},
+                 {'value': 'sonarr-all',  'label': 'Sonarr'},
+                 {'value': 'radarr-all',  'label': 'Radarr'},
+                 {'value': 'lidarr-all',  'label': 'Lidarr'},
+                 {'value': 'readarr-all', 'label': 'Readarr'},
+                 {'value': 'whisparr-v2', 'label': 'Whisparr V2'},
+                 {'value': 'whisparr-v3', 'label': 'Whisparr V3'}
+               ], selected='global', attrs='id="scheduleApp"') }}
+          {% endcall %}
+        </div>
 
         {% call ui.field('Frequency', hint='Select the days this schedule runs on.') %}
           <div class="sched-day-chips">
@@ -62,35 +94,6 @@
               </label>
             {% endfor %}
           </div>
-        {% endcall %}
-
-        {% call ui.field('Action') %}
-          <select class="select" id="scheduleAction">
-            <optgroup label="Activity Control">
-              <option value="enable">Enable</option>
-              <option value="disable">Disable</option>
-            </optgroup>
-            <optgroup label="API Limits">
-              <option value="api-5">API Limits 5</option>
-              <option value="api-10">API Limits 10</option>
-              <option value="api-20">API Limits 20</option>
-              <option value="api-30">API Limits 30</option>
-              <option value="api-50">API Limits 50</option>
-              <option value="api-100">API Limits 100</option>
-            </optgroup>
-          </select>
-        {% endcall %}
-
-        {% call ui.field('App') %}
-          {{ ui.select('scheduleApp', [
-               {'value': 'global',      'label': 'All Apps (Global)'},
-               {'value': 'sonarr-all',  'label': 'Sonarr'},
-               {'value': 'radarr-all',  'label': 'Radarr'},
-               {'value': 'lidarr-all',  'label': 'Lidarr'},
-               {'value': 'readarr-all', 'label': 'Readarr'},
-               {'value': 'whisparr-v2', 'label': 'Whisparr V2'},
-               {'value': 'whisparr-v3', 'label': 'Whisparr V3'}
-             ], selected='global', attrs='id="scheduleApp"') }}
         {% endcall %}
 
         <div class="sched-actions">
@@ -129,10 +132,13 @@
 
 <style>
   /* Layout-only utilities (no colours; all theming stays in cobalt.css tokens). */
-  #schedulingSection .scheduling-grid { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(360px, 1.6fr); gap: 16px; align-items: start; }
+  /* Full-width stacked layout: form card (fields flow horizontally) then the
+     schedules table full-width below - no squished side column. */
+  #schedulingSection .scheduling-grid { display: flex; flex-direction: column; gap: 16px; }
   #schedulingSection .scheduling-grid > * { min-width: 0; }
-  @media (max-width: 900px) { #schedulingSection .scheduling-grid { grid-template-columns: 1fr; } }
   #schedulingSection .sched-fields { display: flex; flex-direction: column; gap: 16px; margin-top: 14px; }
+  #schedulingSection .sched-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px 20px; align-items: end; }
+  #schedulingSection .sched-form-grid .field .select { max-width: none; }
   #schedulingSection .sched-time-row { display: flex; align-items: center; gap: 10px; }
   #schedulingSection .sched-time-row .select { width: 88px; }
   #schedulingSection .sched-time-sep { font-weight: 700; color: var(--text-muted); }

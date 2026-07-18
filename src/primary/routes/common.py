@@ -14,6 +14,7 @@ import logging
 from flask import Blueprint, request, jsonify, make_response, redirect, url_for, current_app, render_template, send_from_directory, session
 from ..auth import (
     verify_user, create_session, get_username_from_session, SESSION_COOKIE_NAME,
+    get_role_from_session, get_profile_from_session,
     change_username as auth_change_username, change_password as auth_change_password,
     validate_password_strength, logout, verify_session, disable_2fa_with_password_and_otp,
     user_exists, create_user, generate_2fa_secret, verify_2fa_code, is_2fa_enabled # Add missing auth imports
@@ -224,8 +225,17 @@ def get_user_info_route():
 
     # Pass username to is_2fa_enabled
     two_fa_status = is_2fa_enabled(username) # This function should now be defined via import
-    logger.debug(f"Retrieved user info for '{username}'. 2FA enabled: {two_fa_status}")
-    return jsonify({"username": username, "is_2fa_enabled": two_fa_status})
+    role = get_role_from_session(session_token) or "admin"
+    profile = get_profile_from_session(session_token)
+    logger.debug(f"Retrieved user info for '{username}'. 2FA enabled: {two_fa_status}, role: {role}")
+    return jsonify({
+        "username": username,
+        "is_2fa_enabled": two_fa_status,
+        "role": role,
+        "name": profile.get("name") or "",
+        "email": profile.get("email") or "",
+        "picture": profile.get("picture") or "",
+    })
 
 @common_bp.route('/api/user/change-username', methods=['POST'])
 def change_username_route():

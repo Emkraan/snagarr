@@ -1842,10 +1842,12 @@ let snagarrUI = {
         SnagarrUtils.fetchWithTimeout('/api/user/info')
             .then(response => response.json())
             .then(data => {
-                if (data.username) {
-                    usernameElement.textContent = data.username;
+                if (data.username || data.name) {
+                    // Prefer the IdP full name; fall back to the username.
+                    usernameElement.textContent = data.name || data.username;
                 }
-                
+                if (data.role === 'member') { document.body.classList.add('role-member'); }
+
                 // Check if local access bypass is enabled and update UI visibility
                 this.checkLocalAccessBypassStatus();
             })
