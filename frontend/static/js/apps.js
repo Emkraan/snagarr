@@ -697,7 +697,7 @@ const appsModule = {
 // Initialize when document is ready
 document.addEventListener('DOMContentLoaded', () => {
     appsModule.init();
-    
+
     // Add a direct event listener to the save button for maximum reliability
     const saveButton = document.getElementById('saveAppsButton');
     if (saveButton) {
@@ -707,3 +707,108 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+/*
+ * Fleet-status strip (page-header) - REAL DATA ONLY.
+ *
+ * Summarises how many configured *arr apps are Connected vs Offline using the
+ * same connection-health language as the dashboard. Source of truth:
+ *   GET /api/status/<app>  (per configured app, exactly as dashboard.js reads it)
+ * Two conic-gradient dials: "Apps online" (X/Y apps reachable) and
+ * "Instances connected" (X/Y instances up). Ring colour follows the shared
+ * cobalt status tokens (green all-up / amber partial / red down).
+ *
+ * Degrades gracefully: if nothing is configured (or every status call fails),
+ * appsTotal is 0 and the whole strip stays `hidden` - never shows broken zeros.
+ * Purely additive: self-contained, guards every DOM lookup, throws nothing.
+ */
+(function () {
+    "use strict";
+
+    // The connection-capable apps (Swaparr/Cleanuperr are utility panels, not
+    // instanced connections) - mirrors dashboard.js's app set.
+    var KEYS = ["sonarr", "radarr", "lidarr", "readarr", "whisparr", "eros"];
+    var POLL_MS = 30000;
+
+    function el(id) { return document.getElementById(id); }
+
+    function fetchJson(url) {
+        var f = (window.SnagarrUtils && typeof window.SnagarrUtils.fetchWithTimeout === "function")
+            ? window.SnagarrUtils.fetchWithTimeout(url) : fetch(url);
+        return f.then(function (r) {
+            if (!r.ok) throw new Error("status " + r.status);
+            return r.json();
+        });
+    }
+
+    // Same shape-normalisation the dashboard uses for /api/status payloads.
+    function configured(s) {
+        s = s || {};
+        var total = s.total_configured != null ? s.total_configured : (s.configured ? 1 : 0);
+        var conn = s.connected_count != null ? s.connected_count : (s.connected ? total : 0);
+        return { total: total, conn: conn, on: total > 0 };
+    }
+
+    function tone(conn, total) {
+        if (total > 0 && conn >= total) return "var(--success)";
+        if (conn > 0) return "var(--warning)";
+        return "var(--danger)";
+    }
+
+    function setDial(dial, valEl, conn, total, pct, rc) {
+        if (dial) {
+            dial.style.setProperty("--v", Math.max(0, Math.min(100, Math.round(pct))));
+            dial.style.setProperty("--rc", rc);
+        }
+        if (valEl) valEl.textContent = conn + "/" + total;
+    }
+
+    function render(statuses) {
+        var wrap = el("appsFleet");
+        if (!wrap) return;
+
+        var appsOn = 0, appsTotal = 0, instConn = 0, instTotal = 0;
+        KEYS.forEach(function (k) {
+            var c = configured(statuses[k]);
+            if (!c.on) return;
+            appsTotal++;
+            if (c.conn > 0) appsOn++;
+            instTotal += c.total;
+            instConn += c.conn;
+        });
+
+        // Nothing configured -> hide entirely (no misleading 0/0).
+        if (appsTotal === 0) { wrap.hidden = true; return; }
+        wrap.hidden = false;
+
+        var appsPct = appsTotal ? (appsOn / appsTotal) * 100 : 0;
+        var instPct = instTotal ? (instConn / instTotal) * 100 : 0;
+        setDial(el("fleetAppsDial"), el("fleetAppsVal"), appsOn, appsTotal, appsPct, tone(appsOn, appsTotal));
+        setDial(el("fleetInstDial"), el("fleetInstVal"), instConn, instTotal, instPct, tone(instConn, instTotal));
+    }
+
+    function refresh() {
+        if (!el("appsFleet")) return;
+        Promise.all(KEYS.map(function (k) {
+            return fetchJson("/api/status/" + k)
+                .then(function (d) { return { k: k, d: d || {} }; })
+                .catch(function () { return { k: k, d: { total_configured: 0 } }; });
+        })).then(function (results) {
+            var statuses = {};
+            results.forEach(function (r) { statuses[r.k] = r.d; });
+            render(statuses);
+        }).catch(function () { /* leave prior state; never throw */ });
+    }
+
+    function boot() { refresh(); }
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", boot);
+    } else {
+        boot();
+    }
+    // Refresh only while the Apps view is active (matches dashboard cadence).
+    setInterval(function () {
+        var s = el("appsSection");
+        if (s && s.classList.contains("active")) refresh();
+    }, POLL_MS);
+})();

@@ -562,6 +562,9 @@ function renderSchedules() {
     // Count total schedules
     const totalSchedules = allSchedules.length;
 
+    // Refresh the header posture strip from the same in-memory schedule data.
+    try { renderSchedHero(allSchedules); } catch (e) { console.warn('Schedule hero render failed:', e); }
+
     // Show empty state if no schedules
     if (totalSchedules === 0) {
         if (tableWrap) tableWrap.style.display = 'none';
@@ -830,6 +833,103 @@ function syncDayChips() {
         const cb = chip.querySelector('.day-input');
         chip.classList.toggle('active', !!(cb && cb.checked));
     });
+}
+
+/**
+ * Render the header posture strip (weekday-coverage dial, active-schedule count,
+ * a 7-chip weekday strip, and a "next run" label) from the already-loaded
+ * schedule data. Purely additive and read-only; hides itself when there are no
+ * active schedules so an empty state never shows zeros as if broken.
+ *
+ * @param {Array} allSchedules - Flat list from getFormattedSchedules().
+ */
+function renderSchedHero(allSchedules) {
+    const hero = document.getElementById('schedHero');
+    if (!hero) return; // View not on the page yet; nothing to do.
+
+    const list = Array.isArray(allSchedules) ? allSchedules : [];
+    const active = list.filter(s => s && s.enabled !== false);
+
+    // No real data -> gracefully hide the whole element.
+    if (active.length === 0) {
+        hero.hidden = true;
+        hero.setAttribute('aria-hidden', 'true');
+        return;
+    }
+
+    // 3-letter day prefix -> JS Date.getDay() index (Sun=0).
+    const DAY3 = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+    const covered = new Set();
+    const now = new Date();
+    let best = null;
+
+    active.forEach(s => {
+        const t = s.time || {};
+        const hh = Number(t.hour);
+        const mm = Number(t.minute);
+
+        // Normalise days to an array of lowercase name strings.
+        let names = [];
+        if (Array.isArray(s.days)) {
+            names = s.days.map(d => String(d).toLowerCase());
+        } else if (s.days && typeof s.days === 'object') {
+            names = Object.keys(s.days).filter(k => s.days[k]);
+        }
+
+        names.forEach(n => {
+            const idx = DAY3[n.slice(0, 3)];
+            if (idx === undefined) return;
+            covered.add(idx);
+
+            // Derive the soonest upcoming run across every active schedule.
+            if (isNaN(hh) || isNaN(mm)) return;
+            const diff = (idx - now.getDay() + 7) % 7;
+            const cand = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diff, hh, mm, 0, 0);
+            if (cand <= now) cand.setDate(cand.getDate() + 7); // Already passed today -> next week.
+            if (!best || cand < best) best = cand;
+        });
+    });
+
+    // Active-schedule count.
+    const cntEl = document.getElementById('schedActiveVal');
+    if (cntEl) cntEl.textContent = String(active.length);
+
+    // Weekday-coverage dial (conic ring fill + "N/7" label), matching the dashboard rings.
+    const coveredCount = covered.size;
+    const dial = document.getElementById('schedCoverDial');
+    const dialVal = document.getElementById('schedCoverVal');
+    if (dial) dial.style.setProperty('--v', Math.round((coveredCount / 7) * 100));
+    if (dialVal) dialVal.textContent = coveredCount + '/7';
+
+    // Highlight the weekday chips that actually have a schedule.
+    const NAME_IDX = { monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6, sunday: 0 };
+    hero.querySelectorAll('.sched-week-chip').forEach(chip => {
+        const day = chip.getAttribute('data-week-day') || '';
+        const idx = NAME_IDX[day];
+        chip.classList.toggle('active', idx !== undefined && covered.has(idx));
+    });
+
+    // "Next run" label: absolute weekday/time plus a relative countdown.
+    const nextEl = document.getElementById('schedNext');
+    if (nextEl) {
+        if (best) {
+            const wk = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][best.getDay()];
+            const hhs = String(best.getHours()).padStart(2, '0');
+            const mms = String(best.getMinutes()).padStart(2, '0');
+            const mins = Math.round((best - now) / 60000);
+            let rel;
+            if (mins < 60) rel = 'in ' + Math.max(1, mins) + 'm';
+            else if (mins < 1440) rel = 'in ' + Math.floor(mins / 60) + 'h ' + (mins % 60) + 'm';
+            else rel = 'in ' + Math.floor(mins / 1440) + 'd ' + Math.floor((mins % 1440) / 60) + 'h';
+            nextEl.textContent = 'Next ' + wk + ' ' + hhs + ':' + mms + ' · ' + rel;
+            nextEl.hidden = false;
+        } else {
+            nextEl.hidden = true; // No derivable next run (e.g. schedules with no days).
+        }
+    }
+
+    hero.hidden = false;
+    hero.removeAttribute('aria-hidden');
 }
 
 // Close the IIFE that wraps the script

@@ -7,6 +7,50 @@
     {{ ui.button('Clear', variant='danger', icon=icons.trash(15), attrs='id="clearHistoryButton"') }}
   {% endcall %}
 
+  {# ── Stat strip (lively hero) — real counts from the loaded history; the ──────
+       whole strip is hidden by history.js when there are zero matching records. #}
+  <div class="history-statstrip" id="historyStatStrip" hidden aria-live="polite">
+    <div class="kpi-tile hst-tile" style="--tone-ink:var(--accent-bright);--tone-dim:var(--accent-dim);--tone-border:var(--accent-border)">
+      <span class="kpi-rail"></span><span class="kpi-glow"></span>
+      <div class="kpi-head">
+        <span class="kpi-label">Total processed</span>
+        <span class="kpi-chip">{{ icons.history(15) }}</span>
+      </div>
+      <div class="kpi-value"><span class="hero-num" id="hstTotal" style="--hero-a:var(--accent-bright);--hero-b:var(--accent)">0</span></div>
+      <div class="kpi-sub" id="hstTotalSub">across all apps</div>
+    </div>
+
+    <div class="kpi-tile hst-tile" style="--tone-ink:var(--info);--tone-dim:var(--info-dim);--tone-border:var(--info-border)">
+      <span class="kpi-rail"></span><span class="kpi-glow"></span>
+      <div class="kpi-head">
+        <span class="kpi-label">Searches</span>
+        <span class="kpi-chip">{{ icons.search(15) }}</span>
+      </div>
+      <div class="kpi-value"><span class="hero-num" id="hstSearches" style="--hero-a:var(--info);--hero-b:var(--accent)">0</span></div>
+      <div class="kpi-sub" id="hstSearchesSub">missing-item hunts</div>
+    </div>
+
+    <div class="kpi-tile hst-tile" style="--tone-ink:var(--success);--tone-dim:var(--success-dim);--tone-border:var(--success-border)">
+      <span class="kpi-rail"></span><span class="kpi-glow"></span>
+      <div class="kpi-head">
+        <span class="kpi-label">Upgrades</span>
+        <span class="kpi-chip">{{ icons.arrow_up_right(15) }}</span>
+      </div>
+      <div class="kpi-value"><span class="hero-num" id="hstUpgrades" style="--hero-a:var(--success);--hero-b:var(--accent)">0</span></div>
+      <div class="kpi-sub" id="hstUpgradesSub">quality bumps</div>
+    </div>
+
+    <div class="kpi-tile hst-tile" style="--tone-ink:var(--warning);--tone-dim:var(--warning-dim);--tone-border:var(--warning-border)">
+      <span class="kpi-rail"></span><span class="kpi-glow"></span>
+      <div class="kpi-head">
+        <span class="kpi-label">Apps active</span>
+        <span class="kpi-chip">{{ icons.apps(15) }}</span>
+      </div>
+      <div class="kpi-value"><span class="hero-num" id="hstApps" style="--hero-a:var(--warning);--hero-b:var(--accent)">0</span></div>
+      <div class="kpi-sub" id="hstAppsSub">with history</div>
+    </div>
+  </div>
+
   {# ── Filter row (client-side fetch; intentionally NOT data-filterbar) ────── #}
   <div class="history-filter">
     <div class="history-filter-field">
@@ -68,6 +112,16 @@
 
 <style>
   /* Layout-only utilities (no colours; all theming stays in cobalt.css tokens). */
+
+  /* Stat strip: compact KPI row reusing .kpi-tile; not clickable here. */
+  #historySection .history-statstrip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 0 0 16px; }
+  #historySection .history-statstrip .hst-tile { cursor: default; padding: 14px 16px; }
+  #historySection .history-statstrip .hst-tile:hover { transform: none; }
+  #historySection .history-statstrip .kpi-value { font-size: 30px; }
+  #historySection .history-statstrip .kpi-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  @media (max-width: 900px) { #historySection .history-statstrip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 420px) { #historySection .history-statstrip { grid-template-columns: 1fr; } }
+
   #historySection .history-filter { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 14px; }
   #historySection .history-filter-field { min-width: 150px; }
   #historySection .history-search { flex: 1 1 220px; }

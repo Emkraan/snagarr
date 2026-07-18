@@ -4,6 +4,15 @@
 <section id="logsSection" class="content-section">
 
   {% call ui.page_header('Logs', 'Live application log stream with per-app filtering and search.') %}
+    {# Level-distribution strip over the currently-loaded buffer. JS fills the
+       counts + toggles visibility; hidden until at least one line is buffered. #}
+    <div id="logLevelStrip" class="log-levelstrip" hidden aria-label="Log level counts across the loaded buffer">
+      <span id="logStreamDot" class="status-dot tone-muted" title="Stream status"></span>
+      <span class="badge tone-danger mono lls-chip" data-lvl="error" title="Errors in the loaded buffer"><span class="lls-k">ERR</span><span class="lls-v" id="llsError">0</span></span>
+      <span class="badge tone-warning mono lls-chip" data-lvl="warn" title="Warnings in the loaded buffer"><span class="lls-k">WARN</span><span class="lls-v" id="llsWarn">0</span></span>
+      <span class="badge tone-info mono lls-chip" data-lvl="info" title="Info lines in the loaded buffer"><span class="lls-k">INFO</span><span class="lls-v" id="llsInfo">0</span></span>
+      <span class="badge mono lls-chip" data-lvl="debug" title="Debug lines in the loaded buffer"><span class="lls-k">DBG</span><span class="lls-v" id="llsDebug">0</span></span>
+    </div>
     <span id="logConnectionStatus" class="status-disconnected" title="Log stream connection">Disconnected</span>
   {% endcall %}
 
@@ -57,6 +66,15 @@
   #logsSection .logs-search-ico { position: absolute; left: 10px; display: inline-flex; color: var(--text-dim); pointer-events: none; }
   #logsSection .logs-search .input { width: 220px; max-width: 100%; padding-left: 32px; }
   #logsSection .logs-results { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
+
+  /* Level-distribution strip (header hero). Tinted chips reuse .badge tones;
+     debug uses the plain .badge (muted). All colour comes from cobalt tokens. */
+  #logsSection .log-levelstrip { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  #logsSection .log-levelstrip .status-dot { margin-right: 2px; }
+  #logsSection .lls-chip { gap: 6px; padding: 3px 10px; transition: opacity var(--t) var(--ease); }
+  #logsSection .lls-chip .lls-k { font-weight: 700; letter-spacing: .06em; opacity: .8; }
+  #logsSection .lls-chip .lls-v { font-weight: 700; font-variant-numeric: tabular-nums; }
+  #logsSection .lls-chip.is-zero { opacity: .38; }
 
   /* Connection status pill (textContent + status-* classes set by JS) */
   #logConnectionStatus { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 600;

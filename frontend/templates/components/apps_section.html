@@ -4,6 +4,16 @@
 <section id="appsSection" class="content-section">
 
   {% call ui.page_header('Apps', 'Configure each connection, its instances, and hunt behaviour.') %}
+    <div class="ringstat-row apps-fleet" id="appsFleet" hidden>
+      <div class="ringstat">
+        <span class="dial" id="fleetAppsDial" style="--v:0"><b id="fleetAppsVal">0/0</b></span>
+        <span class="rl">Apps<br><b>online</b></span>
+      </div>
+      <div class="ringstat">
+        <span class="dial" id="fleetInstDial" style="--v:0"><b id="fleetInstVal">0/0</b></span>
+        <span class="rl">Instances<br><b>connected</b></span>
+      </div>
+    </div>
     <div class="apps-picker">
       {{ ui.select('apps_app_select', [
            {'value': 'sonarr',     'label': 'Sonarr'},
@@ -40,6 +50,13 @@
   /* Layout-only utilities (no colours; all theming stays in cobalt.css tokens). */
   #appsSection .page-header { flex-wrap: wrap; gap: 12px; }
   #appsSection .ph-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+  /* Fleet-status strip: reuses the dashboard's .ringstat/.dial language.
+     The ID+attribute selector outranks .ringstat-row{display:flex} so the
+     `hidden` attribute correctly collapses the strip when nothing is configured. */
+  #appsSection #appsFleet[hidden] { display: none; }
+  #appsSection .apps-fleet { margin-right: 4px; }
+
   #appsSection .apps-picker { min-width: 200px; }
   #appsSection .apps-picker .select { min-width: 200px; }
 

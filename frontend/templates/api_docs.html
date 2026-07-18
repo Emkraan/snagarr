@@ -1,0 +1,226 @@
+{% import "_ui.html" as ui %}
+{% import "_icons.html" as icons %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>API - Snagarr</title>
+    {% include 'components/head.html' %}
+    <!-- RapiDoc: dark-native interactive OpenAPI explorer (renders /api/v1/openapi.json). -->
+    <script type="module" src="https://cdn.jsdelivr.net/npm/rapidoc@9.3.8/dist/rapidoc-min.js"></script>
+    <style>
+        /* Layout + tokens only; all colour comes from cobalt.css variables. */
+        #apiSection { max-width: 1320px; }
+
+        /* ---- API keys console ---- */
+        .keys-card { margin-top: 4px; }
+        .keys-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+        .keys-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+        .key-row {
+            display: flex; align-items: center; gap: 12px; padding: 11px 13px;
+            background: var(--surface-2); border-radius: var(--radius-md); box-shadow: inset 0 0 0 1px var(--border-hair);
+        }
+        .key-row .k-ico { width: 34px; height: 34px; border-radius: var(--radius-sm); flex: none; display: grid; place-items: center;
+            background: var(--accent-dim); color: var(--accent-bright); box-shadow: inset 0 0 0 1px var(--accent-border); }
+        .key-row .k-meta { flex: 1; min-width: 0; }
+        .key-row .k-label { font-weight: 600; font-size: 13.5px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .key-row .k-sub { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; font-family: var(--font-mono); }
+        .keys-empty { color: var(--text-muted); font-size: 13px; padding: 8px 2px; }
+
+        .key-create { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-top: 16px;
+            padding-top: 16px; border-top: 1px solid var(--border-subtle); }
+        .key-create .field { flex: 1 1 200px; }
+        .key-create .field.scope { flex: 0 0 160px; }
+
+        /* Freshly-minted plaintext key (shown once). */
+        .key-reveal { margin-top: 14px; }
+        .key-reveal .kr-token { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+        .key-reveal .kr-token code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; padding: 10px 12px;
+            background: var(--surface-inset); border: 1px solid var(--accent-border); border-radius: var(--radius-sm);
+            color: var(--accent-bright); font-size: 12.5px; }
+
+        /* ---- RapiDoc explorer panel (contained, cobalt-framed) ---- */
+        .apidoc-wrap {
+            margin-top: 18px; border-radius: var(--radius-lg); overflow: hidden;
+            border: 1px solid var(--border); box-shadow: var(--elev-2);
+            height: 76vh; min-height: 560px;
+        }
+        .apidoc-wrap rapi-doc { height: 100%; width: 100%; display: block; }
+        @media (max-width: 768px) {
+            .apidoc-wrap { height: calc(100dvh - 260px); min-height: 440px; margin-top: 14px; }
+            .key-create .field.scope { flex: 1 1 160px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        {% include 'components/sidebar.html' %}
+
+        <div class="main-content">
+            <section id="apiSection" class="content-section wide active">
+
+                {% call ui.page_header('API reference', 'Automate Snagarr over a stable, versioned REST API. Mint a scoped key, then try any endpoint live below.') %}
+                    <a class="btn btn-default" href="/api/v1/openapi.json" target="_blank" rel="noopener">{{ icons.download(15) }} OpenAPI spec</a>
+                {% endcall %}
+
+                {# ── API keys console ─────────────────────────────────────── #}
+                {% call ui.card(klass='keys-card') %}
+                    <div class="keys-head">
+                        {{ ui.section_label('API Keys', icon=icons.key(14)) }}
+                        <span class="badge mono" id="keysCount">&mdash;</span>
+                    </div>
+                    <div class="banner tone-info" style="margin-top:14px">
+                        {{ icons.info(15) }}
+                        <div class="banner-body"><span class="banner-text">Keys are scoped <strong>read &lt; write &lt; admin</strong> and shown in full only once at creation. Your logged-in session already has admin access to the explorer below.</span></div>
+                    </div>
+
+                    <div class="keys-list" id="keysList">
+                        <div class="keys-empty">Loading keys&hellip;</div>
+                    </div>
+
+                    <div class="key-reveal" id="keyReveal" hidden>
+                        {% call ui.banner(tone='success', icon=icons.check(15)) %}
+                            <strong>Key created.</strong> Copy it now &mdash; it cannot be shown again.
+                            <div class="kr-token"><code id="krToken"></code>{{ ui.button('Copy', variant='default', attrs='id="krCopy"') }}</div>
+                        {% endcall %}
+                    </div>
+
+                    <div class="key-create">
+                        <div class="field">
+                            <label class="field-label" for="newKeyLabel">Label</label>
+                            <input class="input" id="newKeyLabel" placeholder="e.g. ci-pipeline" autocomplete="off">
+                        </div>
+                        <div class="field scope">
+                            <label class="field-label" for="newKeyScope">Scope</label>
+                            {{ ui.select('scope', [
+                                 {'value': 'read',  'label': 'read'},
+                                 {'value': 'write', 'label': 'write'},
+                                 {'value': 'admin', 'label': 'admin'}
+                               ], selected='read', attrs='id="newKeyScope"') }}
+                        </div>
+                        {{ ui.button('New key', variant='primary', icon=icons.plus(15), attrs='id="createKeyBtn"') }}
+                    </div>
+                {% endcall %}
+
+                {# ── Interactive explorer ─────────────────────────────────── #}
+                <div class="apidoc-wrap">
+                    <rapi-doc
+                        spec-url="/api/v1/openapi.json"
+                        theme="dark"
+                        render-style="read"
+                        show-header="false"
+                        show-info="true"
+                        allow-server-selection="false"
+                        allow-authentication="true"
+                        allow-spec-file-download="true"
+                        schema-style="table"
+                        default-schema-tab="schema"
+                        font-size="default"
+                        regular-font="Inter, system-ui, -apple-system, sans-serif"
+                        mono-font="'IBM Plex Mono', ui-monospace, monospace"
+                        bg-color="#0B1220"
+                        text-color="#AEB8C6"
+                        header-color="#0F1626"
+                        primary-color="#2486B9"
+                        nav-bg-color="#0F1626"
+                        nav-text-color="#AEB8C6"
+                        nav-hover-bg-color="#182238"
+                        nav-hover-text-color="#F4F7FB"
+                        nav-accent-color="#4A9FE0">
+                    </rapi-doc>
+                </div>
+
+            </section>
+        </div>
+    </div>
+
+    <div class="toast-root" id="toast-root" aria-live="polite" aria-atomic="true"></div>
+    <script src="/static/js/ui.js"></script>
+    <script>
+    (function () {
+        var listEl = document.getElementById('keysList');
+        var countEl = document.getElementById('keysCount');
+        var reveal = document.getElementById('keyReveal');
+        var toast = window.toast || function (m) { console.log(m); };
+
+        function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
+        function ago(ts) {
+            if (!ts) return 'never used';
+            var d = Math.max(0, Math.floor(Date.now() / 1000 - ts));
+            if (d < 60) return 'just now'; if (d < 3600) return Math.floor(d / 60) + 'm ago';
+            if (d < 86400) return Math.floor(d / 3600) + 'h ago'; return Math.floor(d / 86400) + 'd ago';
+        }
+        function scopeTone(s) { return s === 'admin' ? 'tone-danger' : s === 'write' ? 'tone-warning' : 'tone-info'; }
+
+        function render(keys) {
+            countEl.textContent = keys.length + (keys.length === 1 ? ' key' : ' keys');
+            if (!keys.length) { listEl.innerHTML = '<div class="keys-empty">No API keys yet. Create one below to start automating.</div>'; return; }
+            listEl.innerHTML = keys.map(function (k) {
+                return '<div class="key-row">' +
+                    '<span class="k-ico"><i class="fas fa-key"></i></span>' +
+                    '<span class="k-meta"><span class="k-label">' + esc(k.label || 'unnamed') + '</span>' +
+                    '<span class="k-sub">created ' + ago(k.created_at) + ' &middot; ' + (k.last_used_at ? 'used ' + ago(k.last_used_at) : 'never used') + '</span></span>' +
+                    '<span class="badge ' + scopeTone(k.scope) + '">' + esc(k.scope) + '</span>' +
+                    '<button class="btn btn-sm btn-danger" data-revoke="' + esc(k.id) + '" type="button">Revoke</button>' +
+                    '</div>';
+            }).join('');
+        }
+
+        function loadKeys() {
+            fetch('/api/v1/keys', { headers: { 'Accept': 'application/json' } })
+                .then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }); })
+                .then(function (res) {
+                    if (res.status === 403 || res.status === 401) {
+                        listEl.innerHTML = '<div class="keys-empty">Admin access is required to manage keys.</div>';
+                        countEl.textContent = '&mdash;'; return;
+                    }
+                    if (res.j && res.j.ok) render(res.j.data || []);
+                    else listEl.innerHTML = '<div class="keys-empty">Could not load keys.</div>';
+                })
+                .catch(function () { listEl.innerHTML = '<div class="keys-empty">Could not load keys.</div>'; });
+        }
+
+        listEl.addEventListener('click', function (e) {
+            var btn = e.target.closest('[data-revoke]'); if (!btn) return;
+            var id = btn.getAttribute('data-revoke');
+            btn.disabled = true;
+            fetch('/api/v1/keys/' + encodeURIComponent(id), { method: 'DELETE' })
+                .then(function (r) { return r.json(); })
+                .then(function (j) { if (j && j.ok) { toast('Key revoked', 'success'); loadKeys(); } else { toast('Revoke failed', 'error'); btn.disabled = false; } })
+                .catch(function () { toast('Revoke failed', 'error'); btn.disabled = false; });
+        });
+
+        document.getElementById('createKeyBtn').addEventListener('click', function () {
+            var label = (document.getElementById('newKeyLabel').value || '').trim();
+            var scope = document.getElementById('newKeyScope').value || 'read';
+            if (!label) { toast('Give the key a label', 'error'); return; }
+            this.disabled = true;
+            var self = this;
+            fetch('/api/v1/keys', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ label: label, scope: scope }) })
+                .then(function (r) { return r.json(); })
+                .then(function (j) {
+                    self.disabled = false;
+                    if (j && j.ok && j.data && j.data.key) {
+                        document.getElementById('krToken').textContent = j.data.key;
+                        reveal.hidden = false;
+                        document.getElementById('newKeyLabel').value = '';
+                        reveal.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                        toast('Key created', 'success');
+                        loadKeys();
+                    } else {
+                        toast((j && j.error && j.error.message) || 'Could not create key', 'error');
+                    }
+                })
+                .catch(function () { self.disabled = false; toast('Could not create key', 'error'); });
+        });
+
+        document.getElementById('krCopy').addEventListener('click', function () {
+            var t = document.getElementById('krToken').textContent || '';
+            navigator.clipboard && navigator.clipboard.writeText(t).then(function () { toast('Copied', 'success'); });
+        });
+
+        loadKeys();
+    })();
+    </script>
+</body>
+</html>
