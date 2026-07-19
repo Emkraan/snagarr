@@ -6,7 +6,7 @@ Readarr module initialization
 from src.primary.apps.readarr.missing import process_missing_books
 from src.primary.apps.readarr.upgrade import process_cutoff_upgrades
 # Add necessary imports
-from src.primary.settings_manager import load_settings
+from src.primary.settings_manager import load_settings, redact_secrets
 from src.primary.utils.logger import get_logger
 
 # Define logger for this module
@@ -26,7 +26,7 @@ def get_configured_instances():
     if "instances" in settings and isinstance(settings["instances"], list) and settings["instances"]:
         # readarr_logger.info(f"Found 'instances' list with {len(settings['instances'])} items. Processing...") # Removed verbose log
         for idx, instance in enumerate(settings["instances"]):
-            readarr_logger.debug(f"Checking instance #{idx}: {instance}")
+            readarr_logger.debug(f"Checking instance #{idx}: {redact_secrets(instance)}")
             # Enhanced validation
             api_url = instance.get("api_url", "").strip()
             api_key = instance.get("api_key", "").strip()

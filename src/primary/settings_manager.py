@@ -204,6 +204,17 @@ def get_api_key(app_name: str) -> Optional[str]:
     """Get the API Key for a specific app."""
     return get_setting(app_name, "api_key", "")
 
+_REDACT_KEYS = {"api_key", "password", "client_secret", "oidc_client_secret"}
+
+def redact_secrets(value: Any) -> Any:
+    """Recursively replace secret-like values so settings/instance dicts are
+    safe to pass to a debug log line."""
+    if isinstance(value, dict):
+        return {k: ("***" if k in _REDACT_KEYS and v else v) if k in _REDACT_KEYS else redact_secrets(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [redact_secrets(v) for v in value]
+    return value
+
 def get_all_settings() -> Dict[str, Dict[str, Any]]:
     """Load settings for all known apps."""
     all_settings = {}

@@ -31,6 +31,14 @@ USER_FILE = USER_DIR / "credentials.json"
 SESSION_EXPIRY = 60 * 60 * 24 * 7  # 1 week in seconds
 SESSION_COOKIE_NAME = "snagarr_session"
 
+# Whether to trust X-Forwarded-For/-Proto from the connecting peer at all. Off
+# by default: a client hitting the container's port directly (the default
+# docker-compose topology, no reverse proxy) could otherwise forge these
+# headers to spoof "local" IPs or HTTPS. Operators who do run behind a real
+# reverse proxy set TRUST_PROXY_HOPS=1 (see README) to restore both this and
+# ProxyFix's header handling in web_server.py.
+TRUST_PROXY_HOPS = int(os.environ.get("TRUST_PROXY_HOPS", "0") or "0")
+
 # Persisted Flask secret key (signs the session cookie; also backs Authlib's
 # OAuth state/nonce). A generated-and-persisted key replaces the old weak
 # hardcoded default so sessions survive restarts and are not forgeable.
@@ -434,22 +442,25 @@ def authenticate_request():
             '192.168.'        # 192.168.0.0/16
         ]
         is_local = False
-        
-        # Check if request is coming through a proxy
-        forwarded_for = request.headers.get('X-Forwarded-For')
+
+        # Only honor X-Forwarded-For if the operator has confirmed a trusted
+        # reverse proxy is in front (TRUST_PROXY_HOPS > 0). Otherwise this
+        # header is attacker-controlled and would let anyone reaching the
+        # container directly claim to be "local".
+        forwarded_for = request.headers.get('X-Forwarded-For') if TRUST_PROXY_HOPS > 0 else None
         if forwarded_for:
             logger.debug(f"X-Forwarded-For header detected: {forwarded_for}")
             # Take the first IP in the chain which is typically the client's real IP
             possible_client_ip = forwarded_for.split(',')[0].strip()
             logger.debug(f"Checking if forwarded IP {possible_client_ip} is local")
-            
+
             # Check if this forwarded IP is a local network IP
             for network in local_networks:
                 if possible_client_ip == network or (network.endswith('.') and possible_client_ip.startswith(network)):
                     is_local = True
                     logger.info(f"Forwarded IP {possible_client_ip} is a local network IP (matches {network})")
                     break
-        
+
         # Check if direct remote_addr is a local network IP if not already determined
         if not is_local:
             for network in local_networks:

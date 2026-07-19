@@ -70,7 +70,7 @@ def login_route():
                 session_token = create_session(username)
                 session[SESSION_COOKIE_NAME] = session_token # Store token in Flask session immediately
                 response = jsonify({"success": True, "redirect": "/"}) # Add redirect URL
-                response.set_cookie(SESSION_COOKIE_NAME, session_token, httponly=True, samesite='Lax', path='/') # Add path
+                response.set_cookie(SESSION_COOKIE_NAME, session_token, httponly=True, samesite='Lax', path='/', secure=request.is_secure) # Add path
                 logger.info(f"User '{username}' logged in successfully.")
                 return response
             elif needs_2fa:
@@ -196,7 +196,7 @@ def setup():
                 session[SESSION_COOKIE_NAME] = session_token # Store token in session
                 response = jsonify({"success": True})
                 # Set cookie in the response
-                response.set_cookie(SESSION_COOKIE_NAME, session_token, httponly=True, samesite='Lax', path='/') # Add path
+                response.set_cookie(SESSION_COOKIE_NAME, session_token, httponly=True, samesite='Lax', path='/', secure=request.is_secure) # Add path
                 return response
             else:
                 # create_user itself failed, but didn't raise an exception

@@ -125,7 +125,7 @@ Replace the image tag with a semver release or an immutable commit build:
 
 ### How the maintainer runs it (optional, GitOps + Portainer)
 
-This is how Richard runs his own instance, not a requirement for self-hosting. GitHub Actions builds the image and pushes it to GHCR; a Portainer stack pulls `portainer-stack.yml` directly from a private ops repository and is pinned to an immutable `sha-<commit>` tag, so the running image always matches git. A GitOps webhook redeploys the stack when the pinned tag changes. If you go this route, keep the image tag in git and redeploy from there; never edit tags in the Portainer UI.
+This is how the maintainer runs their own instance, not a requirement for self-hosting. GitHub Actions builds the image and pushes it to GHCR; a Portainer stack pulls `portainer-stack.yml` directly from a private ops repository and is pinned to an immutable `sha-<commit>` tag, so the running image always matches git. A GitOps webhook redeploys the stack when the pinned tag changes. If you go this route, keep the image tag in git and redeploy from there; never edit tags in the Portainer UI.
 
 ---
 
@@ -176,6 +176,7 @@ Every value has a working default; a bare `docker run` with only a `/config` mou
 | `SECRET_KEY` | generated | No | Flask session-signing key. If unset, a random key is generated and persisted to `/config/user/secret_key` on first run. Set it explicitly to share one key across replicas. |
 | `DEBUG` | `false` | No | When `true`, runs the Flask development server with debug logging. Never enable in production. |
 | `SNAGARR_BUILD` | `dev` | No | Build label reported by `/api/version` and the sidebar footer. Set by CI at image build. |
+| `TRUST_PROXY_HOPS` | `0` | No | Number of reverse-proxy hops to trust for `X-Forwarded-For`/`-Proto`/`-Host`. Leave at `0` if this container's port is reachable directly (the default docker-compose setup) — those headers are otherwise attacker-controlled and could be used to spoof a "local" IP or HTTPS. Set to `1` only when a reverse proxy (Traefik, nginx, etc.) sits directly in front of Snagarr; this is required for OIDC's HTTPS callback URL and for the local-network auth bypass to see the real client IP. |
 
 > `TZ` is not read by the application, but the container's libc and Docker honor it, and it sets the timezone used for schedule windows and log timestamps. Set `TZ` in the environment (for example `TZ=America/New_York`).
 
@@ -249,9 +250,9 @@ Snagarr has two roles:
 | Role | Can do |
 | :--- | :--- |
 | **Admin** | Everything: change any setting, add and edit connections, manage schedules, trigger resets, manage SSO providers, and mint or revoke API keys. |
-| **Member** | Read-only. View the dashboard, logs, history, and connection status. Every write is rejected. |
+| **Member** | Read-only. View the dashboard, logs, history, and connection status. Every write is rejected, and any API key / client secret returned by a settings read is masked to a last-4 hint. |
 
-**How the role is assigned.** Local login and both bypass modes are always `admin`. For SSO users, the role comes from the provider's **Admin groups**: if a signed-in user's groups intersect that list they are `admin`, otherwise `member`. If **Admin groups** is empty, everyone who signs in is `admin`, so role-based access is dormant until you configure it. A separate **Allowed groups** list, when set, gates who may sign in at all.
+**How the role is assigned.** Local login and both bypass modes are always `admin`. For SSO users, the role comes from the provider's **Admin groups**: if a signed-in user's groups intersect that list they are `admin`, otherwise `member`. If **Admin groups** is empty, nobody gets admin via SSO (fails closed) until you configure it — the local username/password account is unaffected. A separate **Allowed groups** list, when set, gates who may sign in at all.
 
 **Enforcement is server-side.** A central `before_request` check rejects every mutating request (`POST`, `PUT`, `PATCH`, `DELETE`) from a member session with `403`, so members are read-only even if they craft requests directly; the UI additionally hides admin navigation and controls for them. API keys inherit the caller's authority: an admin session maps to the `admin` scope, a member session to `read`.
 

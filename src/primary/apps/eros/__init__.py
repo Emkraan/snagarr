@@ -8,7 +8,7 @@ Exclusively supports the v3 API.
 # Module exports
 from src.primary.apps.eros.missing import process_missing_items
 from src.primary.apps.eros.upgrade import process_cutoff_upgrades
-from src.primary.settings_manager import load_settings
+from src.primary.settings_manager import load_settings, redact_secrets
 from src.primary.utils.logger import get_logger
 
 # Define logger for this module
@@ -22,7 +22,7 @@ def get_configured_instances():
     settings = load_settings("eros")
     instances = []
     # Use debug level to avoid log spam on new installations
-    eros_logger.debug(f"Loaded Eros settings for instance check: {settings}")
+    eros_logger.debug(f"Loaded Eros settings for instance check: {redact_secrets(settings)}")
 
     if not settings:
         eros_logger.debug("No settings found for Eros")
@@ -37,7 +37,7 @@ def get_configured_instances():
         # Use debug level to avoid log spam on new installations
         eros_logger.debug(f"Found 'instances' list with {len(settings['instances'])} items. Processing...")
         for idx, instance in enumerate(settings["instances"]):
-            eros_logger.debug(f"Checking instance #{idx}: {instance}")
+            eros_logger.debug(f"Checking instance #{idx}: {redact_secrets(instance)}")
             # Enhanced validation
             api_url = instance.get("api_url", "").strip()
             api_key = instance.get("api_key", "").strip()

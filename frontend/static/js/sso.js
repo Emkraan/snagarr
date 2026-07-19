@@ -109,7 +109,7 @@
             field("Client secret", input("m_client_secret", secretSet ? SENTINEL : "", { type: "password", ph: secretSet ? "(unchanged)" : "client secret" }), secretSet ? "A secret is stored — leave unchanged to keep it." : "") + "</div>" +
           '<div class="sso-sublabel" style="margin-top:2px">Access &amp; roles</div>' +
           '<div class="sso-mgrid">' + field("Allowed groups", input("m_allowed_groups", (p.allowed_groups || []).join(", "), { ph: "group-a, group-b" }), "Comma-separated. Empty = any authenticated user may sign in.") +
-            field("Admin groups", input("m_admin_groups", (p.admin_groups || []).join(", "), { ph: "snagarr-admins" }), "Members of these get admin; everyone else is read-only. Empty = all admin.") + "</div>" +
+            field("Admin groups", input("m_admin_groups", (p.admin_groups || []).join(", "), { ph: "snagarr-admins" }), "Members of these get admin; everyone else is read-only. Empty = nobody gets admin via SSO (fails closed).") + "</div>" +
           '<div class="sso-sublabel" style="margin-top:2px">Claim mapping</div>' +
           '<div class="sso-mgrid">' + field("Name claim", input("m_name_claim", p.name_claim || "name", { mono: true }), "Token claim for the user's full name.") +
             field("Picture claim", input("m_picture_claim", p.picture_claim || "picture", { mono: true }), "Photo-URL claim. Entra fetches from Graph when this is empty.") + "</div>" +

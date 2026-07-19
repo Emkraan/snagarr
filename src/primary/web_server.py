@@ -33,7 +33,7 @@ from src.primary.auth import (
     authenticate_request, enforce_rbac, user_exists, create_user, verify_user, create_session,
     logout, SESSION_COOKIE_NAME, is_2fa_enabled, generate_2fa_secret,
     verify_2fa_code, disable_2fa, change_username, change_password,
-    get_or_create_secret_key
+    get_or_create_secret_key, session_role
 )
 # Import blueprint for common routes
 from src.primary.routes.common import common_bp
@@ -42,7 +42,7 @@ from src.primary.routes import oidc as oidc_routes
 from src.primary.routes.oidc import oidc_bp, init_oidc
 from src.primary import oidc_config
 # Import the versioned programmatic config API
-from src.primary.routes.api_v1 import api_v1
+from src.primary.routes.api_v1 import api_v1, _mask
 
 # Import blueprints for each app from the centralized blueprints module
 from src.primary.apps.blueprints import sonarr_bp, radarr_bp, lidarr_bp, readarr_bp, whisparr_bp, swaparr_bp, eros_bp
@@ -98,11 +98,17 @@ app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 print(f"Flask app created with template_folder: {app.template_folder}")
 print(f"Flask app created with static_folder: {app.static_folder}")
 
-# Trust one hop of reverse-proxy headers so url_for(_external=True) builds correct
-# https callback URLs (required for the OIDC redirect URI to match the Entra
-# registration) and so client IP / scheme are accurate behind Traefik/nginx.
-from werkzeug.middleware.proxy_fix import ProxyFix
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+# Trust reverse-proxy headers (X-Forwarded-For/-Proto/-Host) only if the
+# operator confirms one is actually there. Off by default: the common
+# docker-compose deployment exposes this container's port directly with no
+# proxy in front, and X-Forwarded-* is otherwise attacker-controlled input -
+# trusting it unconditionally lets any direct caller spoof "local" IPs or
+# HTTPS. Operators running behind Traefik/nginx/etc. (needed for OIDC's
+# https callback URL via url_for(_external=True)) set TRUST_PROXY_HOPS=1.
+TRUST_PROXY_HOPS = int(os.environ.get("TRUST_PROXY_HOPS", "0") or "0")
+if TRUST_PROXY_HOPS > 0:
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=TRUST_PROXY_HOPS, x_proto=TRUST_PROXY_HOPS, x_host=TRUST_PROXY_HOPS)
 
 # Add debug logging for template rendering
 def debug_template_rendering():
@@ -461,6 +467,10 @@ def api_settings():
         # the masked block into the general section so the UI form gets one object.
         if isinstance(all_settings, dict) and isinstance(all_settings.get('general'), dict):
             _merge_masked_oidc(all_settings['general'])
+        # GET has no RBAC method check (enforce_rbac only gates writes), so a
+        # read-only member must never see live api_key values here.
+        if session_role() == "member":
+            all_settings = _mask(all_settings)
         return jsonify(all_settings)
 
 @app.route('/api/settings/general', methods=['POST'])
@@ -532,6 +542,10 @@ def handle_app_settings(app_name):
         # the general section so the UI form gets one object (secret sentinelized).
         if app_name == 'general':
             _merge_masked_oidc(app_settings)
+        # GET has no RBAC method check (enforce_rbac only gates writes), so a
+        # read-only member must never see live api_key values here.
+        if session_role() == "member":
+            app_settings = _mask(app_settings)
         return jsonify(app_settings)
     
     elif request.method == 'POST':
@@ -540,7 +554,7 @@ def handle_app_settings(app_name):
             return jsonify({"success": False, "error": "Expected JSON data"}), 400
         
         data = request.json
-        web_logger.debug(f"Received {app_name} settings save request: {data}")
+        web_logger.debug(f"Received {app_name} settings save request: {_mask(data)}")
         
         # Clean URLs in the data before saving
         if 'instances' in data and isinstance(data['instances'], list):
@@ -552,7 +566,7 @@ def handle_app_settings(app_name):
             # For apps that don't use instances array
             data['api_url'] = data['api_url'].strip().rstrip('/').rstrip('\\')
         
-        web_logger.debug(f"Cleaned {app_name} settings before saving: {data}")
+        web_logger.debug(f"Cleaned {app_name} settings before saving: {_mask(data)}")
         
         # Save the app settings
         success = settings_manager.save_settings(app_name, data)
@@ -611,6 +625,10 @@ def api_app_settings():
     api_url = settings_manager.get_api_url(app_type)
     api_key = settings_manager.get_api_key(app_type)
     api_details = {"api_url": api_url, "api_key": api_key}
+    # GET has no RBAC method check (enforce_rbac only gates writes), so a
+    # read-only member must never see the live api_key here.
+    if session_role() == "member":
+        api_details = _mask(api_details)
     return jsonify({"success": True, **api_details})
 
 @app.route('/api/configured-apps', methods=['GET'])

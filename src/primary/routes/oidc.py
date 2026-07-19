@@ -215,9 +215,13 @@ def _authorized(claims, m) -> bool:
 
 
 def _is_admin(claims, m) -> bool:
+    # Fail closed: an unconfigured admin_groups grants nobody admin via SSO
+    # (the local username/password account is unaffected - see create_session).
+    # An operator who wants every authenticated user to be admin must say so
+    # explicitly by listing the group(s) rather than leaving the field empty.
     admin = set(m.get("admin_groups") or [])
     if not admin:
-        return True
+        return False
     return bool(_groups(claims, m) & admin)
 
 
@@ -344,7 +348,7 @@ def oidc_callback():
     session_token = create_session(username, role=role, profile=profile)
     session[SESSION_COOKIE_NAME] = session_token
     resp = redirect("/")
-    resp.set_cookie(SESSION_COOKIE_NAME, session_token, httponly=True, samesite="Lax", path="/")
+    resp.set_cookie(SESSION_COOKIE_NAME, session_token, httponly=True, samesite="Lax", path="/", secure=request.is_secure)
     logger.info(f"SSO sign-in for '{username}' ({display_name or 'no-name'}) via '{name}' role={role}.")
     return resp
 
