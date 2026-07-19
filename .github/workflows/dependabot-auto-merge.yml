@@ -1,0 +1,66 @@
+name: Dependabot auto-merge
+
+# Minor and patch Dependabot PRs merge themselves once the pull_request run
+# of test.yml's "pytest" job reports success. Major bumps are never touched
+# here and always wait for manual review.
+#
+# See emkraan-studio's dependabot-auto-merge.yml for the full rationale
+# behind pull_request_target, the single-check_name gate, the missing
+# approval step, and the explicit build-and-deploy.yml dispatch after
+# merge. This repo has no third-party check-suite App installed, so the
+# check_name filter here just scopes the gate to one job.
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+  actions: write
+
+jobs:
+  auto-merge:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v3
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Wait for checks and merge
+        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          for i in $(seq 1 60); do
+            run="$(gh api "repos/$REPO/commits/$SHA/check-runs?check_name=pytest" --jq '.check_runs[0] // {}')"
+            status="$(echo "$run" | jq -r '.status // "queued"')"
+            conclusion="$(echo "$run" | jq -r '.conclusion // ""')"
+            if [ "$status" = "completed" ]; then
+              case "$conclusion" in
+                success|neutral|skipped)
+                  echo "pytest passed."
+                  break
+                  ;;
+                *)
+                  echo "pytest concluded '$conclusion'."
+                  exit 1
+                  ;;
+              esac
+            fi
+            echo "Waiting on pytest (status: $status)..."
+            sleep 15
+          done
+          if [ "$status" != "completed" ]; then
+            echo "Timed out waiting for pytest."
+            exit 1
+          fi
+          gh pr merge --squash --delete-branch "$PR_URL"
+          gh workflow run build-and-deploy.yml --repo "$REPO" --ref main
