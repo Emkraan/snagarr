@@ -4,7 +4,7 @@
 Flask>=3.1.3
 # CVE-2024-34069 (<3.0.3 debugger RCE), CVE-2024-49766/49767 (<3.0.6 path traversal / multipart DoS).
 # Flask 3.1 also requires Werkzeug 3.1.x, which is well above the CVE floor.
-Werkzeug>=3.1.3
+Werkzeug>=3.1.8
 # CVE-2024-35195 (Session verify=False persistence, <2.32.0) and CVE-2024-47081 (.netrc leak, <2.32.4).
 requests>=2.32.4
 # CVE-2024-49768 (request smuggling) and CVE-2024-49769 (DoS) affect waitress <=3.0.0.
