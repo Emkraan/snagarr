@@ -53,6 +53,16 @@
 
 ---
 
+## Support
+
+snagarr is free and open source, and always will be. If it is useful to you and
+you would like to support development, you can:
+
+- [Buy Me a Coffee](https://buymeacoffee.com/emkraan)
+- [Donate via PayPal](https://www.paypal.com/ncp/payment/Z5LS6SWMFQGU4)
+
+Entirely optional, and every feature stays free either way.
+
 ## Requirements
 
 | Requirement | Details |
