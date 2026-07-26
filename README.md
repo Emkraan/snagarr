@@ -56,10 +56,13 @@
 ## Support
 
 snagarr is free and open source, and always will be. If it is useful to you and
-you would like to support development, you can:
+you would like to support development:
 
-- [Buy Me a Coffee](https://buymeacoffee.com/emkraan)
-- [Donate via PayPal](https://www.paypal.com/ncp/payment/Z5LS6SWMFQGU4)
+<p>
+  <a href="https://www.buymeacoffee.com/emkraan"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a drink&emoji=🍹&slug=emkraan&button_colour=FF5F5F&font_colour=ffffff&font_family=Comic&outline_colour=000000&coffee_colour=FFDD00" alt="Buy Me a Coffee" height="44" /></a>
+  &nbsp;
+  <a href="https://www.paypal.com/ncp/payment/Z5LS6SWMFQGU4"><img src="https://img.shields.io/badge/PayPal-Donate-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="Donate via PayPal" height="44" /></a>
+</p>
 
 Entirely optional, and every feature stays free either way.
 
