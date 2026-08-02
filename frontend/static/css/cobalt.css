@@ -23,39 +23,46 @@
    1. Tokens  (the only place brand hex is allowed)
    ========================================================================= */
 :root {
-  color-scheme: dark;
+  color-scheme: dark light;
 
   /* ---- Surface ladder (v3 "Elevated": luminance-stacked, all lean blue ~218deg).
      Legacy names retained so every component recolors for free; new --surface-*
      aliases are the canonical v3 tokens. ---- */
   --bg-canvas:  #0B1220;  --surface-1: #0F1626;  --surface-2: #131B2E;
   --surface-3:  #182238;  --surface-4: #1E2A44;  --surface-5: #253250;  --surface-inset: #080E1A;
+  --canvas-rgb:     11 18 32;
+  --surface-1-rgb:  15 22 38;
+  --surface-2-rgb:  19 27 46;
+  --accent-rgb:     36 134 185;
   --bg-primary:   #0B1220;  --bg-secondary: #0F1626;  --bg-card: #131B2E;
-  --bg-hover:     #1B273D;  --bg-active:    #22304C;   --bg-input: #080E1A;
+  --bg-hover:     var(--surface-4);  --bg-active:    var(--surface-5);   --bg-input: #080E1A;
 
   /* ---- Borders (hairline white-alpha + solid fallbacks) ---- */
-  --border: #263049;  --border-subtle: #1B2438;  --border-strong: #33405C;  --border-accent: #2C6FA8;
+  --border-default: #253150;  --border-subtle: #141C2E;  --border-strong: #35446B;
+  --border-accent: rgba(36, 134, 185, 0.45);  --border-accent-strong: rgba(36, 134, 185, 0.72);
+  --border-field: #5E6E9A;
   --border-hair:       rgba(255,255,255,0.06);
   --border-hair-strong:rgba(255,255,255,0.12);
 
   /* ---- Text ---- */
-  --text-primary: #F4F7FB;  --text-secondary: #AEB8C6;  --text-muted: #7C879A;
-  --text-dim: #5A6576;      --text-inverse: #06101A;
+  --text-primary: #F7F9FB;  --text-secondary: #AEB6C2;  --text-tertiary: #949EAE;  --text-muted: #949EAE;
+  --text-quaternary: #5E6773;  --text-dim: #5E6773;  --text-inverse: #FFFFFF;
 
   /* ---- PRIMARY accent -- Emkraan logo blue ramp (500=#2486B9 peak, 600=#1B6FB8 token) ---- */
   --accent-50:#E8F1FB; --accent-100:#C6DEF5; --accent-200:#93C2EC; --accent-300:#5FA4E0;
   --accent-400:#4A9FE0; --accent-500:#2486B9; --accent-600:#1B6FB8; --accent-700:#155A95; --accent-800:#114B7C; --accent-900:#0D3A61;
   --accent: #1B6FB8;  --accent-hover: #2384C2;  --accent-press:#155A95;  --accent-bright: #4A9FE0;
-  --accent-dim: rgba(27,111,184,0.16);  --accent-soft: rgba(27,111,184,0.16);  --accent-veil: rgba(27,111,184,0.10);
+  --accent-dim: #10223A;  --accent-soft: var(--accent-dim);  --accent-veil: rgba(27,111,184,0.10);
   --accent-border: rgba(36,134,185,0.55);  --accent-glow: rgba(36,134,185,0.34);
   --accent-grad: linear-gradient(180deg, #2486B9 0%, #1B6FB8 100%);
 
   /* ---- Status -- mapped to logo inks ---- */
-  --success:#34C759; --success-dim:#0E2A18; --success-border:#1B5C30;
-  --warning:#E8A317; --warning-dim:#2A2008; --warning-border:#6B520F;
-  --danger:#EB5860;  --danger-dim:#2A1011;  --danger-border:#7A2326;
+  --success:#5DD790; --success-dim:#0E2A18; --success-border:#2E7A47;
+  --warning:#E8A317; --warning-dim:#2A2008; --warning-border:#8A6A16;
+  --danger:#EB5860;  --danger-dim:#2A1011;  --danger-border:#B8474D;
+  --danger-glow: rgba(235, 88, 96, 0.22);  --danger-hover: #F2757C;
   --danger-700:#C9282F; --danger-800:#B4232A; --danger-900:#811D22;
-  --info:#4A9FE0;    --info-dim:#0A2236;    --info-border:#1F5C97;
+  --info:#4A9FE0;    --info-dim:#0A2236;    --info-border:#2E77B8;
 
   /* ---- Typography ---- */
   --font-display:"Sora","Segoe UI",system-ui,sans-serif;
@@ -69,10 +76,10 @@
   --sidebar-w: 224px;
 
   /* ---- Radius ---- */
-  --radius:8px; --radius-xs:4px; --radius-sm:6px; --radius-md:8px; --radius-lg:12px; --radius-xl:16px; --radius-pill:999px;
+  --radius: var(--radius-md); --radius-xs:5px; --radius-sm:7px; --radius-md:9px; --radius-lg:12px; --radius-xl:16px; --radius-pill:999px;
 
   /* ---- Focus ring (logo blue, canvas-gap + accent halo) ---- */
-  --focus-ring: 0 0 0 2px var(--bg-canvas), 0 0 0 4px rgba(36,134,185,0.65);
+  --focus-ring: 0 0 0 2px var(--surface-1), 0 0 0 4px rgba(74, 159, 224, 0.90);
   --focus-ring-tight: 0 0 0 2px rgba(36,134,185,0.60);
   --focus-glow-soft: 0 0 0 3px rgba(36,134,185,0.22);
 
@@ -101,7 +108,7 @@
   --ease-in:  cubic-bezier(0.5,0,0.75,0);
   --ease-in-out: cubic-bezier(0.65,0,0.35,1);
   --ease-spring: cubic-bezier(0.34,1.56,0.64,1);
-  --dur-instant:80ms; --dur-fast:120ms; --dur-base:180ms; --dur-slow:240ms; --dur-slower:300ms;
+  --dur-instant:80ms; --dur-fast:120ms; --dur-base:180ms; --dur-slow:260ms; --dur-slower:300ms;
   --t-instant:80ms; --t-fast:120ms; --t:180ms; --t-slow:240ms;
 
   /* ---- Spacing scale (4px base) ---- */
@@ -115,6 +122,7 @@
   /* ---- Body ambient wash (dark-but-not-black canvas the glow fades into) ---- */
   --body-wash: radial-gradient(120% 75% at 50% -10%, rgba(36,134,185,0.10) 0%, rgba(11,18,32,0) 55%),
                var(--bg-canvas);
+  --scrim: rgb(var(--canvas-rgb) / 0.60);
 }
 
 /* =========================================================================
@@ -148,7 +156,7 @@ body.dark-theme {
 
   /* Borders */
   --border-color:   var(--border);
-  --border-default: var(--border);
+  --border:         var(--border-default);
   --log-border:     var(--border);
 
   /* Text */
@@ -283,7 +291,7 @@ code,pre,kbd,samp{font-family:var(--font-mono);}
 .stagger>*{opacity:0;animation:riseIn .52s var(--ease-out) forwards;animation-delay:calc(var(--i,0)*60ms);}
 .tab-panel{animation:fadeIn .26s var(--ease-out) both;}
 .row-expand{animation:slideUp .2s var(--ease-out) both;}
-.glass{background:rgba(7,8,9,.55);backdrop-filter:blur(6px) saturate(120%);-webkit-backdrop-filter:blur(6px) saturate(120%);}
+.glass{background:rgb(var(--canvas-rgb) / 0.55);backdrop-filter:blur(6px) saturate(120%);-webkit-backdrop-filter:blur(6px) saturate(120%);}
 .dot-live{animation:glowPulse 2s var(--ease) infinite;}
 
 /* Gradient hero numeral - big KPI figures (background-clip:text). Tone via --hero-a/--hero-b. */
@@ -696,7 +704,6 @@ body{overflow:hidden;background:var(--bg-primary);}
 .gkpi::after{content:"";position:absolute;right:-28px;top:-28px;width:116px;height:116px;border-radius:50%;background:rgba(255,255,255,.12);pointer-events:none;}
 .gkpi.clickable{cursor:pointer;}
 .gkpi.blue{background:linear-gradient(135deg,#3B9EFF,#1B6FB8);}
-.gkpi.violet{background:linear-gradient(135deg,#9d7bff,#6D5AE0);}
 .gkpi.green{background:linear-gradient(135deg,#43d477,#1F9E45);}
 .gkpi.amber{background:linear-gradient(135deg,#ffc53d,#D98A00);}
 .gkpi.teal{background:linear-gradient(135deg,#38d6e0,#0E8F9C);}
@@ -736,7 +743,7 @@ body{overflow:hidden;background:var(--bg-primary);}
 .actrow .ab .as{font-size:12px;color:var(--text-muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .actrow time{font-family:var(--font-mono);font-size:11.5px;color:var(--text-dim);flex:none;}
 .chip-blue{background:rgba(59,158,255,.16);color:#6fbaff;} .chip-green{background:rgba(52,199,89,.16);color:#57e08a;}
-.chip-amber{background:rgba(245,179,1,.16);color:#ffca4d;} .chip-violet{background:rgba(139,124,246,.16);color:#b6a6ff;}
+.chip-amber{background:rgba(245,179,1,.16);color:#ffca4d;}
 .chip-pink{background:rgba(246,94,142,.16);color:#ff8fb4;} .chip-teal{background:rgba(34,199,214,.16);color:#5fdce6;}
 
 /* Horizontal bar chart (real per-item breakdown) */
@@ -833,4 +840,255 @@ body{overflow:hidden;background:var(--bg-primary);}
   /* Copy row stacks so the button never clips off-screen. */
   .copyrow{flex-wrap:wrap;}
   .copyrow .btn{flex:1 1 100%;}
+}
+
+/* =========================================================================
+   Light-mode ramp  (Cobalt Elevated v3)
+   Same token names, component code is mode-agnostic.
+   Radii, spacing, type scale, durations, curves, z-ladder, layout constants
+   are mode-invariant and not restated. The v2 alias table (section 2) is
+   mode-invariant too — every alias is a var() indirection onto a name below.
+   ========================================================================= */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    /* Surfaces — same ~218deg lean, descending ladder. */
+    --bg-canvas:      #F2F5FA;
+    --surface-1:      #EAEFF7;
+    --surface-2:      #E2E8F3;
+    --surface-3:      #D8E0EE;
+    --surface-4:      #CBD5E7;
+    --surface-5:      #BCC8DE;
+    --surface-inset:  #FFFFFF;
+
+    --canvas-rgb:     242 245 250;
+    --surface-1-rgb:  234 239 247;
+    --surface-2-rgb:  226 232 243;
+
+    --body-wash: radial-gradient(120% 75% at 50% -10%,
+                                 rgba(36, 134, 185, 0.10), transparent 55%);
+    --scrim: rgb(var(--canvas-rgb) / 0.60);
+
+    /* Elevation — same geometry, colours mirror. */
+    --elev-0: 0 0 0 1px rgba(16,27,46,0.08);
+    --elev-1: 0 0 0 1px rgba(16,27,46,0.08),
+              0 1px 2px -1px rgba(16,27,46,0.14),
+              inset 0 1px 0 rgba(255,255,255,0.55);
+    --elev-2: 0 0 0 1px rgba(16,27,46,0.09),
+              0 2px 6px -2px rgba(16,27,46,0.16),
+              inset 0 1px 0 rgba(255,255,255,0.62);
+    --elev-3: 0 0 0 1px rgba(16,27,46,0.10),
+              0 6px 16px -6px rgba(16,27,46,0.20),
+              0 2px 6px -3px rgba(16,27,46,0.14),
+              inset 0 1px 0 rgba(255,255,255,0.68);
+    --elev-4: 0 0 0 1px rgba(16,27,46,0.11),
+              0 12px 28px -10px rgba(16,27,46,0.24),
+              0 4px 10px -5px rgba(16,27,46,0.16),
+              inset 0 1px 0 rgba(255,255,255,0.74);
+    --elev-5: 0 0 0 1px rgba(16,27,46,0.12),
+              0 24px 48px -16px rgba(16,27,46,0.28),
+              0 8px 18px -8px rgba(16,27,46,0.18),
+              inset 0 1px 0 rgba(255,255,255,0.82);
+
+    --shadow-inset-top: inset 0 1px 0 rgba(255,255,255,0.55);
+
+    /* Borders. */
+    --border-subtle:        #E0E6F1;
+    --border-default:       #C3CDDF;
+    --border-strong:        #A5B3CC;
+    --border-field:         #6E7A93;
+    --border-accent:        rgba(21, 90, 149, 0.55);
+    --border-accent-strong: rgba(21, 90, 149, 0.80);
+
+    /* Text. */
+    --text-primary:    #101B2E;
+    --text-secondary:  #3A4759;
+    --text-tertiary:   #465162;
+    --text-muted:      #465162;
+    --text-quaternary: #7A8598;
+    --text-dim:        #7A8598;
+    --text-inverse:    #FFFFFF;
+
+    /* Accent role aliases re-point per mode. Numbered ramp is byte-identical. */
+    --accent-hover:  var(--accent-700);
+    --accent-bright: var(--accent-800);
+    --accent-dim:  #D1E0EF;
+    --accent-veil: rgba(27, 111, 184, 0.07);
+    --accent-glow: rgba(36, 134, 185, 0.26);
+
+    /* Status — dark inks on light tints. */
+    --success:        #0C4A26;
+    --success-dim:    #E2F4E9;
+    --success-border: #4E9268;
+
+    --warning:        #624306;
+    --warning-dim:    #F7EFD8;
+    --warning-border: #A5813A;
+
+    --danger:         #C1151E;
+    --danger-dim:     #FCE6E7;
+    --danger-border:  #C2454C;
+    --danger-glow:    rgba(193, 21, 30, 0.20);
+    --danger-hover:   #8E1017;
+
+    --info:           #155A95;
+    --info-dim:       #E3EDFA;
+    --info-border:    #5C8FC7;
+
+    /* Focus ring — dark accent halo on light. */
+    --focus-ring: 0 0 0 2px var(--surface-1),
+                  0 0 0 4px rgba(21, 90, 149, 0.92);
+  }
+}
+
+/* Native control scheme — color-scheme is a real property, not a token. */
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"]  { color-scheme: dark; }
+
+/* Explicit light-mode choice (wins over the media query on a dark-preferring OS). */
+:root[data-theme="light"] {
+  --bg-canvas: #F2F5FA;
+  --surface-1: #EAEFF7;
+  --surface-2: #E2E8F3;
+  --surface-3: #D8E0EE;
+  --surface-4: #CBD5E7;
+  --surface-5: #BCC8DE;
+  --surface-inset: #FFFFFF;
+  --canvas-rgb: 242 245 250;
+  --surface-1-rgb: 234 239 247;
+  --surface-2-rgb: 226 232 243;
+  --body-wash: radial-gradient(120% 75% at 50% -10%, rgba(36, 134, 185, 0.10), transparent 55%);
+  --scrim: rgb(var(--canvas-rgb) / 0.60);
+  --elev-0: 0 0 0 1px rgba(16,27,46,0.08);
+  --elev-1: 0 0 0 1px rgba(16,27,46,0.08), 0 1px 2px -1px rgba(16,27,46,0.14), inset 0 1px 0 rgba(255,255,255,0.55);
+  --elev-2: 0 0 0 1px rgba(16,27,46,0.09), 0 2px 6px -2px rgba(16,27,46,0.16), inset 0 1px 0 rgba(255,255,255,0.62);
+  --elev-3: 0 0 0 1px rgba(16,27,46,0.10), 0 6px 16px -6px rgba(16,27,46,0.20), 0 2px 6px -3px rgba(16,27,46,0.14), inset 0 1px 0 rgba(255,255,255,0.68);
+  --elev-4: 0 0 0 1px rgba(16,27,46,0.11), 0 12px 28px -10px rgba(16,27,46,0.24), 0 4px 10px -5px rgba(16,27,46,0.16), inset 0 1px 0 rgba(255,255,255,0.74);
+  --elev-5: 0 0 0 1px rgba(16,27,46,0.12), 0 24px 48px -16px rgba(16,27,46,0.28), 0 8px 18px -8px rgba(16,27,46,0.18), inset 0 1px 0 rgba(255,255,255,0.82);
+  --shadow-inset-top: inset 0 1px 0 rgba(255,255,255,0.55);
+  --border-subtle: #E0E6F1;
+  --border-default: #C3CDDF;
+  --border-strong: #A5B3CC;
+  --border-field: #6E7A93;
+  --border-accent: rgba(21, 90, 149, 0.55);
+  --border-accent-strong: rgba(21, 90, 149, 0.80);
+  --text-primary: #101B2E;
+  --text-secondary: #3A4759;
+  --text-tertiary: #465162;
+  --text-muted: #465162;
+  --text-quaternary: #7A8598;
+  --text-dim: #7A8598;
+  --text-inverse: #FFFFFF;
+  --accent-50: #E8F1FB;
+  --accent-100: #C6DEF5;
+  --accent-200: #93C2EC;
+  --accent-300: #5FA4E0;
+  --accent-400: #4A9FE0;
+  --accent-500: #2486B9;
+  --accent-600: #1B6FB8;
+  --accent-700: #155A95;
+  --accent-800: #114B7C;
+  --accent: var(--accent-600);
+  --accent-hover: var(--accent-700);
+  --accent-bright: var(--accent-800);
+  --accent-dim: #D1E0EF;
+  --accent-veil: rgba(27, 111, 184, 0.07);
+  --accent-glow: rgba(36, 134, 185, 0.26);
+  --success: #0C4A26;
+  --success-dim: #E2F4E9;
+  --success-border: #4E9268;
+  --warning: #624306;
+  --warning-dim: #F7EFD8;
+  --warning-border: #A5813A;
+  --danger: #C1151E;
+  --danger-dim: #FCE6E7;
+  --danger-border: #C2454C;
+  --danger-glow: rgba(193, 21, 30, 0.20);
+  --danger-700: #C9282F;
+  --danger-800: #B4232A;
+  --danger-900: #811D22;
+  --danger-hover: #8E1017;
+  --info: #155A95;
+  --info-dim: #E3EDFA;
+  --info-border: #5C8FC7;
+  --focus-ring: 0 0 0 2px var(--surface-1), 0 0 0 4px rgba(21, 90, 149, 0.92);
+}
+
+/* Paper — browsers drop background colours when printing, so dark-mode print
+   puts light text on white paper. Print always gets the light ramp. */
+@media print {
+  :root,
+    :root[data-theme="light"],
+    :root[data-theme="dark"] {
+      --bg-canvas: #F2F5FA;
+      --surface-1: #EAEFF7;
+      --surface-2: #E2E8F3;
+      --surface-3: #D8E0EE;
+      --surface-4: #CBD5E7;
+      --surface-5: #BCC8DE;
+      --surface-inset: #FFFFFF;
+      --canvas-rgb: 242 245 250;
+      --surface-1-rgb: 234 239 247;
+      --surface-2-rgb: 226 232 243;
+      --body-wash: radial-gradient(120% 75% at 50% -10%, rgba(36, 134, 185, 0.10), transparent 55%);
+      --scrim: rgb(var(--canvas-rgb) / 0.60);
+      --elev-0: 0 0 0 1px rgba(16,27,46,0.08);
+      --elev-1: 0 0 0 1px rgba(16,27,46,0.08), 0 1px 2px -1px rgba(16,27,46,0.14), inset 0 1px 0 rgba(255,255,255,0.55);
+      --elev-2: 0 0 0 1px rgba(16,27,46,0.09), 0 2px 6px -2px rgba(16,27,46,0.16), inset 0 1px 0 rgba(255,255,255,0.62);
+      --elev-3: 0 0 0 1px rgba(16,27,46,0.10), 0 6px 16px -6px rgba(16,27,46,0.20), 0 2px 6px -3px rgba(16,27,46,0.14), inset 0 1px 0 rgba(255,255,255,0.68);
+      --elev-4: 0 0 0 1px rgba(16,27,46,0.11), 0 12px 28px -10px rgba(16,27,46,0.24), 0 4px 10px -5px rgba(16,27,46,0.16), inset 0 1px 0 rgba(255,255,255,0.74);
+      --elev-5: 0 0 0 1px rgba(16,27,46,0.12), 0 24px 48px -16px rgba(16,27,46,0.28), 0 8px 18px -8px rgba(16,27,46,0.18), inset 0 1px 0 rgba(255,255,255,0.82);
+      --shadow-inset-top: inset 0 1px 0 rgba(255,255,255,0.55);
+      --border-subtle: #E0E6F1;
+      --border-default: #C3CDDF;
+      --border-strong: #A5B3CC;
+      --border-field: #6E7A93;
+      --border-accent: rgba(21, 90, 149, 0.55);
+      --border-accent-strong: rgba(21, 90, 149, 0.80);
+      --text-primary: #101B2E;
+      --text-secondary: #3A4759;
+      --text-tertiary: #465162;
+      --text-muted: #465162;
+      --text-quaternary: #7A8598;
+      --text-dim: #7A8598;
+      --text-inverse: #FFFFFF;
+      --accent-50: #E8F1FB;
+      --accent-100: #C6DEF5;
+      --accent-200: #93C2EC;
+      --accent-300: #5FA4E0;
+      --accent-400: #4A9FE0;
+      --accent-500: #2486B9;
+      --accent-600: #1B6FB8;
+      --accent-700: #155A95;
+      --accent-800: #114B7C;
+      --accent: var(--accent-600);
+      --accent-hover: var(--accent-700);
+      --accent-bright: var(--accent-800);
+      --accent-dim: #D1E0EF;
+      --accent-veil: rgba(27, 111, 184, 0.07);
+      --accent-glow: rgba(36, 134, 185, 0.26);
+      --success: #0C4A26;
+      --success-dim: #E2F4E9;
+      --success-border: #4E9268;
+      --warning: #624306;
+      --warning-dim: #F7EFD8;
+      --warning-border: #A5813A;
+      --danger: #C1151E;
+      --danger-dim: #FCE6E7;
+      --danger-border: #C2454C;
+      --danger-glow: rgba(193, 21, 30, 0.20);
+      --danger-700: #C9282F;
+      --danger-800: #B4232A;
+      --danger-900: #811D22;
+      --danger-hover: #8E1017;
+      --info: #155A95;
+      --info-dim: #E3EDFA;
+      --info-border: #5C8FC7;
+      --focus-ring: 0 0 0 2px var(--surface-1), 0 0 0 4px rgba(21, 90, 149, 0.92);
+  }
+}
+
+@media print {
+  :root,
+  :root[data-theme="light"],
+  :root[data-theme="dark"] { color-scheme: light; }
 }
