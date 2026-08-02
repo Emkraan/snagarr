@@ -1,15 +1,17 @@
 # ===========================================================================
-# Snagarr - build and publish the container image to GHCR.
-#
-# This workflow BUILDS AND PUBLISHES the image only. Deployment to the
-# homelab is handled out-of-band by swapping the pinned image reference in a
-# separate private stack repository. Do NOT add a deploy webhook or any
-# internal URL to this file: this is a public repo.
+# Snagarr - build, publish, and dispatch a deploy bump to homelab-stacks.
 #
 # Triggers:
 #   push to main            -> :latest, :edge, :sha-<short-sha>
 #   push of a v* git tag    -> additionally the bare semver X.Y.Z
 #   manual (workflow_dispatch)
+#
+# On every push to main the workflow dispatches a repository_dispatch
+# (type: snagarr-image) to Emkraan/homelab-stacks. The snagarr-bump.yml
+# workflow there bumps the image tag in media/docker-compose.yml and fires
+# the hq_mediamanager Portainer webhook. Secrets never leave GitHub
+# Actions - they are safe in a public repo CI because secret access is
+# restricted to the default branch.
 #
 # Image: ghcr.io/emkraan/snagarr
 # ===========================================================================
@@ -95,3 +97,24 @@ jobs:
             org.opencontainers.image.version=${{ steps.meta.outputs.app_version }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.created=${{ steps.meta.outputs.created }}
+
+      - name: Mint deploy-bot app token (homelab-stacks scope)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/create-github-app-token@v3
+        id: hs-token
+        with:
+          app-id: ${{ vars.DEPLOY_APP_ID }}
+          private-key: ${{ secrets.DEPLOY_APP_PRIVATE_KEY }}
+          repositories: homelab-stacks
+
+      - name: Dispatch snagarr-image bump to homelab-stacks
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ steps.hs-token.outputs.token }}
+          SHORT_SHA: ${{ steps.meta.outputs.short_sha }}
+        run: |
+          gh api repos/Emkraan/homelab-stacks/dispatches \
+            --method POST \
+            --field event_type=snagarr-image \
+            --field "client_payload[image]=${REGISTRY}/${IMAGE_NAME}" \
+            --field "client_payload[tag]=sha-${SHORT_SHA}"
