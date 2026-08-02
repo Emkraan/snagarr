@@ -126,11 +126,176 @@
             .auth-head { padding: 22px 20px 18px; }
             .auth-body { padding: 20px; }
         }
+
+        /* ---- Mascot playpen (login-screen-standard Rule 3 / Rule 4) ---- */
+        .sng-playpen {
+            position: fixed; inset: 0;
+            pointer-events: none;
+            z-index: 2;
+            contain: strict;
+            overflow: hidden;
+        }
+        .sng-mascot {
+            position: absolute;
+            width: 72px; height: 72px;
+            will-change: transform;
+        }
+        .sng-mascot-body {
+            width: 72px; height: 72px;
+            display: flex; align-items: center; justify-content: center;
+            animation: sngBob 3.4s ease-in-out infinite;
+        }
+        .sng-drop {
+            transform-box: fill-box; transform-origin: center bottom;
+            animation: sngDropFloat 4.5s ease-in-out infinite; animation-delay: -1.5s;
+        }
+        .sng-mead {
+            transform-box: fill-box; transform-origin: center;
+            animation: sngMeadBreath 3.8s ease-in-out infinite; animation-delay: -0.8s;
+        }
+        .sng-sheen { animation: sngSheenPulse 6s ease-in-out infinite; animation-delay: -2.5s; }
+        .sng-eye { transform-box: fill-box; transform-origin: center; }
+
+        @keyframes sngBob {
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(-5px); }
+        }
+        @keyframes sngDropFloat {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50%       { transform: translateY(-4px) scale(0.9); }
+        }
+        @keyframes sngMeadBreath {
+            0%, 100% { opacity: 0.65; transform: scale(1); }
+            50%       { opacity: 0.45; transform: scale(0.93); }
+        }
+        @keyframes sngSheenPulse {
+            0%, 45%, 100% { opacity: 0.30; }
+            22%            { opacity: 0.60; }
+        }
+        @keyframes sngBlink {
+            0%, 100% { transform: scaleY(1); }
+            50%       { transform: scaleY(0.1); }
+        }
+        .sng-mascot[data-moving] .sng-mascot-body {
+            animation: sngSway 0.55s ease-in-out infinite alternate;
+        }
+        @keyframes sngSway {
+            from { transform: rotate(-5deg); }
+            to   { transform: rotate(5deg); }
+        }
+        .sng-mascot[data-gesture="flap"] .sng-mascot-body { animation: sngFlap 700ms ease-in-out forwards; }
+        .sng-mascot[data-gesture="peck"] .sng-mascot-body { animation: sngPeck 700ms ease-in-out forwards; }
+        .sng-mascot[data-gesture="hop"]  .sng-mascot-body { animation: sngHop  800ms ease-out    forwards; }
+        .sng-mascot[data-gesture="look"] .sng-mascot-body { animation: sngLook 900ms ease-in-out forwards; }
+        .sng-mascot[data-gesture="preen"].sng-mascot-body { animation: sngPreen 800ms ease-in-out forwards; }
+        .sng-mascot[data-gesture="call"] .sng-mascot-body { animation: sngCall 700ms ease-in-out forwards; }
+
+        @keyframes sngFlap {
+            0%   { transform: translateY(0) rotate(0deg); }
+            20%  { transform: translateY(-3px) rotate(-10deg); }
+            40%  { transform: translateY(0) rotate(10deg); }
+            60%  { transform: translateY(-3px) rotate(-7deg); }
+            80%  { transform: translateY(0) rotate(5deg); }
+            100% { transform: translateY(0) rotate(0deg); }
+        }
+        @keyframes sngPeck {
+            0%, 100% { transform: translateY(0) scale(1); }
+            35%       { transform: translateY(8px) scale(0.95,1.05); }
+            65%       { transform: translateY(-4px) scale(1.05,0.95); }
+        }
+        @keyframes sngHop {
+            0%   { transform: translateY(0) scale(1); }
+            30%  { transform: translateY(-16px) scale(0.96,1.04); }
+            60%  { transform: translateY(4px) scale(1.04,0.96); }
+            75%  { transform: translateY(-3px) scale(1); }
+            100% { transform: translateY(0) scale(1); }
+        }
+        @keyframes sngLook {
+            0%, 100% { transform: rotate(0deg); }
+            30%       { transform: rotate(14deg); }
+            70%       { transform: rotate(-10deg); }
+        }
+        @keyframes sngPreen {
+            0%, 100% { transform: translateY(0) scale(1); }
+            40%       { transform: translateY(-2px) scale(1.08); }
+            70%       { transform: translateY(0) scale(0.97); }
+        }
+        @keyframes sngCall {
+            0%, 100% { transform: translateY(0); opacity: 1; }
+            25%       { transform: translateY(-4px); opacity: 0.7; }
+            50%       { transform: translateY(-9px); opacity: 1; }
+            75%       { transform: translateY(-4px); opacity: 0.7; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .sng-playpen *, .auth-logo { animation: none !important; transition: none !important; }
+            .auth-card { animation: none !important; opacity: 1 !important; }
+        }
     </style>
 </head>
 <body class="auth-page">
     {% include 'components/bg.html' %}
-    <div class="auth-card">
+    <!-- Mascot playpen — pointer-events:none, z-ambient, wander JS below -->
+    <div class="sng-playpen" id="sngPlaypen" aria-hidden="true">
+        <div class="sng-mascot" id="sngMascot">
+            <div class="sng-mascot-body">
+                <!--
+                  Dragon mascot. Crown spike floats (.sng-drop), wing membrane
+                  breathes (.sng-mead), sheen pulses (.sng-sheen), eye blinks
+                  via JS (.sng-eye). All fills use cobalt.css tokens.
+                -->
+                <svg viewBox="0 0 128 128" width="60" height="60" xmlns="http://www.w3.org/2000/svg" focusable="false">
+                    <defs>
+                        <radialGradient id="sng-body" cx="38%" cy="30%" r="80%">
+                            <stop offset="0%" style="stop-color:var(--accent-bright)"/>
+                            <stop offset="55%" style="stop-color:var(--accent)"/>
+                            <stop offset="100%" style="stop-color:var(--accent-700)"/>
+                        </radialGradient>
+                    </defs>
+
+                    <!-- Crown spike (mascot-drop) -->
+                    <path class="sng-drop"
+                        d="M64 8 L70 26 L64 22 L58 26 Z"
+                        fill="url(#sng-body)"
+                    />
+
+                    <!-- Left wing -->
+                    <path class="sng-mead"
+                        d="M 24 58 Q 8 42 18 30 Q 28 18 44 38 Q 36 48 40 60 Z"
+                        fill="var(--accent)"
+                        opacity="0.65"
+                    />
+
+                    <!-- Right wing -->
+                    <path class="sng-mead"
+                        d="M 104 58 Q 120 42 110 30 Q 100 18 84 38 Q 92 48 88 60 Z"
+                        fill="var(--accent)"
+                        opacity="0.65"
+                    />
+
+                    <!-- Dragon body -->
+                    <ellipse cx="64" cy="76" rx="28" ry="36" fill="url(#sng-body)"/>
+
+                    <!-- Belly scales (fill breathes) -->
+                    <ellipse class="sng-mead" cx="64" cy="80" rx="16" ry="22"
+                        fill="var(--accent-bright)" opacity="0.18"/>
+
+                    <!-- Sheen -->
+                    <ellipse class="sng-sheen" cx="52" cy="62" rx="9" ry="4"
+                        fill="var(--accent-bright)" opacity="0.30"
+                        transform="rotate(-20 52 62)"/>
+
+                    <!-- Eye (blinks on JS schedule) -->
+                    <circle class="sng-eye" cx="57" cy="68" r="5"
+                        fill="var(--surface-1)" opacity="0.8"/>
+                    <circle cx="58" cy="67" r="2"
+                        fill="var(--accent-bright)" opacity="0.9"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <div class="auth-card rise-in">
         <div class="auth-head">
             <span class="auth-logo" aria-label="Snagarr"><i class="fas fa-dragon"></i></span>
             <h1>Snagarr</h1>
@@ -309,6 +474,119 @@
             errorMessage.textContent = message;
             errorMessage.style.display = 'block';
         }
+
+        // ---- Mascot wander (login-screen-standard Rule 3 / Rule 4) ----
+        (function() {
+            var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (reducedMotion) return;
+
+            var playpen  = document.getElementById('sngPlaypen');
+            var mascot   = document.getElementById('sngMascot');
+            var card     = document.querySelector('.auth-card');
+            var eyeEl    = mascot ? mascot.querySelector('.sng-eye') : null;
+
+            if (!playpen || !mascot || !card) return;
+
+            var GESTURES = ['flap','peck','hop','look','preen','call'];
+            var GUTTER   = 20;
+            var MASCOT_W = 72;
+            var MASCOT_H = 72;
+
+            function cardRect() {
+                return card.getBoundingClientRect();
+            }
+
+            function overlapsCard(x, y) {
+                var r  = cardRect();
+                var pad = 16;
+                return !(x + MASCOT_W + pad < r.left  ||
+                         x - pad > r.right             ||
+                         y + MASCOT_H + pad < r.top    ||
+                         y - pad > r.bottom);
+            }
+
+            function pickWaypoint() {
+                var W  = window.innerWidth;
+                var H  = window.innerHeight;
+                var r  = cardRect();
+                var gutterCoords = [
+                    // left strip
+                    { x: [GUTTER, Math.max(GUTTER, r.left - MASCOT_W - 40)],
+                      y: [GUTTER, H - MASCOT_H - GUTTER] },
+                    // right strip
+                    { x: [Math.min(W - MASCOT_W - GUTTER, r.right + 40), W - MASCOT_W - GUTTER],
+                      y: [GUTTER, H - MASCOT_H - GUTTER] },
+                    // top strip
+                    { x: [GUTTER, W - MASCOT_W - GUTTER],
+                      y: [GUTTER, Math.max(GUTTER, r.top - MASCOT_H - 40)] },
+                    // bottom strip
+                    { x: [GUTTER, W - MASCOT_W - GUTTER],
+                      y: [Math.min(H - MASCOT_H - GUTTER, r.bottom + 40), H - MASCOT_H - GUTTER] }
+                ];
+                for (var attempt = 0; attempt < 8; attempt++) {
+                    var strip = gutterCoords[Math.floor(Math.random() * gutterCoords.length)];
+                    var xRange = strip.x[1] - strip.x[0];
+                    var yRange = strip.y[1] - strip.y[0];
+                    if (xRange < 0 || yRange < 0) continue;
+                    var px = strip.x[0] + Math.random() * xRange;
+                    var py = strip.y[0] + Math.random() * yRange;
+                    if (!overlapsCard(px, py)) return { x: px, y: py };
+                }
+                return { x: GUTTER, y: GUTTER };
+            }
+
+            // Place mascot in a safe initial position
+            var init = pickWaypoint();
+            mascot.style.left = init.x + 'px';
+            mascot.style.top  = init.y + 'px';
+
+            // Travel to a waypoint
+            function travelTo(wp) {
+                mascot.setAttribute('data-moving', '');
+                mascot.style.transition = 'left 2.2s ease-in-out, top 2.2s ease-in-out';
+                mascot.style.left = wp.x + 'px';
+                mascot.style.top  = wp.y + 'px';
+                setTimeout(function() {
+                    mascot.removeAttribute('data-moving');
+                    mascot.style.transition = '';
+                }, 2400);
+            }
+
+            // Wander scheduler: 9-16s cadence
+            function scheduleWander() {
+                var delay = 9000 + Math.random() * 7000;
+                setTimeout(function() {
+                    var wp = pickWaypoint();
+                    travelTo(wp);
+                    scheduleWander();
+                }, delay);
+            }
+            scheduleWander();
+
+            // Gesture scheduler: 4-8s cadence
+            function scheduleGesture() {
+                var delay = 4000 + Math.random() * 4000;
+                setTimeout(function() {
+                    var g = GESTURES[Math.floor(Math.random() * GESTURES.length)];
+                    mascot.setAttribute('data-gesture', g);
+                    setTimeout(function() { mascot.removeAttribute('data-gesture'); }, 950);
+                    scheduleGesture();
+                }, delay);
+            }
+            scheduleGesture();
+
+            // Blink scheduler: 4-7s cadence
+            if (eyeEl) {
+                function scheduleBlink() {
+                    var delay = 4000 + Math.random() * 3000;
+                    setTimeout(function() {
+                        eyeEl.style.animation = 'sngBlink 120ms ease-in-out';
+                        setTimeout(function() { eyeEl.style.animation = ''; scheduleBlink(); }, 200);
+                    }, delay);
+                }
+                scheduleBlink();
+            }
+        })();
     </script>
 </body>
 </html>
