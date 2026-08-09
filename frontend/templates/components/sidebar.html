@@ -66,6 +66,11 @@
                 <div class="nav-icon-wrapper"><i class="fas fa-sliders"></i></div>
                 <span>Settings</span>
             </a>
+            <a href="/admin" class="nav-item" id="adminNav">
+                <span class="nav-rail"></span>
+                <div class="nav-icon-wrapper"><i class="fas fa-shield-halved"></i></div>
+                <span>Admin Hub</span>
+            </a>
             <a href="/api/docs" class="nav-item" id="apiNav">
                 <span class="nav-rail"></span>
                 <div class="nav-icon-wrapper"><i class="fas fa-code"></i></div>
@@ -270,6 +275,7 @@
     body.role-member #appsNav,
     body.role-member #schedulingNav,
     body.role-member #settingsNav,
+    body.role-member #adminNav,
     body.role-member #apiNav,
     body.role-member #dashboardResetStats,
     body.role-member #clearLogsButton,
@@ -340,6 +346,10 @@
 
         if (window.location.pathname === '/user') {
             document.getElementById('userNav')?.classList.add('active');
+            return;
+        }
+        if (window.location.pathname === '/admin') {
+            document.getElementById('adminNav')?.classList.add('active');
             return;
         }
         if (window.location.pathname === '/api/docs') {
