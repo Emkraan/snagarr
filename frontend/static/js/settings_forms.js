@@ -59,7 +59,7 @@ const SettingsForms = {
                             <label for="sonarr-enabled-${index}"><span class="info-icon" title="Toggle this instance on or off without removing it"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Enabled:</label>
                             <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                                 <input type="checkbox" id="sonarr-enabled-${index}" name="enabled" ${instance.enabled !== false ? 'checked' : ''}>
-                                <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
+                                <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--switch-bg); border-radius:20px; transition:0.4s;"></span>
                             </label>
                         </div>
                     </div>
@@ -117,7 +117,7 @@ const SettingsForms = {
                     <label for="sonarr_hourly_cap"><span class="info-icon" title="Max API requests per hour to avoid rate limiting"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;API Cap - Hourly:</label>
                     <input type="number" id="sonarr_hourly_cap" name="hourly_cap" min="1" max="500" value="${settings.hourly_cap !== undefined ? settings.hourly_cap : 20}">
                     <p class="setting-help">Maximum API requests per hour (helps prevent rate limiting)</p>
-                    <p class="setting-help" style="color: #cc0000; font-weight: bold;">Setting this too high will risk your accounts being banned! You have been warned!</p>
+                    <p class="setting-help" style="color: var(--danger); font-weight: bold;">Setting this too high will risk your accounts being banned! You have been warned!</p>
                 </div>
             </div>
             
@@ -127,7 +127,7 @@ const SettingsForms = {
                     <label for="sonarr_monitored_only"><span class="info-icon" title="Only process items marked as monitored in Sonarr"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Monitored Only:</label>
                     <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                         <input type="checkbox" id="sonarr_monitored_only" name="monitored_only" ${settings.monitored_only !== false ? 'checked' : ''}>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
+                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--switch-bg); border-radius:20px; transition:0.4s;"></span>
                     </label>
                     <p class="setting-help">Only search for monitored items</p>
                 </div>
@@ -135,7 +135,7 @@ const SettingsForms = {
                     <label for="sonarr_skip_future_episodes"><span class="info-icon" title="Skip episodes with future air dates"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Skip Future Episodes:</label>
                     <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                         <input type="checkbox" id="sonarr_skip_future_episodes" name="skip_future_episodes" ${settings.skip_future_episodes !== false ? 'checked' : ''}>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
+                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--switch-bg); border-radius:20px; transition:0.4s;"></span>
                     </label>
                     <p class="setting-help">Skip searching for episodes with future air dates</p>
                 </div>
@@ -204,7 +204,7 @@ const SettingsForms = {
                             <label for="radarr-enabled-${index}"><span class="info-icon" title="Toggle this instance on or off without removing it"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Enabled:</label>
                             <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                                 <input type="checkbox" id="radarr-enabled-${index}" name="enabled" ${instance.enabled !== false ? 'checked' : ''}>
-                                <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
+                                <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--switch-bg); border-radius:20px; transition:0.4s;"></span>
                             </label>
                         </div>
                     </div>
@@ -248,7 +248,7 @@ const SettingsForms = {
                     <label for="radarr_hourly_cap"><span class="info-icon" title="Max API requests per hour to avoid rate limiting"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;API Cap - Hourly:</label>
                     <input type="number" id="radarr_hourly_cap" name="hourly_cap" min="1" max="500" value="${settings.hourly_cap !== undefined ? settings.hourly_cap : 20}">
                     <p class="setting-help">Maximum API requests per hour (helps prevent rate limiting)</p>
-                    <p class="setting-help" style="color: #cc0000; font-weight: bold;">Setting this too high will risk your accounts being banned! You have been warned!</p>
+                    <p class="setting-help" style="color: var(--danger); font-weight: bold;">Setting this too high will risk your accounts being banned! You have been warned!</p>
                 </div>
             </div>
             
@@ -258,7 +258,7 @@ const SettingsForms = {
                     <label for="radarr_monitored_only"><span class="info-icon" title="Only process movies marked as monitored in Radarr"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Monitored Only:</label>
                     <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                         <input type="checkbox" id="radarr_monitored_only" ${settings.monitored_only !== false ? 'checked' : ''}>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
+                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--switch-bg); border-radius:20px; transition:0.4s;"></span>
                     </label>
                     <p class="setting-help">Only search for monitored items</p>
                 </div>
@@ -266,7 +266,7 @@ const SettingsForms = {
                     <label for="radarr_skip_future_releases"><span class="info-icon" title="Skip movies with future release dates"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Skip Future Releases:</label>
                     <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                         <input type="checkbox" id="radarr_skip_future_releases" ${settings.skip_future_releases !== false ? 'checked' : ''}>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
+                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--switch-bg); border-radius:20px; transition:0.4s;"></span>
                     </label>
                     <p class="setting-help">Skip searching for movies with future release dates</p>
                 </div>
@@ -355,7 +355,7 @@ const SettingsForms = {
                             <label for="lidarr-enabled-${index}"><span class="info-icon" title="Toggle this instance on or off without removing it"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Enabled:</label>
                             <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                                 <input type="checkbox" id="lidarr-enabled-${index}" name="enabled" ${instance.enabled !== false ? 'checked' : ''}>
-                                <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
+                                <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--switch-bg); border-radius:20px; transition:0.4s;"></span>
                             </label>
                         </div>
                     </div>
@@ -407,7 +407,7 @@ const SettingsForms = {
                     <label for="lidarr_hourly_cap"><span class="info-icon" title="Max API requests per hour to avoid rate limiting"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;API Cap - Hourly:</label>
                     <input type="number" id="lidarr_hourly_cap" name="hourly_cap" min="1" max="500" value="${settings.hourly_cap !== undefined ? settings.hourly_cap : 20}">
                     <p class="setting-help">Maximum API requests per hour (helps prevent rate limiting)</p>
-                    <p class="setting-help" style="color: #cc0000; font-weight: bold;">Setting this too high will risk your accounts being banned! You have been warned!</p>
+                    <p class="setting-help" style="color: var(--danger); font-weight: bold;">Setting this too high will risk your accounts being banned! You have been warned!</p>
                 </div>
             </div>
             
@@ -417,7 +417,7 @@ const SettingsForms = {
                     <label for="lidarr_monitored_only"><span class="info-icon" title="Only process albums marked as monitored in Lidarr"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Monitored Only:</label>
                     <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                         <input type="checkbox" id="lidarr_monitored_only" ${settings.monitored_only !== false ? 'checked' : ''}>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
+                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--switch-bg); border-radius:20px; transition:0.4s;"></span>
                     </label>
                     <p class="setting-help">Only search for monitored items</p>
                 </div>
@@ -425,7 +425,7 @@ const SettingsForms = {
                     <label for="lidarr_skip_future_releases"><span class="info-icon" title="Skip albums with future release dates"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Skip Future Releases:</label>
                     <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                         <input type="checkbox" id="lidarr_skip_future_releases" ${settings.skip_future_releases !== false ? 'checked' : ''}>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
+                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--switch-bg); border-radius:20px; transition:0.4s;"></span>
                     </label>
                     <p class="setting-help">Skip searching for albums with future release dates</p>
                 </div>
@@ -491,7 +491,7 @@ const SettingsForms = {
                             <label for="readarr-enabled-${index}"><span class="info-icon" title="Toggle this instance on or off without removing it"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Enabled:</label>
                             <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                                 <input type="checkbox" id="readarr-enabled-${index}" name="enabled" ${instance.enabled !== false ? 'checked' : ''}>
-                                <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
+                                <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--switch-bg); border-radius:20px; transition:0.4s;"></span>
                             </label>
                         </div>
                     </div>
@@ -534,7 +534,7 @@ const SettingsForms = {
                     <label for="readarr_hourly_cap"><span class="info-icon" title="Max API requests per hour to avoid rate limiting"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;API Cap - Hourly:</label>
                     <input type="number" id="readarr_hourly_cap" name="hourly_cap" min="1" max="500" value="${settings.hourly_cap !== undefined ? settings.hourly_cap : 20}">
                     <p class="setting-help">Maximum API requests per hour (helps prevent rate limiting)</p>
-                    <p class="setting-help" style="color: #cc0000; font-weight: bold;">Setting this too high will risk your accounts being banned! You have been warned!</p>
+                    <p class="setting-help" style="color: var(--danger); font-weight: bold;">Setting this too high will risk your accounts being banned! You have been warned!</p>
                 </div>
             </div>
             
@@ -544,7 +544,7 @@ const SettingsForms = {
                     <label for="readarr_monitored_only"><span class="info-icon" title="Only process books marked as monitored in Readarr"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Monitored Only:</label>
                     <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                         <input type="checkbox" id="readarr_monitored_only" ${settings.monitored_only !== false ? 'checked' : ''}>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
+                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--switch-bg); border-radius:20px; transition:0.4s;"></span>
                     </label>
                     <p class="setting-help">Only search for monitored items</p>
                 </div>
@@ -552,7 +552,7 @@ const SettingsForms = {
                     <label for="readarr_skip_future_releases"><span class="info-icon" title="Skip books with future release dates"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Skip Future Releases:</label>
                     <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                         <input type="checkbox" id="readarr_skip_future_releases" ${settings.skip_future_releases !== false ? 'checked' : ''}>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
+                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--switch-bg); border-radius:20px; transition:0.4s;"></span>
                     </label>
                     <p class="setting-help">Skip searching for books with future release dates</p>
                 </div>
@@ -618,7 +618,7 @@ const SettingsForms = {
                             <label for="whisparr-enabled-${index}"><span class="info-icon" title="Toggle this instance on or off without removing it"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Enabled:</label>
                             <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                                 <input type="checkbox" id="whisparr-enabled-${index}" name="enabled" ${instance.enabled !== false ? 'checked' : ''}>
-                                <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
+                                <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--switch-bg); border-radius:20px; transition:0.4s;"></span>
                             </label>
                         </div>
                     </div>
@@ -659,7 +659,7 @@ const SettingsForms = {
                     <label for="whisparr_hourly_cap"><span class="info-icon" title="Max API requests per hour to avoid rate limiting"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;API Cap - Hourly:</label>
                     <input type="number" id="whisparr_hourly_cap" name="hourly_cap" min="1" max="500" value="${settings.hourly_cap !== undefined ? settings.hourly_cap : 20}">
                     <p class="setting-help">Maximum API requests per hour (helps prevent rate limiting)</p>
-                    <p class="setting-help" style="color: #cc0000; font-weight: bold;">Setting this too high will risk your accounts being banned! You have been warned!</p>
+                    <p class="setting-help" style="color: var(--danger); font-weight: bold;">Setting this too high will risk your accounts being banned! You have been warned!</p>
                 </div>
             </div>
             
@@ -669,7 +669,7 @@ const SettingsForms = {
                     <label for="whisparr_monitored_only"><span class="info-icon" title="Only process items marked as monitored in Whisparr"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Monitored Only:</label>
                     <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                         <input type="checkbox" id="whisparr_monitored_only" name="monitored_only" ${settings.monitored_only !== false ? 'checked' : ''}>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
+                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--switch-bg); border-radius:20px; transition:0.4s;"></span>
                     </label>
                     <p class="setting-help">Only search for monitored items</p>
                 </div>
@@ -677,7 +677,7 @@ const SettingsForms = {
                     <label for="whisparr_skip_future_releases"><span class="info-icon" title="Skip items with future release dates"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Skip Future Releases:</label>
                     <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                         <input type="checkbox" id="whisparr_skip_future_releases" name="skip_future_releases" ${settings.skip_future_releases !== false ? 'checked' : ''}>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
+                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--switch-bg); border-radius:20px; transition:0.4s;"></span>
                     </label>
                     <p class="setting-help">Skip searching for scenes with future release dates</p>
                 </div>
@@ -749,7 +749,7 @@ const SettingsForms = {
                             <label for="eros-enabled-${index}"><span class="info-icon" title="Toggle this instance on or off without removing it"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Enabled:</label>
                             <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                                 <input type="checkbox" id="eros-enabled-${index}" name="enabled" ${instance.enabled !== false ? 'checked' : ''}>
-                                <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
+                                <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--switch-bg); border-radius:20px; transition:0.4s;"></span>
                             </label>
                         </div>
                     </div>
@@ -798,7 +798,7 @@ const SettingsForms = {
                     <label for="eros_hourly_cap"><span class="info-icon" title="Max API requests per hour to avoid rate limiting"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;API Cap - Hourly:</label>
                     <input type="number" id="eros_hourly_cap" name="hourly_cap" min="1" max="500" value="${settings.hourly_cap !== undefined ? settings.hourly_cap : 20}">
                     <p class="setting-help">Maximum API requests per hour (helps prevent rate limiting)</p>
-                    <p class="setting-help" style="color: #cc0000; font-weight: bold;">Setting this too high will risk your accounts being banned! You have been warned!</p>
+                    <p class="setting-help" style="color: var(--danger); font-weight: bold;">Setting this too high will risk your accounts being banned! You have been warned!</p>
                 </div>
             </div>
             
@@ -808,7 +808,7 @@ const SettingsForms = {
                     <label for="eros_monitored_only"><span class="info-icon" title="Only process items marked as monitored"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Monitored Only:</label>
                     <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                         <input type="checkbox" id="eros_monitored_only" name="monitored_only" ${settings.monitored_only !== false ? 'checked' : ''}>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
+                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--switch-bg); border-radius:20px; transition:0.4s;"></span>
                     </label>
                     <p class="setting-help">Only search for monitored items</p>
                 </div>
@@ -816,7 +816,7 @@ const SettingsForms = {
                     <label for="eros_skip_future_releases"><span class="info-icon" title="Skip items with future release dates"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Skip Future Releases:</label>
                     <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                         <input type="checkbox" id="eros_skip_future_releases" name="skip_future_releases" ${settings.skip_future_releases !== false ? 'checked' : ''}>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
+                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--switch-bg); border-radius:20px; transition:0.4s;"></span>
                     </label>
                     <p class="setting-help">Skip searching for scenes with future release dates</p>
                 </div>
@@ -852,7 +852,7 @@ const SettingsForms = {
                     <label for="swaparr_enabled"><span class="info-icon" title="Automatically manage stalled downloads across your *arr apps"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Enable Swaparr:</label>
                     <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                         <input type="checkbox" id="swaparr_enabled" ${settings.enabled ? 'checked' : ''}>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
+                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--switch-bg); border-radius:20px; transition:0.4s;"></span>
                     </label>
                     <p class="setting-help">Enable automatic handling of stalled downloads</p>
                 </div>
@@ -875,7 +875,7 @@ const SettingsForms = {
                     <label for="swaparr_remove_from_client"><span class="info-icon" title="Also remove the download from the torrent/usenet client"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Remove From Client:</label>
                     <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                         <input type="checkbox" id="swaparr_remove_from_client" ${settings.remove_from_client !== false ? 'checked' : ''}>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
+                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--switch-bg); border-radius:20px; transition:0.4s;"></span>
                     </label>
                     <p class="setting-help">Remove the download from the torrent/usenet client when removed</p>
                 </div>
@@ -883,7 +883,7 @@ const SettingsForms = {
                     <label for="swaparr_dry_run"><span class="info-icon" title="Test mode - logs actions without actually removing downloads"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Dry Run Mode:</label>
                     <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                         <input type="checkbox" id="swaparr_dry_run" ${settings.dry_run === true ? 'checked' : ''}>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
+                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--switch-bg); border-radius:20px; transition:0.4s;"></span>
                     </label>
                     <p class="setting-help">Log actions but don't actually remove downloads. Useful for testing the first time!</p>
                 </div>
@@ -893,7 +893,7 @@ const SettingsForms = {
                 <h3>Swaparr Status</h3>
                 <div id="swaparr_status_container">
                     <div class="button-container" style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
-                        <button type="button" id="reset_swaparr_strikes" style="background-color: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 0.9em; cursor: pointer;">
+                        <button type="button" id="reset_swaparr_strikes" style="background-color: var(--danger); color: var(--text-inverse); border: none; padding: 5px 10px; border-radius: 4px; font-size: 0.9em; cursor: pointer;">
                             <i class="fas fa-trash"></i> Reset
                         </button>
                     </div>
@@ -1217,7 +1217,7 @@ const SettingsForms = {
                     <label for="check_for_updates"><span class="info-icon" title="Periodically check for new versions (informational only)"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Check for Updates:</label>
                     <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                         <input type="checkbox" id="check_for_updates" ${settings.check_for_updates !== false ? 'checked' : ''}>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
+                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--switch-bg); border-radius:20px; transition:0.4s;"></span>
                     </label>
                     <p class="setting-help" style="margin-left: -3ch !important;">Automatically check for Snagarr updates</p>
                 </div>
@@ -1225,7 +1225,7 @@ const SettingsForms = {
                     <label for="debug_mode"><span class="info-icon" title="Enable verbose logging for troubleshooting"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Debug Mode:</label>
                     <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                         <input type="checkbox" id="debug_mode" ${settings.debug_mode === true ? 'checked' : ''}>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
+                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--switch-bg); border-radius:20px; transition:0.4s;"></span>
                     </label>
                     <p class="setting-help" style="margin-left: -3ch !important;">Enable verbose logging for troubleshooting (applies to all apps)</p>
                 </div>
@@ -1233,7 +1233,7 @@ const SettingsForms = {
                     <label for="display_community_resources"><span class="info-icon" title="Show community resources section in the UI"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Display Resources:</label>
                     <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                         <input type="checkbox" id="display_community_resources" ${settings.display_community_resources !== false ? 'checked' : ''}>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
+                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--switch-bg); border-radius:20px; transition:0.4s;"></span>
                     </label>
                     <p class="setting-help" style="margin-left: -3ch !important;">Show or hide the Resources section on the home page</p>
                 </div>
@@ -1272,7 +1272,7 @@ const SettingsForms = {
                 <h3>Security</h3>
                 <div class="setting-item">
                     <label for="auth_mode"><span class="info-icon" title="Controls how users authenticate (forms, basic auth, or disabled)"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Authentication Mode:</label>
-                    <select id="auth_mode" name="auth_mode" style="width: 300px; padding: 8px 12px; border-radius: 6px; cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.1); background-color: #1f2937; color: #d1d5db; background-image: url('data:image/svg+xml;utf8,<svg fill=\'white\' height=\'24\' viewBox=\'0 0 24 24\' width=\'24\' xmlns=\'http://www.w3.org/2000/svg\'><path d=\'M7 10l5 5 5-5z\'/><path d=\'M0 0h24v24H0z\' fill=\'none\'/></svg>'); background-repeat: no-repeat; background-position: right 8px center; -webkit-appearance: none; -moz-appearance: none; appearance: none;">
+                    <select id="auth_mode" name="auth_mode" style="width: 300px; padding: 8px 12px; border-radius: 6px; cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.1); background-color: var(--bg-input); color: var(--text-secondary); background-image: url('data:image/svg+xml;utf8,<svg fill=\'white\' height=\'24\' viewBox=\'0 0 24 24\' width=\'24\' xmlns=\'http://www.w3.org/2000/svg\'><path d=\'M7 10l5 5 5-5z\'/><path d=\'M0 0h24v24H0z\' fill=\'none\'/></svg>'); background-repeat: no-repeat; background-position: right 8px center; -webkit-appearance: none; -moz-appearance: none; appearance: none;">
                         <option value="login" ${(settings.auth_mode === 'login' || (!settings.auth_mode && !settings.local_access_bypass && !settings.proxy_auth_bypass)) ? 'selected' : ''}>Login Mode</option>
                         <option value="local_bypass" ${(settings.auth_mode === 'local_bypass' || (!settings.auth_mode && settings.local_access_bypass === true && !settings.proxy_auth_bypass)) ? 'selected' : ''}>Local Bypass Mode</option>
                         <option value="no_login" ${(settings.auth_mode === 'no_login' || (!settings.auth_mode && settings.proxy_auth_bypass === true)) ? 'selected' : ''}>No Login Mode</option>
@@ -1282,13 +1282,13 @@ const SettingsForms = {
                         <strong>Local Bypass Mode:</strong> Only local network connections (192.168.x.x, 10.x.x.x) bypass login<br>
                         <strong>No Login Mode:</strong> Completely disable authentication when running behind your own reverse proxy
                     </p>
-                    <p class="setting-help warning" style="color: #ff6b6b; margin-left: -3ch !important;"><strong>Warning:</strong> Only use No Login Mode if your reverse proxy (e.g., Cloudflare, Nginx) is properly securing access!</p>
+                    <p class="setting-help warning" style="color: var(--danger-hover); margin-left: -3ch !important;"><strong>Warning:</strong> Only use No Login Mode if your reverse proxy (e.g., Cloudflare, Nginx) is properly securing access!</p>
                 </div>
                 <div class="setting-item">
                     <label for="ssl_verify"><span class="info-icon" title="Verify SSL certificates when connecting to *arr instances"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Enable SSL Verify:</label>
                     <label class="toggle-switch" style="width:40px; height:20px; display:inline-block; position:relative;">
                         <input type="checkbox" id="ssl_verify" ${settings.ssl_verify === true ? 'checked' : ''}>
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#3d4353; border-radius:20px; transition:0.4s;"></span>
+                        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--switch-bg); border-radius:20px; transition:0.4s;"></span>
                     </label>
                     <p class="setting-help" style="margin-left: -3ch !important;">Disable SSL certificate verification when using self-signed certificates in private networks.</p>
                 </div>
@@ -1836,13 +1836,13 @@ const SettingsForms = {
         buttonElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
         buttonElement.disabled = true;
         statusElement.textContent = 'Testing connection...';
-        statusElement.style.color = '#888';
+        statusElement.style.setProperty('color', 'var(--text-muted)');
         
         console.log(`Testing connection for ${app} - URL: ${url}, API Key: ${apiKey.substring(0, 5)}...`);
         
         if (!url) {
             statusElement.textContent = 'Please enter a valid URL';
-            statusElement.style.color = 'red';
+            statusElement.style.setProperty('color', 'var(--danger)');
             buttonElement.innerHTML = originalButtonHTML;
             buttonElement.disabled = false;
             // Reset suppression flags
@@ -1852,7 +1852,7 @@ const SettingsForms = {
         
         if (!apiKey) {
             statusElement.textContent = 'Please enter a valid API key';
-            statusElement.style.color = 'red';
+            statusElement.style.setProperty('color', 'var(--danger)');
             buttonElement.innerHTML = originalButtonHTML;
             buttonElement.disabled = false;
             // Reset suppression flags
@@ -1894,7 +1894,7 @@ const SettingsForms = {
                 
                 // Show success message
                 statusElement.textContent = successMessage;
-                statusElement.style.color = 'green';
+                statusElement.style.setProperty('color', 'var(--success)');
             } else {
                 // Failure
                 buttonElement.innerHTML = '<i class="fas fa-plug"></i> Test Connection';
@@ -1902,7 +1902,7 @@ const SettingsForms = {
                 // Show error message
                 const errorMsg = data.message || 'Connection failed';
                 statusElement.textContent = errorMsg;
-                statusElement.style.color = 'red';
+                statusElement.style.setProperty('color', 'var(--danger)');
             }
             
             // Reset suppression flags after a short delay to handle any potential redirects
@@ -1919,7 +1919,7 @@ const SettingsForms = {
             
             // Show error message
             statusElement.textContent = `Error: ${error.message}`;
-            statusElement.style.color = 'red';
+            statusElement.style.setProperty('color', 'var(--danger)');
             
             // Reset suppression flags
             this._resetSuppressionFlags();
@@ -1940,7 +1940,7 @@ const SettingsForms = {
 const styleEl = document.createElement('style');
 styleEl.innerHTML = `
     .toggle-switch input:checked + .toggle-slider {
-        background-color: #1B6FB8 !important;
+        background-color: var(--accent) !important;
     }
     .toggle-slider:before {
         position: absolute;
@@ -1949,7 +1949,7 @@ styleEl.innerHTML = `
         width: 14px;
         left: 3px;
         bottom: 3px;
-        background-color: white;
+        background-color: var(--text-inverse);
         transition: .4s;
         border-radius: 50%;
     }
