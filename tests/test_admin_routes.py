@@ -1,16 +1,13 @@
 """
 Unit tests for the admin hub blueprint (src/primary/routes/admin_routes.py).
 
-Stubs:
-  - settings_manager, auth, oidc_config, api_keys, logger
-  - Flask test client with a minimal app that mounts only admin_bp
-
 RBAC contract under test:
   - Unauthenticated sessions -> 401
   - Member sessions -> 403
   - Admin sessions -> 200 / expected payload
 """
 
+import importlib
 import json
 import logging
 import os
@@ -20,7 +17,7 @@ import types
 
 import pytest
 
-# ---- stubs (must run before importing the blueprint) ----------------------
+# ---- module-level stubs (must run before any app import) ------------------
 
 os.environ.setdefault("SNAGARR_USER_DIR", tempfile.mkdtemp())
 os.environ.setdefault("SNAGARR_API_DIR", tempfile.mkdtemp())
@@ -29,7 +26,7 @@ _logmod = types.ModuleType("src.primary.utils.logger")
 _logmod.logger = logging.getLogger("test-admin")
 sys.modules["src.primary.utils.logger"] = _logmod
 
-# Track which provider/key operations were called.
+# Provider and key stores - mutated per test via fixture.
 _PROVIDERS = []
 _KEYS = []
 _GENERAL = {"auth_mode": "login", "proxy_auth_bypass": False, "local_access_bypass": False}
@@ -55,43 +52,60 @@ _ak.create_key = lambda label, scope="read": "testkey-" + label
 _ak.revoke_key = lambda key_id: any(k for k in _KEYS if k.get("id") == key_id and _KEYS.remove(k) is None)
 sys.modules["src.primary.api_keys"] = _ak
 
-# Sessions: map token -> (username, role)
+# Auth sessions: token -> (username, role)
 _SESSIONS = {
     "admin-token": ("admin", "admin"),
     "member-token": ("user", "member"),
 }
 
+
+def _verify_session(tok):
+    return tok in _SESSIONS
+
+
+def _get_role(tok):
+    return (_SESSIONS.get(tok) or (None, None))[1]
+
+
+# Minimal auth stub so the blueprint import doesn't crash.
 _auth = types.ModuleType("src.primary.auth")
 _auth.SESSION_COOKIE_NAME = "snagarr_session"
-_auth.verify_session = lambda tok: tok in _SESSIONS
-_auth.get_role_from_session = lambda tok: _SESSIONS.get(tok, (None, None))[1]
-_auth.get_username_from_session = lambda tok: _SESSIONS.get(tok, (None, None))[0]
+_auth.verify_session = _verify_session
+_auth.get_role_from_session = _get_role
 sys.modules["src.primary.auth"] = _auth
 
+# ---- import blueprint AFTER stubs, then patch its module namespace --------
+# `from ..auth import X` binds names at import time. Patching sys.modules is
+# enough when no prior import has cached admin_routes - drop it to be sure.
+sys.modules.pop("src.primary.routes.admin_routes", None)
+
 from flask import Flask  # noqa: E402
+import src.primary.routes.admin_routes as _ar_module  # noqa: E402
 from src.primary.routes.admin_routes import admin_bp  # noqa: E402
+
+# Monkeypatch the bound names to guarantee our stubs are used regardless of
+# prior import caching.
+_ar_module.SESSION_COOKIE_NAME = "snagarr_session"
+_ar_module.verify_session = _verify_session
+_ar_module.get_role_from_session = _get_role
+
+
+# ---- fixtures -------------------------------------------------------------
+
+@pytest.fixture(autouse=True)
+def _reset_stores():
+    _PROVIDERS.clear()
+    _KEYS.clear()
+    yield
 
 
 @pytest.fixture
 def client():
-    _PROVIDERS.clear()
-    _KEYS.clear()
     app = Flask(__name__, template_folder=None)
     app.config["TESTING"] = True
     app.secret_key = "test-secret"
-    # Disable template rendering for pure-API tests; the /admin GET tests are
-    # separate because they require a real template folder.
     app.register_blueprint(admin_bp)
     return app.test_client()
-
-
-def _admin_env(c):
-    """Set the admin session cookie on the test client."""
-    return c.environ_base.update({"HTTP_COOKIE": "snagarr_session=admin-token"}) or c
-
-
-def _member_env(c):
-    return c.environ_base.update({"HTTP_COOKIE": "snagarr_session=member-token"}) or c
 
 
 # ---- helpers ---------------------------------------------------------------
@@ -162,9 +176,12 @@ def test_sso_upsert_missing_name(client):
 
 
 def test_sso_upsert_ok(client):
-    r = _post(client, "/api/admin/sso-providers",
-              {"name": "entra", "client_id": "cid", "provider_type": "entra"},
-              token="admin-token")
+    r = _post(
+        client,
+        "/api/admin/sso-providers",
+        {"name": "entra", "client_id": "cid", "provider_type": "entra"},
+        token="admin-token",
+    )
     assert r.status_code == 200
     assert r.get_json()["success"] is True
     assert any(p["name"] == "entra" for p in _PROVIDERS)
@@ -184,9 +201,12 @@ def test_sso_delete_ok(client):
 
 
 def test_sso_member_cannot_upsert(client):
-    r = _post(client, "/api/admin/sso-providers",
-              {"name": "entra", "client_id": "x"},
-              token="member-token")
+    r = _post(
+        client,
+        "/api/admin/sso-providers",
+        {"name": "entra", "client_id": "x"},
+        token="member-token",
+    )
     assert r.status_code == 403
 
 
@@ -223,10 +243,14 @@ def test_keys_create_ok(client):
 
 def test_keys_revoke_not_found(client):
     r = _delete(client, "/api/admin/keys/does-not-exist", token="admin-token")
-    # revoke_key returns False -> 404
     assert r.status_code == 404
 
 
 def test_keys_member_cannot_create(client):
-    r = _post(client, "/api/admin/keys", {"label": "x", "scope": "read"}, token="member-token")
+    r = _post(
+        client,
+        "/api/admin/keys",
+        {"label": "x", "scope": "read"},
+        token="member-token",
+    )
     assert r.status_code == 403
