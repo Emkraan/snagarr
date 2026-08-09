@@ -23,6 +23,7 @@ import pytest
 
 # ---- pre-import stubs for modules with filesystem side-effects -----------
 
+os.environ.setdefault("SNAGARR_CONFIG_DIR", tempfile.mkdtemp())
 os.environ.setdefault("SNAGARR_USER_DIR", tempfile.mkdtemp())
 os.environ.setdefault("SNAGARR_API_DIR", tempfile.mkdtemp())
 
