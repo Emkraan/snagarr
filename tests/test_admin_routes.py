@@ -1,9 +1,12 @@
 """
 Unit tests for the admin hub blueprint (src/primary/routes/admin_routes.py).
 
-Uses unittest.mock.patch to stub auth/oidc_config/api_keys without fighting
-Python's import caching. Each test patches what admin_routes.py actually calls
-at call-site, ensuring correct isolation regardless of import order.
+Authentication is exercised via the REAL auth module: test tokens are inserted
+directly into auth.active_sessions so verify_session / get_role_from_session
+return the correct values without needing monkeypatching.
+
+Deps (oidc_config, api_keys, settings_manager) are replaced on the admin_routes
+module object so the routes work without hitting the filesystem.
 
 RBAC contract under test:
   - Unauthenticated sessions -> 401
@@ -16,67 +19,68 @@ import logging
 import os
 import sys
 import tempfile
+import time
 import types
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
-# ---- pre-import stubs for modules with filesystem side-effects -----------
+# ---- env vars must be set before any snagarr imports ----------------------
 
 os.environ.setdefault("SNAGARR_CONFIG_DIR", tempfile.mkdtemp())
 os.environ.setdefault("SNAGARR_USER_DIR", tempfile.mkdtemp())
 os.environ.setdefault("SNAGARR_API_DIR", tempfile.mkdtemp())
 
+# ---- stub logger so importing auth/oidc_config doesn't create /config/logs -
+
+_fake_logger = logging.getLogger("test-admin")
 _logmod = types.ModuleType("src.primary.utils.logger")
-_logmod.logger = logging.getLogger("test-admin")
-_logmod.get_logger = lambda _app_type="": logging.getLogger("test-admin")  # type: ignore[attr-defined]
+_logmod.logger = _fake_logger  # type: ignore[attr-defined]
+_logmod.get_logger = lambda _app_type="": _fake_logger  # type: ignore[attr-defined]
 _logmod.debug_log = lambda *_a, **_kw: None  # type: ignore[attr-defined]
 sys.modules.setdefault("src.primary.utils.logger", _logmod)
 
-# ---- import the blueprint (may drag in real auth/oidc but that's fine) ---
-# We'll patch via unittest.mock.patch at the call-site.
+# ---- imports (after env + logger stubs are in place) ----------------------
 
 from flask import Flask  # noqa: E402
-from src.primary.routes.admin_routes import admin_bp  # noqa: E402
 
-# The module object - we patch its names directly in each test.
+import src.primary.auth as _auth  # noqa: E402
+from src.primary.routes.admin_routes import admin_bp  # noqa: E402
 import src.primary.routes.admin_routes as _ar  # noqa: E402
 
-# ---- shared test state ---------------------------------------------------
+# ---- shared test constants -------------------------------------------------
+
+ADMIN_TOKEN = "test-admin-session-token"
+MEMBER_TOKEN = "test-member-session-token"
+COOKIE_NAME = _auth.SESSION_COOKIE_NAME  # "snagarr_session"
 
 _PROVIDERS = []
 _KEYS = []
 
-ADMIN_TOKEN = "admin-tok"
-MEMBER_TOKEN = "member-tok"
-COOKIE_NAME = "snagarr_session"
 
-
-def _verify_session(tok):
-    return tok in (ADMIN_TOKEN, MEMBER_TOKEN)
-
-
-def _get_role(tok):
-    if tok == ADMIN_TOKEN:
-        return "admin"
-    if tok == MEMBER_TOKEN:
-        return "member"
-    return None
-
-
-# ---- fixtures ------------------------------------------------------------
+# ---- fixtures -------------------------------------------------------------
 
 @pytest.fixture(autouse=True)
-def _patch_auth(monkeypatch):
-    """Patch the bound names inside admin_routes for the duration of each test."""
-    monkeypatch.setattr(_ar, "SESSION_COOKIE_NAME", COOKIE_NAME)
-    monkeypatch.setattr(_ar, "verify_session", _verify_session)
-    monkeypatch.setattr(_ar, "get_role_from_session", _get_role)
+def _setup_sessions():
+    """Insert real sessions so verify_session / get_role_from_session work."""
+    _auth.active_sessions[ADMIN_TOKEN] = {
+        "user": "admin@test.com",
+        "role": "admin",
+        "expires_at": time.time() + 3600,
+    }
+    _auth.active_sessions[MEMBER_TOKEN] = {
+        "user": "member@test.com",
+        "role": "member",
+        "expires_at": time.time() + 3600,
+    }
+    yield
+    _auth.active_sessions.pop(ADMIN_TOKEN, None)
+    _auth.active_sessions.pop(MEMBER_TOKEN, None)
 
 
 @pytest.fixture(autouse=True)
 def _patch_deps(monkeypatch):
-    """Patch oidc_config, api_keys, settings_manager used by admin_routes."""
+    """Replace oidc_config / api_keys / settings_manager on admin_routes."""
 
     def _load_providers():
         return list(_PROVIDERS)
@@ -148,7 +152,7 @@ def client():
     return app.test_client()
 
 
-# ---- helpers -------------------------------------------------------------
+# ---- helpers ---------------------------------------------------------------
 
 def _get(client, path, token=None):
     headers = {}
@@ -171,7 +175,7 @@ def _delete(client, path, token=None):
     return client.delete(path, headers=headers)
 
 
-# ---- /api/admin/summary --------------------------------------------------
+# ---- /api/admin/summary ----------------------------------------------------
 
 def test_summary_unauthenticated(client):
     r = _get(client, "/api/admin/summary")
@@ -192,7 +196,7 @@ def test_summary_admin_ok(client):
     assert "api_key_count" in d
 
 
-# ---- /api/admin/sso-providers --------------------------------------------
+# ---- /api/admin/sso-providers ----------------------------------------------
 
 def test_sso_list_unauthenticated(client):
     assert _get(client, "/api/admin/sso-providers").status_code == 401
@@ -242,7 +246,7 @@ def test_sso_member_cannot_upsert(client):
     assert r.status_code == 403
 
 
-# ---- /api/admin/keys -----------------------------------------------------
+# ---- /api/admin/keys -------------------------------------------------------
 
 def test_keys_list_unauthenticated(client):
     assert _get(client, "/api/admin/keys").status_code == 401
