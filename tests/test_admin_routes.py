@@ -157,26 +157,30 @@ def client():
 def _get(client, path, token=None):
     """GET request, optionally injecting a session cookie.
 
-    environ_overrides is applied AFTER all other environ setup (including the
-    Werkzeug cookie jar), so HTTP_COOKIE is guaranteed to carry our value.
+    Werkzeug 3.x rebuilds HTTP_COOKIE from the client's cookie jar in
+    prepare_environ(), which runs after environ_overrides are applied and
+    therefore overwrites them.  set_cookie() places the cookie directly into
+    the jar so prepare_environ() picks it up naturally.
     """
-    kw = {"environ_overrides": {"HTTP_COOKIE": f"{COOKIE_NAME}={token}"}} if token else {}
-    return client.get(path, **kw)
+    if token:
+        client.set_cookie(COOKIE_NAME, token)
+    return client.get(path)
 
 
 def _post(client, path, body=None, token=None):
-    kw = {"environ_overrides": {"HTTP_COOKIE": f"{COOKIE_NAME}={token}"}} if token else {}
+    if token:
+        client.set_cookie(COOKIE_NAME, token)
     return client.post(
         path,
         data=json.dumps(body or {}),
         content_type="application/json",
-        **kw,
     )
 
 
 def _delete(client, path, token=None):
-    kw = {"environ_overrides": {"HTTP_COOKIE": f"{COOKIE_NAME}={token}"}} if token else {}
-    return client.delete(path, **kw)
+    if token:
+        client.set_cookie(COOKIE_NAME, token)
+    return client.delete(path)
 
 
 # ---- /api/admin/summary ----------------------------------------------------
