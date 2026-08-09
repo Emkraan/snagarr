@@ -39,6 +39,12 @@ from flask import Flask  # noqa: E402
 from src.primary.routes import api_v1 as api_v1_mod  # noqa: E402
 from src.primary import api_keys as ak  # noqa: E402
 
+# Bind the stub directly on the already-imported module.  When test_admin_routes.py
+# is collected before this file, it imports the real settings_manager and sets it as
+# a package attribute on src.primary.  A later sys.modules patch cannot override a
+# package attribute, so the stub must be applied to api_v1_mod directly.
+api_v1_mod.settings_manager = _sm
+
 
 @pytest.fixture
 def client(tmp_path):

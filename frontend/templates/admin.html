@@ -1,0 +1,610 @@
+{% import "_ui.html" as ui %}
+{% import "_icons.html" as icons %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Admin Hub - Snagarr</title>
+  {% include 'components/head.html' %}
+  <style>
+    /* Admin hub layout - Cobalt Elevated pattern, consistent with index.html */
+    .admin-wrap {
+      padding: 24px;
+      max-width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Summary KPI strip */
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+    }
+
+    /* Provider / key rows */
+    .admin-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .admin-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: var(--surface-2);
+      border: 1px solid var(--border-hair);
+      border-radius: var(--radius-sm);
+    }
+    .admin-row-label {
+      flex: 1;
+      min-width: 0;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .admin-row-sub {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-weight: 400;
+    }
+
+    /* Key reveal box */
+    .key-reveal {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: var(--surface-inset);
+      border: 1px solid var(--accent-border);
+      border-radius: var(--radius-sm);
+      margin-top: 12px;
+    }
+    .key-reveal code {
+      flex: 1;
+      font-size: 12px;
+      font-family: var(--font-mono, monospace);
+      color: var(--accent-bright);
+      word-break: break-all;
+    }
+
+    /* Empty state */
+    .admin-empty {
+      text-align: center;
+      padding: 28px 0;
+      color: var(--text-dim);
+      font-size: 13px;
+    }
+
+    /* Modal form rows */
+    .modal-fields { display: flex; flex-direction: column; gap: 12px; }
+
+    /* Auth mode selector */
+    .auth-mode-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+    }
+    .auth-mode-opt {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface-2);
+      cursor: pointer;
+      transition: border-color var(--t-fast) var(--ease), background-color var(--t-fast) var(--ease);
+    }
+    .auth-mode-opt:hover { border-color: var(--accent-border); background: var(--accent-veil); }
+    .auth-mode-opt.selected { border-color: var(--accent); background: var(--accent-dim); }
+    .auth-mode-opt input[type="radio"] { margin-top: 2px; accent-color: var(--accent-bright); flex-shrink: 0; }
+    .auth-mode-desc { display: flex; flex-direction: column; gap: 2px; }
+    .auth-mode-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .auth-mode-hint { font-size: 11px; color: var(--text-dim); }
+
+    /* Spinner overlay for async operations */
+    .admin-spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid transparent;
+      border-top-color: var(--accent-bright);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  {% include 'components/sidebar.html' %}
+
+  <div class="main-content">
+    <div class="admin-wrap">
+
+      {# ── Page header ──────────────────────────────────────────────────── #}
+      {% call ui.page_header('Admin Hub', 'System management and security configuration.') %}
+        {{ ui.button('Refresh', variant='default', icon=icons.refresh(14), attrs='id="adminRefreshBtn"') }}
+      {% endcall %}
+
+      {# ── Auth mode ────────────────────────────────────────────────────── #}
+      {% call ui.card() %}
+        {{ ui.section_label('Authentication Mode') }}
+        <form id="authModeForm" style="margin-top:12px;">
+          <div class="auth-mode-grid">
+            <label class="auth-mode-opt" id="optLogin">
+              <input type="radio" name="auth_mode" value="login">
+              <div class="auth-mode-desc">
+                <span class="auth-mode-name">Normal login</span>
+                <span class="auth-mode-hint">Username + password required on every visit.</span>
+              </div>
+            </label>
+            <label class="auth-mode-opt" id="optLocalBypass">
+              <input type="radio" name="auth_mode" value="local_bypass">
+              <div class="auth-mode-desc">
+                <span class="auth-mode-name">Local bypass</span>
+                <span class="auth-mode-hint">LAN clients skip login; external users still authenticate.</span>
+              </div>
+            </label>
+            <label class="auth-mode-opt" id="optNoLogin">
+              <input type="radio" name="auth_mode" value="no_login">
+              <div class="auth-mode-desc">
+                <span class="auth-mode-name">No login</span>
+                <span class="auth-mode-hint">Reverse-proxy handles auth; Snagarr trusts the proxy header.</span>
+              </div>
+            </label>
+          </div>
+          <div style="margin-top:12px; display:flex; justify-content:flex-end;">
+            {{ ui.button('Save auth mode', variant='primary', attrs='id="saveAuthModeBtn"') }}
+          </div>
+        </form>
+      {% endcall %}
+
+      {# ── Summary KPIs ─────────────────────────────────────────────────── #}
+      <div class="kpi-strip" id="summaryStrip">
+        {{ ui.kpi_tile('Version', '...', tone='accent', i=0, attrs='id="kpiVersion"') }}
+        {{ ui.kpi_tile('Build', '...', tone='info', i=1, attrs='id="kpiBuild"') }}
+        {{ ui.kpi_tile('SSO Providers', '...', tone='accent', i=2, attrs='id="kpiSso"') }}
+        {{ ui.kpi_tile('API Keys', '...', tone='accent', i=3, attrs='id="kpiKeys"') }}
+      </div>
+
+      {# ── SSO providers ────────────────────────────────────────────────── #}
+      {% call ui.card() %}
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+          {{ ui.section_label('SSO Providers') }}
+          {{ ui.button('Add provider', variant='primary', icon=icons.plus(14), attrs='id="addProviderBtn"') }}
+        </div>
+        <div class="admin-list" id="providerList">
+          <div class="admin-empty">Loading...</div>
+        </div>
+      {% endcall %}
+
+      {# ── API keys ─────────────────────────────────────────────────────── #}
+      {% call ui.card() %}
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+          {{ ui.section_label('API Keys') }}
+          {{ ui.button('Create key', variant='primary', icon=icons.plus(14), attrs='id="createKeyBtn"') }}
+        </div>
+        <div class="admin-list" id="keyList">
+          <div class="admin-empty">Loading...</div>
+        </div>
+        <div id="newKeyReveal" hidden>
+          <div class="key-reveal">
+            <code id="newKeyValue"></code>
+            {{ ui.icon_button(icons.copy(14), 'Copy key', attrs='id="copyKeyBtn"') }}
+          </div>
+          <p style="font-size:11px; color:var(--warning); margin-top:6px;">
+            Copy this key now - it will not be shown again.
+          </p>
+        </div>
+      {% endcall %}
+
+      {# ── Account shortcuts ────────────────────────────────────────────── #}
+      {% call ui.card() %}
+        {{ ui.section_label('Account') }}
+        <p style="font-size:13px; color:var(--text-secondary); margin:10px 0 14px;">
+          Manage your credentials and two-factor authentication on the Account page.
+        </p>
+        {{ ui.button('Go to Account', variant='default', attrs='onclick="window.location.href=\'/user\'"') }}
+      {% endcall %}
+
+    </div>
+  </div>
+
+  {# ── Add SSO provider modal ──────────────────────────────────────────── #}
+  {% call ui.modal('add-provider', 'Add SSO Provider', 480) %}
+    <div class="modal-fields">
+      <div id="providerError" class="banner tone-danger" hidden>
+        <span class="banner-text" id="providerErrorMsg"></span>
+      </div>
+      {% call ui.field('Provider name', hint='Unique slug used internally (e.g. "entra", "google").') %}
+        {{ ui.input('', placeholder='e.g. entra', attrs='id="providerName"') }}
+      {% endcall %}
+      {% call ui.field('Display name', hint='Label shown on the login page.') %}
+        {{ ui.input('', placeholder='e.g. Microsoft Entra', attrs='id="providerDisplayName"') }}
+      {% endcall %}
+      {% call ui.field('Provider type') %}
+        {{ ui.select('', [
+            {'value': 'entra', 'label': 'Microsoft Entra (Azure AD)'},
+            {'value': 'generic', 'label': 'Generic OIDC'},
+            {'value': 'google', 'label': 'Google'},
+          ], attrs='id="providerType"') }}
+      {% endcall %}
+      {% call ui.field('Client ID') %}
+        {{ ui.input('', placeholder='OIDC client_id', attrs='id="providerClientId"') }}
+      {% endcall %}
+      {% call ui.field('Client secret') %}
+        {{ ui.input('', type='password', placeholder='OIDC client_secret', attrs='id="providerClientSecret"') }}
+      {% endcall %}
+      {% call ui.field('Tenant / Discovery URL', hint='Tenant ID for Entra; discovery URL for generic OIDC.') %}
+        {{ ui.input('', placeholder='e.g. da9b02f8-... or https://.../.well-known/openid-configuration', attrs='id="providerTenant"') }}
+      {% endcall %}
+      {% call ui.field('Required Entra group ID', hint='Optional. Leave empty to allow any authenticated user.') %}
+        {{ ui.input('', placeholder='xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', attrs='id="providerGroupId"') }}
+      {% endcall %}
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-top:4px;">
+        {{ ui.switch('', attrs='id="providerEnabled" checked') }}
+        <span style="font-size:13px; color:var(--text-secondary);">Enabled</span>
+        {{ ui.switch('', attrs='id="providerShowOnLogin" checked') }}
+        <span style="font-size:13px; color:var(--text-secondary);">Show on login page</span>
+      </div>
+    </div>
+    <div class="modal-foot">
+      {{ ui.button('Cancel', variant='default', attrs='data-modal-close') }}
+      {{ ui.button('Save provider', variant='primary', attrs='id="saveProviderBtn"') }}
+    </div>
+  {% endcall %}
+
+  {# ── Create API key modal ─────────────────────────────────────────────── #}
+  {% call ui.modal('create-key', 'Create API Key', 420) %}
+    <div class="modal-fields">
+      <div id="keyError" class="banner tone-danger" hidden>
+        <span class="banner-text" id="keyErrorMsg"></span>
+      </div>
+      {% call ui.field('Label', hint='Human-readable name for this key.') %}
+        {{ ui.input('', placeholder='e.g. Hermes integration', attrs='id="keyLabel"') }}
+      {% endcall %}
+      {% call ui.field('Scope') %}
+        {{ ui.select('', [
+            {'value': 'read', 'label': 'read - fetch config + status'},
+            {'value': 'write', 'label': 'write - full config access'},
+          ], attrs='id="keyScope"') }}
+      {% endcall %}
+    </div>
+    <div class="modal-foot">
+      {{ ui.button('Cancel', variant='default', attrs='data-modal-close') }}
+      {{ ui.button('Create', variant='primary', attrs='id="confirmCreateKeyBtn"') }}
+    </div>
+  {% endcall %}
+
+  {% include 'components/scripts.html' %}
+  <script>
+    /* ------------------------------------------------------------------ *
+     * Admin hub controller                                                *
+     * ------------------------------------------------------------------ */
+    (function () {
+      'use strict';
+
+      /* ---------- helpers ---------- */
+      function el(id) { return document.getElementById(id); }
+      function q(sel) { return document.querySelector(sel); }
+
+      function openModal(id) {
+        var m = document.getElementById('modal-' + id);
+        if (m) { m.removeAttribute('hidden'); }
+      }
+      function closeModal(id) {
+        var m = document.getElementById('modal-' + id);
+        if (m) { m.setAttribute('hidden', ''); }
+      }
+
+      /* ---------- data ---------- */
+      var _providers = [];
+      var _keys = [];
+
+      /* ---------- load summary ---------- */
+      function loadSummary() {
+        fetch('/api/admin/summary').then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (d) {
+            if (!d) return;
+            var kv = el('kpiVersion');
+            var kb = el('kpiBuild');
+            var ks = el('kpiSso');
+            var kk = el('kpiKeys');
+            if (kv) kv.querySelector('.kpi-value') && (kv.querySelector('.kpi-value').textContent = d.version || 'unknown');
+            if (kb) kb.querySelector('.kpi-value') && (kb.querySelector('.kpi-value').textContent = (d.build || 'unknown').slice(0, 7));
+            if (ks) ks.querySelector('.kpi-value') && (ks.querySelector('.kpi-value').textContent = d.sso_provider_count ?? '0');
+            if (kk) kk.querySelector('.kpi-value') && (kk.querySelector('.kpi-value').textContent = d.api_key_count ?? '0');
+            /* set auth mode radio */
+            var radios = document.querySelectorAll('input[name="auth_mode"]');
+            radios.forEach(function (r) {
+              r.checked = r.value === (d.auth_mode || 'login');
+              r.closest('.auth-mode-opt') && r.closest('.auth-mode-opt').classList.toggle('selected', r.checked);
+            });
+          }).catch(function () {});
+      }
+
+      /* ---------- providers ---------- */
+      function renderProviders() {
+        var list = el('providerList');
+        if (!list) return;
+        if (!_providers.length) {
+          list.innerHTML = '<div class="admin-empty">No SSO providers configured.</div>';
+          return;
+        }
+        list.innerHTML = '';
+        _providers.forEach(function (p) {
+          var row = document.createElement('div');
+          row.className = 'admin-row';
+          var enabled = p.enabled !== false;
+          row.innerHTML =
+            '<div class="admin-row-label">' +
+              escHtml(p.display_name || p.name) +
+              '<span class="admin-row-sub"> &middot; ' + escHtml(p.provider_type || p.name) + '</span>' +
+            '</div>' +
+            '<span class="badge ' + (enabled ? 'tone-success' : '') + '">' + (enabled ? 'Enabled' : 'Disabled') + '</span>' +
+            '<button class="icon-btn" style="width:28px;height:28px;" title="Delete provider" data-del-provider="' + escAttr(p.name) + '">' +
+              '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>' +
+            '</button>';
+          list.appendChild(row);
+        });
+        /* bind delete buttons */
+        list.querySelectorAll('[data-del-provider]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var name = btn.dataset.delProvider;
+            if (!confirm('Delete SSO provider "' + name + '"?')) return;
+            fetch('/api/admin/sso-providers/' + encodeURIComponent(name), { method: 'DELETE' })
+              .then(function (r) { return r.json(); })
+              .then(function (d) {
+                if (d.success) loadProviders();
+              });
+          });
+        });
+      }
+
+      function loadProviders() {
+        fetch('/api/admin/sso-providers').then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (d) {
+            _providers = (d && d.providers) || [];
+            renderProviders();
+            /* update KPI */
+            var ks = el('kpiSso');
+            if (ks) { var v = ks.querySelector('.kpi-value'); if (v) v.textContent = _providers.length; }
+          }).catch(function () {});
+      }
+
+      /* ---------- keys ---------- */
+      function renderKeys() {
+        var list = el('keyList');
+        if (!list) return;
+        if (!_keys.length) {
+          list.innerHTML = '<div class="admin-empty">No API keys created.</div>';
+          return;
+        }
+        list.innerHTML = '';
+        _keys.forEach(function (k) {
+          var row = document.createElement('div');
+          row.className = 'admin-row';
+          row.innerHTML =
+            '<div class="admin-row-label">' + escHtml(k.label) +
+              '<span class="admin-row-sub"> &middot; ' + escHtml(k.scope || 'read') + '</span>' +
+            '</div>' +
+            '<span class="badge mono" style="font-size:10px;">' + escHtml((k.id || '').slice(0, 8)) + '&hellip;</span>' +
+            '<button class="icon-btn" style="width:28px;height:28px;" title="Revoke key" data-del-key="' + escAttr(k.id) + '">' +
+              '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>' +
+            '</button>';
+          list.appendChild(row);
+        });
+        list.querySelectorAll('[data-del-key]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var id = btn.dataset.delKey;
+            if (!confirm('Revoke this API key?')) return;
+            fetch('/api/admin/keys/' + encodeURIComponent(id), { method: 'DELETE' })
+              .then(function (r) { return r.json(); })
+              .then(function (d) {
+                if (d.success) loadKeys();
+              });
+          });
+        });
+      }
+
+      function loadKeys() {
+        fetch('/api/admin/keys').then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (d) {
+            _keys = (d && d.keys) || [];
+            renderKeys();
+            var kk = el('kpiKeys');
+            if (kk) { var v = kk.querySelector('.kpi-value'); if (v) v.textContent = _keys.length; }
+          }).catch(function () {});
+      }
+
+      /* ---------- init ---------- */
+      document.addEventListener('DOMContentLoaded', function () {
+        loadSummary();
+        loadProviders();
+        loadKeys();
+
+        /* refresh button */
+        var refreshBtn = el('adminRefreshBtn');
+        if (refreshBtn) {
+          refreshBtn.addEventListener('click', function () {
+            loadSummary(); loadProviders(); loadKeys();
+          });
+        }
+
+        /* auth mode radio selection highlight */
+        document.querySelectorAll('input[name="auth_mode"]').forEach(function (r) {
+          r.addEventListener('change', function () {
+            document.querySelectorAll('.auth-mode-opt').forEach(function (o) {
+              o.classList.remove('selected');
+            });
+            r.closest('.auth-mode-opt') && r.closest('.auth-mode-opt').classList.add('selected');
+          });
+        });
+
+        /* save auth mode */
+        var saveAuthBtn = el('saveAuthModeBtn');
+        if (saveAuthBtn) {
+          saveAuthBtn.addEventListener('click', function () {
+            var checked = q('input[name="auth_mode"]:checked');
+            if (!checked) return;
+            var mode = checked.value;
+            var payload = {
+              auth_mode: mode,
+              local_access_bypass: mode === 'local_bypass',
+              proxy_auth_bypass: mode === 'no_login',
+            };
+            saveAuthBtn.disabled = true;
+            fetch('/api/settings/general', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            })
+              .then(function (r) { return r.json(); })
+              .then(function (d) {
+                if (d.success) loadSummary();
+              })
+              .finally(function () { saveAuthBtn.disabled = false; });
+          });
+        }
+
+        /* add provider button */
+        var addProvBtn = el('addProviderBtn');
+        if (addProvBtn) {
+          addProvBtn.addEventListener('click', function () {
+            /* clear form */
+            ['providerName','providerDisplayName','providerClientId','providerClientSecret','providerTenant','providerGroupId']
+              .forEach(function (id) { var e = el(id); if (e) e.value = ''; });
+            el('providerError') && (el('providerError').hidden = true);
+            openModal('add-provider');
+          });
+        }
+
+        /* save provider */
+        var saveProvBtn = el('saveProviderBtn');
+        if (saveProvBtn) {
+          saveProvBtn.addEventListener('click', function () {
+            var name = (el('providerName').value || '').trim();
+            var displayName = (el('providerDisplayName').value || '').trim();
+            var type = el('providerType').value;
+            var clientId = (el('providerClientId').value || '').trim();
+            var clientSecret = (el('providerClientSecret').value || '').trim();
+            var tenant = (el('providerTenant').value || '').trim();
+            var groupId = (el('providerGroupId').value || '').trim();
+            var enabled = el('providerEnabled') ? el('providerEnabled').checked : true;
+            var showOnLogin = el('providerShowOnLogin') ? el('providerShowOnLogin').checked : true;
+
+            if (!name) { showProviderError('Provider name is required.'); return; }
+            if (!clientId) { showProviderError('Client ID is required.'); return; }
+
+            var body = {
+              name: name,
+              display_name: displayName || name,
+              provider_type: type,
+              client_id: clientId,
+              enabled: enabled,
+              show_on_login: showOnLogin,
+            };
+            if (clientSecret) body.client_secret = clientSecret;
+            if (tenant) body.tenant_id = tenant;
+            if (groupId) body.required_group = groupId;
+
+            saveProvBtn.disabled = true;
+            fetch('/api/admin/sso-providers', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            })
+              .then(function (r) { return r.json(); })
+              .then(function (d) {
+                if (d.success) { closeModal('add-provider'); loadProviders(); }
+                else { showProviderError(d.error || 'Failed to save provider.'); }
+              })
+              .finally(function () { saveProvBtn.disabled = false; });
+          });
+        }
+
+        /* create key button */
+        var createKeyBtn = el('createKeyBtn');
+        if (createKeyBtn) {
+          createKeyBtn.addEventListener('click', function () {
+            el('keyLabel') && (el('keyLabel').value = '');
+            el('keyError') && (el('keyError').hidden = true);
+            el('newKeyReveal') && (el('newKeyReveal').hidden = true);
+            openModal('create-key');
+          });
+        }
+
+        /* confirm create key */
+        var confirmKeyBtn = el('confirmCreateKeyBtn');
+        if (confirmKeyBtn) {
+          confirmKeyBtn.addEventListener('click', function () {
+            var label = (el('keyLabel').value || '').trim();
+            var scope = el('keyScope').value;
+            if (!label) { showKeyError('Label is required.'); return; }
+
+            confirmKeyBtn.disabled = true;
+            fetch('/api/admin/keys', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ label: label, scope: scope }),
+            })
+              .then(function (r) { return r.json(); })
+              .then(function (d) {
+                if (d.success && d.key) {
+                  closeModal('create-key');
+                  el('newKeyValue').textContent = d.key;
+                  el('newKeyReveal').hidden = false;
+                  loadKeys();
+                } else {
+                  showKeyError(d.error || 'Failed to create key.');
+                }
+              })
+              .finally(function () { confirmKeyBtn.disabled = false; });
+          });
+        }
+
+        /* copy key button */
+        var copyKeyBtn = el('copyKeyBtn');
+        if (copyKeyBtn) {
+          copyKeyBtn.addEventListener('click', function () {
+            var val = el('newKeyValue').textContent;
+            if (navigator.clipboard) {
+              navigator.clipboard.writeText(val).catch(function () {});
+            }
+          });
+        }
+
+        /* modal-close buttons */
+        document.querySelectorAll('[data-modal-close]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var modal = btn.closest('.modal-backdrop');
+            if (modal) modal.setAttribute('hidden', '');
+          });
+        });
+      });
+
+      /* ---------- helpers ---------- */
+      function showProviderError(msg) {
+        var e = el('providerError');
+        var m = el('providerErrorMsg');
+        if (e && m) { m.textContent = msg; e.hidden = false; }
+      }
+      function showKeyError(msg) {
+        var e = el('keyError');
+        var m = el('keyErrorMsg');
+        if (e && m) { m.textContent = msg; e.hidden = false; }
+      }
+      function escHtml(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      }
+      function escAttr(s) { return escHtml(s); }
+    }());
+  </script>
+</body>
+</html>
