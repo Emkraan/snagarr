@@ -119,24 +119,41 @@ def init_oidc(app):
 
 def seed_from_env():
     """One-time: if no providers are configured yet but env/file OIDC creds are
-    present (the legacy deployment shape), persist them into the store as a
-    microsoft provider. Lets an env-based deploy drop the env and keep login."""
+    present (a legacy or container-bootstrap deployment shape), persist them into
+    the store so removing the env later never breaks login.
+
+    Two shapes are recognised:
+    - Microsoft/Entra: OIDC_TENANT_ID + OIDC_CLIENT_ID + OIDC_CLIENT_SECRET
+    - Authentik (or any issuer-based OIDC): OIDC_ISSUER + OIDC_CLIENT_ID +
+      OIDC_CLIENT_SECRET (OIDC_TENANT_ID must be absent)
+    """
     if oidc_config.load_providers():
         return
     tenant = _read_secret("OIDC_TENANT_ID")
     client_id = _read_secret("OIDC_CLIENT_ID")
     client_secret = _read_secret("OIDC_CLIENT_SECRET")
-    if not (tenant and client_id and client_secret):
+    if not (client_id and client_secret):
         return
     allowed = [g.strip() for g in (os.environ.get("OIDC_ALLOWED_GROUPS") or "").split(",") if g.strip()]
     admin = [g.strip() for g in (os.environ.get("OIDC_ADMIN_GROUPS") or "").split(",") if g.strip()]
-    oidc_config.save_providers([{
-        "name": "microsoft", "display_name": "Microsoft Entra ID", "provider_type": "microsoft",
-        "enabled": True, "show_on_login": True, "is_default": True,
-        "tenant": tenant, "client_id": client_id, "client_secret": client_secret,
-        "allowed_groups": allowed, "admin_groups": admin,
-    }])
-    logger.info("Seeded SSO provider store from env OIDC config (Entra).")
+    if tenant:
+        oidc_config.save_providers([{
+            "name": "microsoft", "display_name": "Microsoft Entra ID", "provider_type": "microsoft",
+            "enabled": True, "show_on_login": True, "is_default": True,
+            "tenant": tenant, "client_id": client_id, "client_secret": client_secret,
+            "allowed_groups": allowed, "admin_groups": admin,
+        }])
+        logger.info("Seeded SSO provider store from env OIDC config (Entra).")
+        return
+    issuer = _read_secret("OIDC_ISSUER")
+    if issuer:
+        oidc_config.save_providers([{
+            "name": "authentik", "display_name": "Authentik", "provider_type": "authentik",
+            "enabled": True, "show_on_login": True, "is_default": True,
+            "issuer": issuer, "client_id": client_id, "client_secret": client_secret,
+            "allowed_groups": allowed, "admin_groups": admin,
+        }])
+        logger.info("Seeded SSO provider store from env OIDC config (Authentik).")
 
 
 def invalidate():
@@ -377,10 +394,13 @@ def oidc_configured() -> bool:
 
 
 def oidc_env_configured() -> bool:
-    """True only when OIDC creds come from ENV/FILE (legacy deployment).
+    """True when OIDC creds from ENV/FILE would seed a provider (no store yet).
     Kept for back-compat; the auth path no longer routes on it."""
-    return bool(_read_secret("OIDC_TENANT_ID") and _read_secret("OIDC_CLIENT_ID")
-                and _read_secret("OIDC_CLIENT_SECRET"))
+    cid = _read_secret("OIDC_CLIENT_ID")
+    sec = _read_secret("OIDC_CLIENT_SECRET")
+    if not (cid and sec):
+        return False
+    return bool(_read_secret("OIDC_TENANT_ID") or _read_secret("OIDC_ISSUER"))
 
 
 def _probe_discovery(m) -> dict:

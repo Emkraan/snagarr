@@ -16,7 +16,8 @@ import types
 def load_oidc(tmp_path):
     os.environ["SNAGARR_USER_DIR"] = str(tmp_path / "user")
     for k in ("OIDC_TENANT_ID", "OIDC_CLIENT_ID", "OIDC_CLIENT_SECRET",
-              "OIDC_TENANT_ID_FILE", "OIDC_CLIENT_ID_FILE", "OIDC_CLIENT_SECRET_FILE"):
+              "OIDC_TENANT_ID_FILE", "OIDC_CLIENT_ID_FILE", "OIDC_CLIENT_SECRET_FILE",
+              "OIDC_ISSUER", "OIDC_ISSUER_FILE"):
         os.environ.pop(k, None)
 
     fake_logger_mod = types.ModuleType("src.primary.utils.logger")
@@ -25,6 +26,13 @@ def load_oidc(tmp_path):
     sys.modules["src.primary.utils.logger"] = fake_logger_mod
 
     # Re-import auth (for a fresh USER_DIR), the store, and the blueprint.
+    # Also clear the submodule attributes on the parent package so Python does
+    # not reuse the stale module object via `from src.primary import oidc_config`
+    # (Python checks pkg.__dict__ before sys.modules for submodule lookups).
+    import src.primary as _pkg  # noqa: PLC0415 -- ensure package is loaded
+    for _attr in ("auth", "oidc_config"):
+        if hasattr(_pkg, _attr):
+            delattr(_pkg, _attr)
     sys.modules.pop("src.primary.auth", None)
     sys.modules.pop("src.primary.oidc_config", None)
     sys.modules.pop("src.primary.routes.oidc", None)
@@ -60,6 +68,31 @@ def test_env_seed_creates_microsoft_provider(tmp_path):
         assert len(oidc_config.load_providers()) == 1
     finally:
         for k in ("OIDC_TENANT_ID", "OIDC_CLIENT_ID", "OIDC_CLIENT_SECRET"):
+            os.environ.pop(k, None)
+
+
+def test_env_seed_creates_authentik_provider(tmp_path):
+    oidc = load_oidc(tmp_path)
+    from src.primary import oidc_config
+    os.environ["OIDC_ISSUER"] = "https://auth.example.com/application/o/snagarr/"
+    os.environ["OIDC_CLIENT_ID"] = "33333333-3333-3333-3333-333333333333"
+    os.environ["OIDC_CLIENT_SECRET"] = "shh-authentik-secret"
+    try:
+        assert oidc.oidc_env_configured() is True
+        oidc.seed_from_env()
+        provs = oidc_config.load_providers()
+        assert len(provs) == 1
+        assert provs[0]["provider_type"] == "authentik"
+        assert provs[0]["issuer"] == "https://auth.example.com/application/o/snagarr/"
+        assert provs[0]["is_default"] is True
+        assert oidc.oidc_configured() is True
+        # the secret is stored but masked on the read-model
+        assert oidc_config.mask_provider(provs[0])["client_secret"] == oidc_config.SECRET_SENTINEL
+        # seeding is one-time
+        oidc.seed_from_env()
+        assert len(oidc_config.load_providers()) == 1
+    finally:
+        for k in ("OIDC_ISSUER", "OIDC_CLIENT_ID", "OIDC_CLIENT_SECRET"):
             os.environ.pop(k, None)
 
 
