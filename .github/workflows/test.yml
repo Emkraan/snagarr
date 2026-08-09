@@ -29,3 +29,13 @@ jobs:
 
       - name: Run unit tests
         run: python -m pytest tests/ -q
+
+  ci:
+    name: ci
+    needs: [pytest]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: All checks passed
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+        run: exit 1
