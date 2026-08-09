@@ -154,25 +154,33 @@ def client():
 
 # ---- helpers ---------------------------------------------------------------
 
+def _cookie_env(token):
+    """Return environ_base dict that injects the session cookie into the WSGI environ.
+
+    Werkzeug's test client manages its own cookie jar which can shadow a Cookie
+    header set via headers={}.  Injecting directly into HTTP_COOKIE in
+    environ_base bypasses the jar and is reliably parsed by Flask's request.cookies.
+    """
+    if not token:
+        return {}
+    return {"HTTP_COOKIE": f"{COOKIE_NAME}={token}"}
+
+
 def _get(client, path, token=None):
-    headers = {}
-    if token:
-        headers["Cookie"] = f"{COOKIE_NAME}={token}"
-    return client.get(path, headers=headers)
+    return client.get(path, environ_base=_cookie_env(token))
 
 
 def _post(client, path, body=None, token=None):
-    headers = {"Content-Type": "application/json"}
-    if token:
-        headers["Cookie"] = f"{COOKIE_NAME}={token}"
-    return client.post(path, data=json.dumps(body or {}), headers=headers)
+    return client.post(
+        path,
+        data=json.dumps(body or {}),
+        content_type="application/json",
+        environ_base=_cookie_env(token),
+    )
 
 
 def _delete(client, path, token=None):
-    headers = {}
-    if token:
-        headers["Cookie"] = f"{COOKIE_NAME}={token}"
-    return client.delete(path, headers=headers)
+    return client.delete(path, environ_base=_cookie_env(token))
 
 
 # ---- /api/admin/summary ----------------------------------------------------
