@@ -11,6 +11,11 @@ import os
 
 from src.primary import settings_manager, api_keys
 
+#: The project's own repository. A self-reference is legitimate OSS identification
+#: and is allowed. No operating-org name, no hostname, no homelab path may appear
+#: as the identity of the public build beyond this self-reference.
+REPO_URL = "https://github.com/Emkraan/snagarr"
+
 
 def _version():
     try:
@@ -82,6 +87,20 @@ def build_spec():
                 "> Secret fields (client secrets, passwords) are masked in GET responses and "
                 "preserved-unless-changed on write."
             ),
+            # `contact.name` is the PRODUCT name, never the operating org name.
+            "contact": {"name": "Snagarr", "url": REPO_URL},
+            "license": {
+                "name": "GNU General Public License v3.0",
+                "url": f"{REPO_URL}/blob/main/LICENSE",
+            },
+            # `x-logo` is the field Scalar and RapiDoc read for the reference masthead.
+            # Relative on purpose: resolves against whatever origin is rendering the
+            # document, correct behind any proxy and with no org hostname baked in.
+            "x-logo": {"url": "/static/logo/snagarr.svg", "altText": "Snagarr"},
+        },
+        "externalDocs": {
+            "description": "Source, deployment notes and the design docs",
+            "url": REPO_URL,
         },
         "servers": [{"url": "/api/v1", "description": "This Snagarr instance"}],
         "tags": [
