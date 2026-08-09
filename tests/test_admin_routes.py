@@ -28,6 +28,8 @@ os.environ.setdefault("SNAGARR_API_DIR", tempfile.mkdtemp())
 
 _logmod = types.ModuleType("src.primary.utils.logger")
 _logmod.logger = logging.getLogger("test-admin")
+_logmod.get_logger = lambda _app_type="": logging.getLogger("test-admin")  # type: ignore[attr-defined]
+_logmod.debug_log = lambda *_a, **_kw: None  # type: ignore[attr-defined]
 sys.modules.setdefault("src.primary.utils.logger", _logmod)
 
 # ---- import the blueprint (may drag in real auth/oidc but that's fine) ---
