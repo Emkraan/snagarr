@@ -78,70 +78,6 @@ Entirely optional, and every feature stays free either way.
 
 ---
 
-## Deployment
-
-Snagarr ships as a single container that listens on port `9705` and keeps all state under one `/config` volume. Images are published to GitHub Container Registry (GHCR) under four tags:
-
-```
-ghcr.io/emkraan/snagarr:latest          <- latest commit on main
-ghcr.io/emkraan/snagarr:edge            <- same as latest
-ghcr.io/emkraan/snagarr:X.Y.Z           <- pinned stable release (semver)
-ghcr.io/emkraan/snagarr:sha-<commit>    <- immutable per-commit build
-```
-
-Pin to a `X.Y.Z` release (or an immutable `sha-<commit>`) in production. Do not run `:latest`.
-
-### Docker Compose (recommended)
-
-Create a `docker-compose.yml`:
-
-```yaml
-services:
-  snagarr:
-    image: ghcr.io/emkraan/snagarr:0.1.0   # pin a release; avoid :latest in production
-    container_name: snagarr
-    restart: unless-stopped
-    ports:
-      - "9705:9705"                        # web UI + API
-    volumes:
-      - ./config:/config                   # all settings, state, credentials, and logs
-    environment:
-      - TZ=UTC                             # container timezone; affects schedules and log timestamps
-      # - SECRET_KEY=change-me             # optional: a random key is generated and persisted if unset
-      # - PORT=9705                        # optional: override the listen port
-      # - DEBUG=false                      # optional: never enable in production
-```
-
-The container runs as uid/gid 1000, so make the host config directory writable by it before the first start:
-
-```bash
-mkdir -p ./config
-sudo chown -R 1000:1000 ./config
-docker compose up -d
-```
-
-### First run
-
-Browse to `http://<your-host>:9705`. On first launch you are redirected to `/setup` to create the admin username and password. After that, open **Connections** and add each *arr instance (base URL + API key), then tune hunt counts and schedules under **Settings** and **Scheduling**.
-
-> **Verify the deploy.** `curl http://<your-host>:9705/ping` returns `{"status":"OK"}`. `curl http://<your-host>:9705/api/v1/health` returns the running version. The build number also shows in the sidebar footer.
-
-### Pin to a version
-
-Replace the image tag with a semver release or an immutable commit build:
-
-```yaml
-    image: ghcr.io/emkraan/snagarr:0.1.0
-    # or
-    image: ghcr.io/emkraan/snagarr:sha-<commit>
-```
-
-### How the maintainer runs it (optional, GitOps + Portainer)
-
-This is how the maintainer runs their own instance, not a requirement for self-hosting. GitHub Actions builds the image and pushes it to GHCR; a Portainer stack pulls `portainer-stack.yml` directly from a private ops repository and is pinned to an immutable `sha-<commit>` tag, so the running image always matches git. A GitOps webhook redeploys the stack when the pinned tag changes. If you go this route, keep the image tag in git and redeploy from there; never edit tags in the Portainer UI.
-
----
-
 ## Data Volume
 
 All persistent state lives under `/config`. Each app has its own JSON file, so settings are isolated and independently editable. Secret material (credentials, the session key, SSO client secrets, API keys) is written with `0600` permissions.
@@ -270,6 +206,70 @@ Snagarr has two roles:
 **Enforcement is server-side.** A central `before_request` check rejects every mutating request (`POST`, `PUT`, `PATCH`, `DELETE`) from a member session with `403`, so members are read-only even if they craft requests directly; the UI additionally hides admin navigation and controls for them. API keys inherit the caller's authority: an admin session maps to the `admin` scope, a member session to `read`.
 
 **Claim mapping.** The SSO editor exposes the claim names used for the display name, email, profile photo, and groups, plus the OAuth scopes, so you can adapt Snagarr to any provider's token shape without code changes.
+
+---
+
+## Deployment
+
+Snagarr ships as a single container that listens on port `9705` and keeps all state under one `/config` volume. Images are published to GitHub Container Registry (GHCR) under four tags:
+
+```
+ghcr.io/emkraan/snagarr:latest          <- latest commit on main
+ghcr.io/emkraan/snagarr:edge            <- same as latest
+ghcr.io/emkraan/snagarr:X.Y.Z           <- pinned stable release (semver)
+ghcr.io/emkraan/snagarr:sha-<commit>    <- immutable per-commit build
+```
+
+Pin to a `X.Y.Z` release (or an immutable `sha-<commit>`) in production. Do not run `:latest`.
+
+### Docker Compose (recommended)
+
+Create a `docker-compose.yml`:
+
+```yaml
+services:
+  snagarr:
+    image: ghcr.io/emkraan/snagarr:0.1.0   # pin a release; avoid :latest in production
+    container_name: snagarr
+    restart: unless-stopped
+    ports:
+      - "9705:9705"                        # web UI + API
+    volumes:
+      - ./config:/config                   # all settings, state, credentials, and logs
+    environment:
+      - TZ=UTC                             # container timezone; affects schedules and log timestamps
+      # - SECRET_KEY=change-me             # optional: a random key is generated and persisted if unset
+      # - PORT=9705                        # optional: override the listen port
+      # - DEBUG=false                      # optional: never enable in production
+```
+
+The container runs as uid/gid 1000, so make the host config directory writable by it before the first start:
+
+```bash
+mkdir -p ./config
+sudo chown -R 1000:1000 ./config
+docker compose up -d
+```
+
+### First run
+
+Browse to `http://<your-host>:9705`. On first launch you are redirected to `/setup` to create the admin username and password. After that, open **Connections** and add each *arr instance (base URL + API key), then tune hunt counts and schedules under **Settings** and **Scheduling**.
+
+> **Verify the deploy.** `curl http://<your-host>:9705/ping` returns `{"status":"OK"}`. `curl http://<your-host>:9705/api/v1/health` returns the running version. The build number also shows in the sidebar footer.
+
+### Pin to a version
+
+Replace the image tag with a semver release or an immutable commit build:
+
+```yaml
+    image: ghcr.io/emkraan/snagarr:0.1.0
+    # or
+    image: ghcr.io/emkraan/snagarr:sha-<commit>
+```
+
+### How the maintainer runs it (optional, GitOps + Portainer)
+
+This is how the maintainer runs their own instance, not a requirement for self-hosting. GitHub Actions builds the image and pushes it to GHCR; a Portainer stack pulls `portainer-stack.yml` directly from a private ops repository and is pinned to an immutable `sha-<commit>` tag, so the running image always matches git. A GitOps webhook redeploys the stack when the pinned tag changes. If you go this route, keep the image tag in git and redeploy from there; never edit tags in the Portainer UI.
 
 ---
 
