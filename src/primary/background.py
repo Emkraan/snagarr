@@ -16,8 +16,8 @@ from typing import Dict, List, Optional, Callable, Union, Tuple
 import datetime
 import traceback
 
-# Define the version number
-__version__ = "1.0.0" # Consider updating this based on changes
+# Version is read from the VERSION file via src.primary.__version__.
+from src.primary import __version__ as __version__
 
 # Set up logging first
 from src.primary.utils.logger import setup_main_logger, get_logger # Import get_logger
