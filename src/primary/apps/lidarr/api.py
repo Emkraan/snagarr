@@ -13,6 +13,7 @@ import traceback
 import logging
 from typing import List, Dict, Any, Optional, Union
 from src.primary.utils.logger import get_logger
+from src.primary import __version__ as _SNAGARR_VERSION
 from src.primary.settings_manager import get_ssl_verify_setting
 
 # Get logger for the Lidarr app
@@ -53,7 +54,7 @@ def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, met
     headers = {
         "X-Api-Key": api_key,
         "Content-Type": "application/json",
-        "User-Agent": "Snagarr/0.1.0 (https://github.com/Emkraan/snagarr)"
+        "User-Agent": f"Snagarr/{_SNAGARR_VERSION} (https://github.com/Emkraan/snagarr)"
     }
     
     lidarr_logger.debug(f"Using User-Agent: {headers['User-Agent']}")

@@ -12,6 +12,7 @@ from typing import List, Dict, Any, Optional, Union
 # Correct the import path
 from src.primary.utils.logger import get_logger
 # Import load_settings
+from src.primary import __version__ as _SNAGARR_VERSION
 from src.primary.settings_manager import load_settings, get_ssl_verify_setting
 import importlib
 
@@ -44,7 +45,7 @@ def check_connection(api_url: str, api_key: str, api_timeout: int) -> bool:
         # Add User-Agent header to identify Huntarr
         headers = {
             "X-Api-Key": api_key,
-            "User-Agent": "Snagarr/0.1.0 (https://github.com/Emkraan/snagarr)"
+            "User-Agent": f"Snagarr/{_SNAGARR_VERSION} (https://github.com/Emkraan/snagarr)"
         }
         logger.debug(f"Using User-Agent: {headers['User-Agent']}")
         
@@ -187,7 +188,7 @@ def arr_request(endpoint: str, method: str = "GET", data: Dict = None, app_type:
     headers = {
         "X-Api-Key": key,
         "Content-Type": "application/json",
-        "User-Agent": f"Snagarr/0.1.0 ({app_type})"
+        "User-Agent": f"Snagarr/{_SNAGARR_VERSION} ({app_type})"
     }
     
     # Get SSL verification setting
@@ -295,7 +296,7 @@ def get_wanted_missing_books(api_url: str, api_key: str, api_timeout: int, monit
     # Add User-Agent header to identify Huntarr
     headers = {
         "X-Api-Key": api_key,
-        "User-Agent": "Snagarr/0.1.0 (https://github.com/Emkraan/snagarr)",
+        "User-Agent": f"Snagarr/{_SNAGARR_VERSION} (https://github.com/Emkraan/snagarr)",
         "Content-Type": "application/json"
     }
     logger.debug(f"Using User-Agent: {headers['User-Agent']}")
