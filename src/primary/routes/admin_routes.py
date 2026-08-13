@@ -17,7 +17,7 @@ import pathlib
 from flask import Blueprint, jsonify, render_template, request
 
 from .. import api_keys, oidc_config, settings_manager
-from ..auth import SESSION_COOKIE_NAME, get_role_from_session, verify_session
+from ..auth import session_role
 from ..utils.logger import logger
 
 admin_bp = Blueprint("admin", __name__)
@@ -26,13 +26,22 @@ _REPO_ROOT = pathlib.Path(__file__).parent.parent.parent.parent
 
 
 def _require_admin():
-    """Return (session_token, None) or (None, 403-response)."""
-    token = request.cookies.get(SESSION_COOKIE_NAME)
-    if not verify_session(token):
+    """Return (True, None) or (None, 401/403-response).
+
+    Role comes from session_role(), which is proxy-trust aware: it prefers the
+    request-scoped role set by authenticate_request over the raw session cookie.
+    The raw cookie is not a reliable source under trusted-proxy auth -- it is
+    absent on the first request (set only via after_request) and points at an
+    in-memory session that a different worker may not hold. None means no
+    per-user session was resolved -> unauthenticated (401), preserving the prior
+    behavior.
+    """
+    role = session_role()
+    if role is None:
         return None, (jsonify({"error": "Not authenticated"}), 401)
-    if get_role_from_session(token) != "admin":
+    if role != "admin":
         return None, (jsonify({"error": "Admin access required"}), 403)
-    return token, None
+    return True, None
 
 
 # ---------------------------------------------------------------------------
@@ -41,12 +50,17 @@ def _require_admin():
 
 @admin_bp.route("/admin")
 def admin_hub():
-    """Admin hub - rendered for admin sessions only; members get 403."""
-    token = request.cookies.get(SESSION_COOKIE_NAME)
-    if not verify_session(token):
+    """Admin hub - rendered for admin sessions only; members get 403.
+
+    authenticate_request has already enforced authentication before this view
+    runs, so we only gate on role via the proxy-trust-aware session_role()
+    (see _require_admin for why the raw cookie is not used here).
+    """
+    role = session_role()
+    if role is None:
         from flask import redirect, url_for
         return redirect(url_for("common.login_route"))
-    if get_role_from_session(token) != "admin":
+    if role != "admin":
         return render_template("403.html"), 403
     return render_template("admin.html")
 
