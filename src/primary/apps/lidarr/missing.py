@@ -4,28 +4,26 @@ Lidarr missing content processing module for Huntarr
 Handles missing albums or artists based on configuration.
 """
 
-import time
-import random
 import datetime
-import os
-import json
-from typing import Dict, Any, Callable
-from src.primary.utils.logger import get_logger
+import random
+import time
+from collections.abc import Callable
+from typing import Any
+
 from src.primary.apps.lidarr import api as lidarr_api
+from src.primary.settings_manager import get_advanced_setting
+from src.primary.state import check_state_reset
+from src.primary.stateful_manager import add_processed_id, is_processed
 from src.primary.stats_manager import increment_stat
-from src.primary.stateful_manager import is_processed, add_processed_id
 from src.primary.utils.history_utils import log_processed_media
-from src.primary.settings_manager import load_settings, get_advanced_setting
-from src.primary.state import get_state_file_path, check_state_reset
-import json
-import os
+from src.primary.utils.logger import get_logger
 
 # Get the logger for the Lidarr module
 lidarr_logger = get_logger(__name__) # Use __name__ for correct logger hierarchy
 
 
 def process_missing_albums(
-    app_settings: Dict[str, Any],      # Combined settings dictionary
+    app_settings: dict[str, Any],      # Combined settings dictionary
     stop_check: Callable[[], bool] = None      # Function to check for stop signal
 ) -> bool:
     """
@@ -184,7 +182,7 @@ def process_missing_albums(
 
         # --- Trigger Search (Artist or Album) ---
         if hunt_missing_mode == "artist":
-            lidarr_logger.info(f"Artist-based missing mode selected")
+            lidarr_logger.info("Artist-based missing mode selected")
             lidarr_logger.info(f"Found {len(entities_to_search_ids)} unprocessed artists to search.")
             
             # Prepare a list for artist details log
@@ -198,7 +196,7 @@ def process_missing_albums(
                 if artist_data:
                     artist_details[artist_id] = artist_data
             
-            lidarr_logger.info(f"Artists selected for processing in this cycle:")
+            lidarr_logger.info("Artists selected for processing in this cycle:")
             for i, artist_id in enumerate(entities_to_search_ids):
                 # Get artist name and any additional details
                 artist_name = f"Artist ID {artist_id}" # Default if name not found
@@ -212,7 +210,7 @@ def process_missing_albums(
                         album_count = artist_data['statistics']['albumCount']
                         artist_metadata = f"({album_count} albums)"
                     # Get genre info if available
-                    if 'genres' in artist_data and artist_data['genres']:
+                    if artist_data.get('genres'):
                         genres = ", ".join(artist_data['genres'][:2])  # Limit to first 2 genres
                         if artist_metadata:
                             artist_metadata = f"{artist_metadata} - {genres}"
@@ -234,7 +232,7 @@ def process_missing_albums(
                 if artist_id in artist_details:
                     artist_data = artist_details[artist_id]
                     artist_name = artist_data.get('artistName', artist_name)
-                elif artist_id in items_by_artist and items_by_artist[artist_id]:
+                elif items_by_artist.get(artist_id):
                     # Fallback to album info if direct artist details not available
                     first_album = items_by_artist[artist_id][0]
                     artist_info = first_album.get('artist')
@@ -285,7 +283,7 @@ def process_missing_albums(
             for album_id in album_ids_to_search:
                 album_details[album_id] = lidarr_api.get_albums(api_url, api_key, api_timeout, album_id)
             
-            lidarr_logger.info(f"Albums selected for processing in this cycle:")
+            lidarr_logger.info("Albums selected for processing in this cycle:")
             for idx, album_id in enumerate(album_ids_to_search):
                 album_info = missing_items_dict.get(album_id)
                 if album_info:
@@ -295,7 +293,7 @@ def process_missing_albums(
                     
                     # Get additional metadata if available
                     release_year = ""
-                    if 'releaseDate' in album_info and album_info['releaseDate']:
+                    if album_info.get('releaseDate'):
                         try:
                             release_date = album_info['releaseDate'].split('T')[0]
                             release_year = f"({release_date[:4]})"

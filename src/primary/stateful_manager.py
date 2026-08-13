@@ -16,16 +16,16 @@ Persistence hardening in this module:
   concurrent add across the hunt threads.
 """
 
-import os
-import json
-import time
-import hashlib
-import pathlib
 import datetime
+import hashlib
+import json
 import logging
+import os
+import pathlib
 import tempfile
 import threading
-from typing import Dict, Any, Set
+import time
+from typing import Any
 
 # Create logger for stateful_manager
 stateful_logger = logging.getLogger("stateful_manager")
@@ -122,7 +122,7 @@ def _instance_path(app_type: str, instance_name: str) -> pathlib.Path:
     return new_path
 
 
-def _read_ids(file_path: pathlib.Path) -> Set[str]:
+def _read_ids(file_path: pathlib.Path) -> set[str]:
     """Read the processed-ID set from a resolved file path. Missing/corrupt -> empty set."""
     if not file_path.exists():
         return set()
@@ -159,7 +159,7 @@ def initialize_lock_file() -> None:
                 stateful_logger.error(f"Error initializing lock file: {e}")
 
 
-def get_lock_info() -> Dict[str, Any]:
+def get_lock_info() -> dict[str, Any]:
     """Return the current lock info, self-healing missing fields."""
     initialize_lock_file()
     with _LOCK:
@@ -274,7 +274,7 @@ def check_expiration() -> bool:
     return False
 
 
-def get_processed_ids(app_type: str, instance_name: str) -> Set[str]:
+def get_processed_ids(app_type: str, instance_name: str) -> set[str]:
     """Return the set of processed media IDs for an app+instance."""
     if app_type not in APP_TYPES:
         stateful_logger.warning(f"Unknown app type: {app_type}")
@@ -319,7 +319,7 @@ def is_processed(app_type: str, instance_name: str, media_id: str) -> bool:
     return result
 
 
-def get_stateful_management_info() -> Dict[str, Any]:
+def get_stateful_management_info() -> dict[str, Any]:
     """Return created/expiry timestamps and the configured interval for the UI/API."""
     lock_info = get_lock_info()
     return {

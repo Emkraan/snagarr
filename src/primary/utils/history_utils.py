@@ -37,5 +37,5 @@ def log_processed_media(app_type, media_name, media_id, instance_name, operation
             logger.error(f"Failed to log history entry for {app_type} - {instance_name}: {media_name}")
             return False
     except Exception as e:
-        logger.error(f"Error logging history entry: {str(e)}")
+        logger.error(f"Error logging history entry: {e!s}")
         return False

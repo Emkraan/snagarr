@@ -6,16 +6,16 @@ VERSION file (not a hardcoded literal), product branding is present, and the cor
 API-key paths are there. Without this the spec silently drifts on every merge.
 """
 
+import logging
 import os
 import re
-import tempfile
-
-import pytest
 
 # One-time stubs before importing the app modules; mirrors test_api_v1.py.
 import sys
+import tempfile
 import types
-import logging
+
+import pytest
 
 os.environ.setdefault("SNAGARR_USER_DIR", tempfile.mkdtemp())
 os.environ.setdefault("SNAGARR_API_DIR", tempfile.mkdtemp())

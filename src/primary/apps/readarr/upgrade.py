@@ -4,23 +4,24 @@ Quality Upgrade Processing for Readarr
 Handles searching for books that need quality upgrades in Readarr
 """
 
-import time
+import datetime  # Import the datetime module
 import random
-import datetime # Import the datetime module
-from typing import List, Dict, Any, Set, Callable, Union, Optional
-from src.primary.utils.logger import get_logger
+from collections.abc import Callable
+from typing import Any
+
 from src.primary.apps.readarr import api as readarr_api
-from src.primary.stats_manager import increment_stat
-from src.primary.stateful_manager import is_processed, add_processed_id
-from src.primary.utils.history_utils import log_processed_media
+from src.primary.settings_manager import load_settings  # Import load_settings function
 from src.primary.state import check_state_reset
-from src.primary.settings_manager import load_settings # Import load_settings function
+from src.primary.stateful_manager import add_processed_id, is_processed
+from src.primary.stats_manager import increment_stat
+from src.primary.utils.history_utils import log_processed_media
+from src.primary.utils.logger import get_logger
 
 # Get logger for the app
 readarr_logger = get_logger("readarr")
 
 def process_cutoff_upgrades(
-    app_settings: Dict[str, Any],
+    app_settings: dict[str, Any],
     stop_check: Callable[[], bool] # Function to check if stop is requested
 ) -> bool:
     """
@@ -184,7 +185,7 @@ def process_cutoff_upgrades(
         processed_something = True
         readarr_logger.info(f"Processed {processed_count} book upgrades this cycle.")
     else:
-        readarr_logger.error(f"Failed to trigger search for book upgrades.")
+        readarr_logger.error("Failed to trigger search for book upgrades.")
 
     readarr_logger.info(f"Completed processing {processed_count} books for upgrade this cycle.")
     

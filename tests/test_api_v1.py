@@ -35,9 +35,10 @@ _sm.get_configured_apps = lambda: [a for a in _STORE if _STORE[a].get("instances
 _sm.load_default_app_settings = lambda app: {"_default": True, "app": app}
 sys.modules["src.primary.settings_manager"] = _sm
 
-from flask import Flask  # noqa: E402
-from src.primary.routes import api_v1 as api_v1_mod  # noqa: E402
-from src.primary import api_keys as ak  # noqa: E402
+from flask import Flask
+
+from src.primary import api_keys as ak
+from src.primary.routes import api_v1 as api_v1_mod
 
 # Bind the stub directly on the already-imported module.  When test_admin_routes.py
 # is collected before this file, it imports the real settings_manager and sets it as

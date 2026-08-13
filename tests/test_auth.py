@@ -29,7 +29,7 @@ def load_auth(tmp_path):
     sys.modules["src.primary.utils.logger"] = fake_logger_mod
 
     sys.modules.pop("src.primary.auth", None)
-    import src.primary.auth as auth
+    from src.primary import auth
     importlib.reload(auth)
     return auth
 

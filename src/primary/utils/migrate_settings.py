@@ -4,10 +4,9 @@ Settings migration utility for Huntarr
 Migrates settings from nested structure to flat structure
 """
 
-import os
 import json
-import pathlib
 import logging
+import pathlib
 
 # Create logger
 logging.basicConfig(level=logging.INFO)

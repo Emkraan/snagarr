@@ -5,22 +5,22 @@ Handles user creation, verification, and session management
 Including two-factor authentication
 """
 
-import os
-import json
+import base64
 import hashlib
+import io
+import json
+import os
+import pathlib
 import secrets
 import time
+from typing import Any
+
 import bcrypt
-import pathlib
-import base64
-import io
+import pyotp  # Ensure pyotp is imported
 import qrcode
-import pyotp # Ensure pyotp is imported
-import re # Import the re module for regex
-from functools import wraps
-from typing import Dict, Any, Optional, Tuple
-from flask import request, redirect, url_for, session, jsonify
-from .utils.logger import logger # Ensure logger is imported
+from flask import jsonify, redirect, request, session
+
+from .utils.logger import logger  # Ensure logger is imported
 
 # User directory setup (env-overridable, mainly for tests; default unchanged)
 USER_DIR = pathlib.Path(os.getenv("SNAGARR_USER_DIR") or os.path.join(os.getenv("SNAGARR_CONFIG_DIR", "/config"), "user"))
@@ -72,7 +72,7 @@ def get_or_create_secret_key() -> str:
         return secrets.token_hex(32)
 
 # --- Add Helper functions for user data ---
-def get_user_data() -> Dict[str, Any]:
+def get_user_data() -> dict[str, Any]:
     """Load user data from the credentials file."""
     if not USER_FILE.exists():
         logger.warning(f"Attempted to get user data, but file not found: {USER_FILE}")
@@ -87,7 +87,7 @@ def get_user_data() -> Dict[str, Any]:
         logger.error(f"Error reading user file {USER_FILE}: {e}", exc_info=True)
         return {}
 
-def save_user_data(user_data: Dict[str, Any]) -> bool:
+def save_user_data(user_data: dict[str, Any]) -> bool:
     """Save user data to the credentials file."""
     try:
         logger.debug(f"Attempting to save user data to: {USER_FILE}")
@@ -137,7 +137,7 @@ def hash_username(username: str) -> str:
     # Convert to lowercase and hash
     return hashlib.sha256(username.lower().encode()).hexdigest()
 
-def validate_password_strength(password: str) -> Optional[str]:
+def validate_password_strength(password: str) -> str | None:
     """Validate password strength based on defined criteria.
 
     Args:
@@ -201,7 +201,7 @@ def create_user(username: str, password: str) -> bool:
         logger.error(f"Error creating user file {USER_FILE}: {e}", exc_info=True)
         return False
 
-def verify_user(username: str, password: str, otp_code: str = None) -> Tuple[bool, bool]:
+def verify_user(username: str, password: str, otp_code: str = None) -> tuple[bool, bool]:
     """
     Verify user credentials
     
@@ -267,7 +267,7 @@ def verify_user(username: str, password: str, otp_code: str = None) -> Tuple[boo
     logger.warning(f"Login attempt failed for user '{username}': Username not found or other error.")
     return False, False
 
-def create_session(username: str, role: str = "admin", profile: Optional[dict] = None) -> str:
+def create_session(username: str, role: str = "admin", profile: dict | None = None) -> str:
     """Create a new session for an authenticated user.
 
     role: 'admin' (full control) or 'member' (read-only). Local login and any
@@ -302,7 +302,7 @@ def verify_session(session_id: str) -> bool:
     active_sessions[session_id]["expires_at"] = time.time() + SESSION_EXPIRY
     return True
 
-def get_username_from_session(session_id: str) -> Optional[str]:
+def get_username_from_session(session_id: str) -> str | None:
     """Get the username from a session"""
     if not session_id or session_id not in active_sessions:
         return None
@@ -310,7 +310,7 @@ def get_username_from_session(session_id: str) -> Optional[str]:
     # Return the stored username
     return active_sessions[session_id].get("username")
 
-def get_role_from_session(session_id: str) -> Optional[str]:
+def get_role_from_session(session_id: str) -> str | None:
     """Get the RBAC role ('admin'|'member') from a session, or None if unknown."""
     if not session_id or session_id not in active_sessions:
         return None
@@ -332,7 +332,7 @@ def get_profile_from_session(session_id: str) -> dict:
 # Mutating requests always allowed even for members (self-service / auth flow).
 _RBAC_METHOD_EXEMPT = {"GET", "HEAD", "OPTIONS"}
 
-def session_role() -> Optional[str]:
+def session_role() -> str | None:
     """Role of the current request's session cookie, or None if not a session."""
     sid = request.cookies.get(SESSION_COOKIE_NAME)
     if sid and verify_session(sid):
@@ -511,7 +511,7 @@ def is_2fa_enabled(username):
     user_data = get_user_data()
     return user_data.get('2fa_enabled', False)
 
-def generate_2fa_secret(username: str) -> Tuple[str, str]:
+def generate_2fa_secret(username: str) -> tuple[str, str]:
     """
     Generate a new 2FA secret and QR code
     
@@ -675,7 +675,7 @@ def change_password(current_password: str, new_password: str) -> bool:
         logger.error("Failed to save user data after changing password.")
         return False
 
-def get_app_url_and_key(app_type: str) -> Tuple[str, str]:
+def get_app_url_and_key(app_type: str) -> tuple[str, str]:
     """
     Get the API URL and API key for a specific app type
     

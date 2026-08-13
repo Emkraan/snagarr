@@ -1,6 +1,8 @@
 import socket
 from urllib.parse import urlparse
+
 from src.primary.config import API_URL
+
 
 def get_ip_address():
     try:

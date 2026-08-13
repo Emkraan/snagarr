@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
-from flask import Blueprint, request, jsonify
-import datetime, os, requests
-from src.primary import keys_manager
-from src.primary.state import get_state_file_path, reset_state_file
-from src.primary.utils.logger import get_logger
-from src.primary.settings_manager import get_ssl_verify_setting
-import traceback
 import socket
 from urllib.parse import urlparse
+
+import requests
+from flask import Blueprint, jsonify, request
+
+from src.primary.settings_manager import get_ssl_verify_setting
+from src.primary.state import get_state_file_path
+from src.primary.utils.logger import get_logger
 
 lidarr_bp = Blueprint('lidarr', __name__)
 lidarr_logger = get_logger("lidarr")
@@ -58,7 +58,7 @@ def test_connection():
         return jsonify({"success": False, "message": error_msg}), 404
     except Exception as e:
         # Log the socket testing error but continue with the full request
-        lidarr_logger.debug(f"Socket test error, continuing with full request: {str(e)}")
+        lidarr_logger.debug(f"Socket test error, continuing with full request: {e!s}")
     
     # For Lidarr, use api/v1
     url = f"{api_url.rstrip('/')}/api/v1/system/status"
@@ -125,10 +125,10 @@ def test_connection():
         lidarr_logger.error(error_msg)
         return jsonify({"success": False, "message": error_msg}), 404
     except requests.exceptions.Timeout:
-        error_msg = f"Connection timed out - Lidarr took too long to respond"
+        error_msg = "Connection timed out - Lidarr took too long to respond"
         lidarr_logger.error(error_msg)
         return jsonify({"success": False, "message": error_msg}), 504
     except requests.exceptions.RequestException as e:
-        error_msg = f"Connection test failed: {str(e)}"
+        error_msg = f"Connection test failed: {e!s}"
         lidarr_logger.error(error_msg)
         return jsonify({"success": False, "message": error_msg}), 500

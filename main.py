@@ -4,11 +4,11 @@ Main entry point for Huntarr
 Starts both the web server and the background processing tasks.
 """
 
+import logging  # Use standard logging for initial setup
 import os
-import threading
-import sys
 import signal
-import logging # Use standard logging for initial setup
+import sys
+import threading
 
 # Ensure the 'src' directory is in the Python path
 # This allows importing modules from 'src.primary' etc.
@@ -80,13 +80,14 @@ if sys.platform == 'win32' and len(sys.argv) > 1:
 
 try:
     # Import the Flask app instance
-    from primary.web_server import app
-    # Import the background task starter function and shutdown helpers from the renamed file
-    from primary.background import start_snagarr, stop_event, shutdown_threads
     # Configure logging first
     import logging
+
+    # Import the background task starter function and shutdown helpers from the renamed file
+    from primary.background import shutdown_threads, start_snagarr, stop_event
+    from primary.web_server import app
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
-    from primary.utils.logger import setup_main_logger, get_logger
+    from primary.utils.logger import get_logger, setup_main_logger
     
     # Initialize main logger
     huntarr_logger = setup_main_logger()

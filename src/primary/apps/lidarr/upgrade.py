@@ -4,22 +4,26 @@ Lidarr cutoff upgrade processing module for Huntarr
 Handles albums that do not meet the configured quality cutoff.
 """
 
-import time
 import random
-from typing import Dict, Any, Optional, Callable, List, Union, Set # Added List, Union and Set
-from src.primary.utils.logger import get_logger
+import time
+from collections.abc import Callable
+from typing import (  # Added List, Union and Set
+    Any,
+)
+
 from src.primary.apps.lidarr import api as lidarr_api
-from src.primary.utils.history_utils import log_processed_media
-from src.primary.stateful_manager import is_processed, add_processed_id
-from src.primary.stats_manager import increment_stat
-from src.primary.settings_manager import load_settings, get_advanced_setting
+from src.primary.settings_manager import get_advanced_setting
 from src.primary.state import check_state_reset  # Add the missing import
+from src.primary.stateful_manager import add_processed_id, is_processed
+from src.primary.stats_manager import increment_stat
+from src.primary.utils.history_utils import log_processed_media
+from src.primary.utils.logger import get_logger
 
 # Get logger for the app
 lidarr_logger = get_logger(__name__) # Use __name__ for correct logger hierarchy
 
 def process_cutoff_upgrades(
-    app_settings: Dict[str, Any], # Changed signature: Use app_settings
+    app_settings: dict[str, Any], # Changed signature: Use app_settings
     stop_check: Callable[[], bool] # Changed signature: Use stop_check
 ) -> bool:
     """
@@ -130,7 +134,7 @@ def process_cutoff_upgrades(
 
         # Log each album on a separate line for better readability
         if album_details_log:
-            lidarr_logger.info(f"Albums selected for quality upgrade in this cycle:")
+            lidarr_logger.info("Albums selected for quality upgrade in this cycle:")
             for album_detail in album_details_log:
                 lidarr_logger.info(f" {album_detail}")
 

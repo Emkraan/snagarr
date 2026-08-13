@@ -1,10 +1,10 @@
-import os
 import json
+import logging
+import os
+import pathlib
+import threading
 import time
 from datetime import datetime
-import threading
-import logging
-import pathlib
 
 # Create a logger
 logger = logging.getLogger(__name__)
@@ -30,13 +30,13 @@ def ensure_history_dir():
         HISTORY_BASE_PATH.mkdir(exist_ok=True, parents=True)
         
         # Create app-specific directories
-        for app in history_locks.keys():
+        for app in history_locks:
             app_dir = HISTORY_BASE_PATH / app
             app_dir.mkdir(exist_ok=True, parents=True)
                     
         return True
     except Exception as e:
-        logger.error(f"Failed to create history directory: {str(e)}")
+        logger.error(f"Failed to create history directory: {e!s}")
         return False
 
 def get_history_file_path(app_type, instance_name=None):
@@ -143,7 +143,7 @@ def get_history(app_type, search_query=None, page=1, page_size=20):
     
     if app_type == "all":
         # Combine histories from all apps and their instances
-        for app in history_locks.keys():
+        for app in history_locks:
             app_dir = HISTORY_BASE_PATH / app
             
             # Find and read all instance files
@@ -155,7 +155,7 @@ def get_history(app_type, search_query=None, page=1, page_size=20):
                             result.extend(instance_history)
                             logger.debug(f"Read {len(instance_history)} entries from {history_file}")
                     except (json.JSONDecodeError, FileNotFoundError) as e:
-                        logger.warning(f"Error reading instance history file {history_file}: {str(e)}")
+                        logger.warning(f"Error reading instance history file {history_file}: {e!s}")
     else:
         # Get history for specific app - combine all instances
         app_dir = HISTORY_BASE_PATH / app_type
@@ -254,7 +254,7 @@ def clear_history(app_type):
     try:
         if app_type == "all":
             # Clear all history files for all apps
-            for app in history_locks.keys():
+            for app in history_locks:
                 # Clear all instance files
                 app_dir = HISTORY_BASE_PATH / app
                 # Ensure directory exists
@@ -286,7 +286,7 @@ def clear_history(app_type):
         logger.info(f"Successfully cleared history for {app_type}")
         return True
     except Exception as e:
-        logger.error(f"Error clearing history for {app_type}: {str(e)}")
+        logger.error(f"Error clearing history for {app_type}: {e!s}")
         return False
 
 def handle_instance_rename(app_type, old_instance_name, new_instance_name):
@@ -432,7 +432,7 @@ def sync_history_files_with_instances():
         ensure_history_dir()
         
         # Load settings for each app type to find instances
-        for app_type in history_locks.keys():
+        for app_type in history_locks:
             app_dir = HISTORY_BASE_PATH / app_type
             app_dir.mkdir(exist_ok=True, parents=True)
             

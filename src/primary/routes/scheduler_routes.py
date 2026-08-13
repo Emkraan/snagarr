@@ -4,11 +4,12 @@ Scheduler API Routes
 Handles API endpoints for scheduler management
 """
 
-import os
 import json
 import logging
-from flask import Blueprint, jsonify, request, Response
+import os
 from datetime import datetime
+
+from flask import Blueprint, Response, jsonify, request
 
 # Import the scheduler engine to get execution history
 from src.primary.scheduler_engine import get_execution_history
@@ -62,7 +63,7 @@ def load_schedules():
         return response
     
     except Exception as e:
-        error_msg = f"Error loading schedules: {str(e)}"
+        error_msg = f"Error loading schedules: {e!s}"
         scheduler_logger.error(error_msg)
         return jsonify({"error": error_msg}), 500
         
@@ -85,7 +86,7 @@ def get_scheduler_history():
         return response
     
     except Exception as e:
-        error_msg = f"Error getting scheduler history: {str(e)}"
+        error_msg = f"Error getting scheduler history: {e!s}"
         scheduler_logger.error(error_msg)
         return jsonify({"error": error_msg}), 500
 
@@ -122,6 +123,6 @@ def save_schedules():
         return response
     
     except Exception as e:
-        error_msg = f"Error saving schedules: {str(e)}"
+        error_msg = f"Error saving schedules: {e!s}"
         scheduler_logger.error(error_msg)
         return jsonify({"error": error_msg}), 500

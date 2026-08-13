@@ -83,7 +83,7 @@ def get_configured_instances():
                 "api_key": api_key,
             }
             instances.append(instance_data)
-            sonarr_logger.info(f"Using legacy configuration with instance name: 'Default'")
+            sonarr_logger.info("Using legacy configuration with instance name: 'Default'")
         else:
             sonarr_logger.warning("No API URL or key found in legacy configuration")
 
@@ -91,4 +91,4 @@ def get_configured_instances():
     sonarr_logger.debug(f"Found {len(instances)} configured and enabled Sonarr instances")
     return instances
 
-__all__ = ["process_missing_episodes", "process_cutoff_upgrades", "get_configured_instances"]
+__all__ = ["get_configured_instances", "process_cutoff_upgrades", "process_missing_episodes"]

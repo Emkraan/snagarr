@@ -4,17 +4,17 @@ Lidarr-specific API functions
 Handles all communication with the Lidarr API (v1)
 """
 
-import requests
 import json
-import sys
-import time
-import datetime
-import traceback
 import logging
-from typing import List, Dict, Any, Optional, Union
-from src.primary.utils.logger import get_logger
+import sys
+import traceback
+from typing import Any
+
+import requests
+
 from src.primary import __version__ as _SNAGARR_VERSION
 from src.primary.settings_manager import get_ssl_verify_setting
+from src.primary.utils.logger import get_logger
 
 # Get logger for the Lidarr app
 lidarr_logger = get_logger("lidarr")
@@ -22,7 +22,7 @@ lidarr_logger = get_logger("lidarr")
 # Use a session for better performance
 session = requests.Session()
 
-def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, method: str = "GET", data: Dict = None, params: Dict = None) -> Any:
+def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, method: str = "GET", data: dict = None, params: dict = None) -> Any:
     """
     Make a request to the Lidarr API.
     
@@ -98,7 +98,7 @@ def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, met
             return True # Indicate success even without content
                 
     except requests.exceptions.RequestException as e:
-        error_msg = f"Error during {method} request to Lidarr endpoint '{endpoint}': {str(e)}"
+        error_msg = f"Error during {method} request to Lidarr endpoint '{endpoint}': {e!s}"
         if e.response is not None:
              error_msg += f" | Status: {e.response.status_code} | Response: {e.response.text[:500]}"
         lidarr_logger.error(error_msg)
@@ -109,7 +109,7 @@ def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, met
             
     except Exception as e:
         # Catch all exceptions and log them with traceback
-        error_msg = f"CRITICAL ERROR in Lidarr arr_request: {str(e)}"
+        error_msg = f"CRITICAL ERROR in Lidarr arr_request: {e!s}"
         lidarr_logger.error(error_msg)
         lidarr_logger.error(f"Full traceback: {traceback.format_exc()}")
         print(error_msg, file=sys.stderr)
@@ -118,7 +118,7 @@ def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, met
 
 # --- Specific API Functions ---
 
-def get_system_status(api_url: str, api_key: str, api_timeout: int, verify_ssl: Optional[bool] = None) -> Dict:
+def get_system_status(api_url: str, api_key: str, api_timeout: int, verify_ssl: bool | None = None) -> dict:
     """
     Get Lidarr system status.
     
@@ -151,7 +151,7 @@ def get_system_status(api_url: str, api_key: str, api_timeout: int, verify_ssl: 
         # Parse and return the result
         return response.json()
     except Exception as e:
-        lidarr_logger.error(f"Error getting system status: {str(e)}")
+        lidarr_logger.error(f"Error getting system status: {e!s}")
         return {}
 
 def check_connection(api_url: str, api_key: str, api_timeout: int) -> bool:
@@ -181,15 +181,15 @@ def check_connection(api_url: str, api_key: str, api_timeout: int) -> bool:
              return False
     except Exception as e:
         # Error should have been logged by arr_request, just indicate failure
-        lidarr_logger.error(f"Connection check failed for {api_url}: {str(e)}")
+        lidarr_logger.error(f"Connection check failed for {api_url}: {e!s}")
         return False
 
-def get_artists(api_url: str, api_key: str, api_timeout: int, artist_id: Optional[int] = None) -> Union[List, Dict, None]:
+def get_artists(api_url: str, api_key: str, api_timeout: int, artist_id: int | None = None) -> list | dict | None:
     """Get artist information from Lidarr."""
     endpoint = f"artist/{artist_id}" if artist_id else "artist"
     return arr_request(api_url, api_key, api_timeout, endpoint)
 
-def get_albums(api_url: str, api_key: str, api_timeout: int, album_id: Optional[int] = None, artist_id: Optional[int] = None) -> Union[List, Dict, None]:
+def get_albums(api_url: str, api_key: str, api_timeout: int, album_id: int | None = None, artist_id: int | None = None) -> list | dict | None:
     """Get album information from Lidarr."""
     params = {}
     if artist_id:
@@ -202,7 +202,7 @@ def get_albums(api_url: str, api_key: str, api_timeout: int, album_id: Optional[
         
     return arr_request(api_url, api_key, api_timeout, endpoint, params=params if params else None)
 
-def get_tracks(api_url: str, api_key: str, api_timeout: int, album_id: Optional[int] = None) -> Union[List, None]:
+def get_tracks(api_url: str, api_key: str, api_timeout: int, album_id: int | None = None) -> list | None:
      """Get track information for a specific album."""
      if not album_id:
          lidarr_logger.warning("get_tracks requires an album_id.")
@@ -210,7 +210,7 @@ def get_tracks(api_url: str, api_key: str, api_timeout: int, album_id: Optional[
      params = {'albumId': album_id}
      return arr_request(api_url, api_key, api_timeout, "track", params=params)
 
-def get_queue(api_url: str, api_key: str, api_timeout: int) -> List:
+def get_queue(api_url: str, api_key: str, api_timeout: int) -> list:
     """Get the current queue from Lidarr (handles pagination)."""
     # Lidarr v1 queue endpoint supports pagination, unlike Sonarr v3's simple list
     all_records = []
@@ -257,7 +257,7 @@ def get_download_queue_size(api_url: str, api_key: str, api_timeout: int) -> int
         lidarr_logger.error("Error getting Lidarr download queue size.")
         return -1 # Indicate error
 
-def get_missing_albums(api_url: str, api_key: str, api_timeout: int, monitored_only: bool) -> List[Dict[str, Any]]:
+def get_missing_albums(api_url: str, api_key: str, api_timeout: int, monitored_only: bool) -> list[dict[str, Any]]:
     """Get missing albums from Lidarr, handling pagination."""
     endpoint = "wanted/missing"
     page = 1
@@ -325,7 +325,7 @@ def get_missing_albums(api_url: str, api_key: str, api_timeout: int, monitored_o
         lidarr_logger.debug(f"Returning {len(all_missing_albums)} missing albums (monitored_only=False).")
         return all_missing_albums
 
-def get_cutoff_unmet_albums(api_url: str, api_key: str, api_timeout: int, monitored_only: bool) -> List[Dict[str, Any]]:
+def get_cutoff_unmet_albums(api_url: str, api_key: str, api_timeout: int, monitored_only: bool) -> list[dict[str, Any]]:
     """Get cutoff unmet albums from Lidarr, handling pagination."""
     # Note: Lidarr API returns ALBUMS for cutoff unmet, not tracks.
     endpoint = "wanted/cutoff"
@@ -398,7 +398,7 @@ def get_cutoff_unmet_albums(api_url: str, api_key: str, api_timeout: int, monito
         lidarr_logger.debug(f"Returning {len(all_cutoff_unmet)} cutoff unmet albums (monitored_only=False).")
         return all_cutoff_unmet
 
-def search_albums(api_url: str, api_key: str, api_timeout: int, album_ids: List[int]) -> Optional[Dict]:
+def search_albums(api_url: str, api_key: str, api_timeout: int, album_ids: list[int]) -> dict | None:
     """Trigger a search for specific albums in Lidarr."""
     if not album_ids:
         lidarr_logger.warning("No album IDs provided for search.")
@@ -418,7 +418,7 @@ def search_albums(api_url: str, api_key: str, api_timeout: int, album_ids: List[
         lidarr_logger.error(f"Failed to trigger Lidarr AlbumSearch for album IDs {album_ids}. Response: {response}")
         return None
 
-def search_artist(api_url: str, api_key: str, api_timeout: int, artist_id: int) -> Optional[Dict]:
+def search_artist(api_url: str, api_key: str, api_timeout: int, artist_id: int) -> dict | None:
     """Trigger a search for a specific artist in Lidarr."""
     payload = {
         "name": "ArtistSearch",
@@ -434,7 +434,7 @@ def search_artist(api_url: str, api_key: str, api_timeout: int, artist_id: int) 
         lidarr_logger.error(f"Failed to trigger Lidarr ArtistSearch for artist ID {artist_id}. Response: {response}")
         return None
 
-def refresh_artist(api_url: str, api_key: str, api_timeout: int, artist_id: int) -> Optional[Dict]:
+def refresh_artist(api_url: str, api_key: str, api_timeout: int, artist_id: int) -> dict | None:
     """Refresh functionality has been removed as it was a performance bottleneck.
     This function now returns a placeholder success value without making any API calls."""
     lidarr_logger.debug(f"Refresh functionality disabled for artist ID: {artist_id}")
@@ -447,7 +447,7 @@ def refresh_artist(api_url: str, api_key: str, api_timeout: int, artist_id: int)
         'message': 'Refresh functionality disabled for performance reasons'
     }
 
-def get_command_status(api_url: str, api_key: str, api_timeout: int, command_id: int) -> Optional[Dict[str, Any]]:
+def get_command_status(api_url: str, api_key: str, api_timeout: int, command_id: int) -> dict[str, Any] | None:
     """Get the status of a Lidarr command."""
     response = arr_request(api_url, api_key, api_timeout, f"command/{command_id}")
     if response and isinstance(response, dict):
@@ -457,6 +457,6 @@ def get_command_status(api_url: str, api_key: str, api_timeout: int, command_id:
          lidarr_logger.error(f"Error getting Lidarr command status for ID {command_id}. Response: {response}")
          return None
 
-def get_artist_by_id(api_url: str, api_key: str, api_timeout: int, artist_id: int) -> Optional[Dict[str, Any]]:
+def get_artist_by_id(api_url: str, api_key: str, api_timeout: int, artist_id: int) -> dict[str, Any] | None:
     """Get artist details by ID from Lidarr."""
     return arr_request(api_url, api_key, api_timeout, f"artist/{artist_id}")

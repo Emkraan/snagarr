@@ -1,5 +1,6 @@
-import re
 import logging
+import re
+
 
 class WebUrlFilter(logging.Filter):
     """Filter out web URLs from log messages"""

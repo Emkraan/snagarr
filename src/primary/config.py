@@ -6,12 +6,12 @@ and perform configuration-related tasks like logging.
 Removes the old concept of loading a single app's config into global constants.
 """
 
-import os
-import sys
 import logging
+import sys
 import traceback
+
 from src.primary import settings_manager
-from src.primary.utils.logger import logger, get_logger # Import get_logger
+from src.primary.utils.logger import get_logger, logger  # Import get_logger
 
 # Removed global constants like APP_TYPE, API_URL, API_KEY, SLEEP_DURATION etc.
 # Settings should be fetched directly using settings_manager when needed.
@@ -99,11 +99,11 @@ def configure_logging(app_name: str = None):
         #     handler.setLevel(level)
 
     except Exception as e:
-        print(f"CRITICAL ERROR in configure_logging for app '{app_name}': {str(e)}", file=sys.stderr)
+        print(f"CRITICAL ERROR in configure_logging for app '{app_name}': {e!s}", file=sys.stderr)
         print(f"Traceback: {traceback.format_exc()}", file=sys.stderr)
         # Try to log it anyway
         if logger:
-            logger.error(f"Error in configure_logging for app '{app_name}': {str(e)}")
+            logger.error(f"Error in configure_logging for app '{app_name}': {e!s}")
             logger.error(traceback.format_exc())
         # Decide whether to raise or continue
         # raise

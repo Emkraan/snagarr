@@ -3,6 +3,11 @@ output "client_id" {
   value       = azuread_application.snagarr.client_id
 }
 
+output "admin_group_oid" {
+  description = "OID of the sec-snagarr-admin Entra group. Add to Snagarr provider admin_groups."
+  value       = "76e31f1d-1bcb-4584-b305-138bd858d7c9"
+}
+
 output "tenant_id" {
   description = "Tenant ID (passthrough)."
   value       = var.tenant_id

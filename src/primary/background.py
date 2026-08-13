@@ -4,37 +4,38 @@ Huntarr - Main entry point for the application
 Supports multiple Arr applications running concurrently
 """
 
-import time
-import sys
-import os
-# import socket # No longer used directly
-import signal
+import datetime
 import importlib
 import logging
+import os
+
+# import socket # No longer used directly
 import threading
-from typing import Dict, List, Optional, Callable, Union, Tuple
-import datetime
+import time
 import traceback
 
 # Version is read from the VERSION file via src.primary.__version__.
 from src.primary import __version__ as __version__
 
 # Set up logging first
-from src.primary.utils.logger import setup_main_logger, get_logger # Import get_logger
+from src.primary.utils.logger import get_logger, setup_main_logger  # Import get_logger
+
 logger = setup_main_logger()
 
 # Import necessary modules
 from src.primary import config, settings_manager
+from src.primary.scheduler_engine import start_scheduler, stop_scheduler
+
 # Removed keys_manager import as settings_manager handles API details
-from src.primary.state import check_state_reset, calculate_reset_time
+from src.primary.state import calculate_reset_time, check_state_reset
 from src.primary.stateful_manager import check_expiration
 from src.primary.stats_manager import check_hourly_cap_exceeded
 from src.primary.utils.instance_list_generator import generate_instance_list
-from src.primary.scheduler_engine import start_scheduler, stop_scheduler
+
 # from src.primary.utils.app_utils import get_ip_address # No longer used here
 
 # Global state for managing app threads and their status
-app_threads: Dict[str, threading.Thread] = {}
+app_threads: dict[str, threading.Thread] = {}
 stop_event = threading.Event() # Use an event for clearer stop signaling
 
 # Hourly cap scheduler thread
@@ -72,57 +73,57 @@ def app_specific_loop(app_type: str) -> None:
 
         # Try to get the multi-instance function from the main app module
         try:
-            get_instances_func = getattr(app_module, 'get_configured_instances')
+            get_instances_func = app_module.get_configured_instances
             app_logger.debug(f"Found 'get_configured_instances' in {app_module.__name__}")
         except AttributeError:
             app_logger.debug(f"'get_configured_instances' not found in {app_module.__name__}. Assuming single instance mode.")
             get_instances_func = None # Explicitly set to None if not found
 
-        check_connection = getattr(api_module, 'check_connection')
+        check_connection = api_module.check_connection
         get_queue_size = getattr(api_module, 'get_download_queue_size', lambda api_url, api_key, api_timeout: 0) # Default if not found
 
         if app_type == "sonarr":
             missing_module = importlib.import_module('src.primary.apps.sonarr.missing')
             upgrade_module = importlib.import_module('src.primary.apps.sonarr.upgrade')
-            process_missing = getattr(missing_module, 'process_missing_episodes')
-            process_upgrades = getattr(upgrade_module, 'process_cutoff_upgrades')
+            process_missing = missing_module.process_missing_episodes
+            process_upgrades = upgrade_module.process_cutoff_upgrades
             hunt_missing_setting = "hunt_missing_items"
             hunt_upgrade_setting = "hunt_upgrade_items"
         elif app_type == "radarr":
             missing_module = importlib.import_module('src.primary.apps.radarr.missing')
             upgrade_module = importlib.import_module('src.primary.apps.radarr.upgrade')
-            process_missing = getattr(missing_module, 'process_missing_movies')
-            process_upgrades = getattr(upgrade_module, 'process_cutoff_upgrades')
+            process_missing = missing_module.process_missing_movies
+            process_upgrades = upgrade_module.process_cutoff_upgrades
             hunt_missing_setting = "hunt_missing_movies"
             hunt_upgrade_setting = "hunt_upgrade_movies"
         elif app_type == "lidarr":
             missing_module = importlib.import_module('src.primary.apps.lidarr.missing')
             upgrade_module = importlib.import_module('src.primary.apps.lidarr.upgrade')
             # Use process_missing_albums as the function name
-            process_missing = getattr(missing_module, 'process_missing_albums') 
-            process_upgrades = getattr(upgrade_module, 'process_cutoff_upgrades')
+            process_missing = missing_module.process_missing_albums 
+            process_upgrades = upgrade_module.process_cutoff_upgrades
             hunt_missing_setting = "hunt_missing_items"
             # Use hunt_upgrade_items
             hunt_upgrade_setting = "hunt_upgrade_items" 
         elif app_type == "readarr":
             missing_module = importlib.import_module('src.primary.apps.readarr.missing')
             upgrade_module = importlib.import_module('src.primary.apps.readarr.upgrade')
-            process_missing = getattr(missing_module, 'process_missing_books')
-            process_upgrades = getattr(upgrade_module, 'process_cutoff_upgrades')
+            process_missing = missing_module.process_missing_books
+            process_upgrades = upgrade_module.process_cutoff_upgrades
             hunt_missing_setting = "hunt_missing_books"
             hunt_upgrade_setting = "hunt_upgrade_books"
         elif app_type == "whisparr":
             missing_module = importlib.import_module('src.primary.apps.whisparr.missing')
             upgrade_module = importlib.import_module('src.primary.apps.whisparr.upgrade')
-            process_missing = getattr(missing_module, 'process_missing_scenes')
-            process_upgrades = getattr(upgrade_module, 'process_cutoff_upgrades')
+            process_missing = missing_module.process_missing_scenes
+            process_upgrades = upgrade_module.process_cutoff_upgrades
             hunt_missing_setting = "hunt_missing_items"  # Updated to new name
             hunt_upgrade_setting = "hunt_upgrade_items"  # Updated to new name
         elif app_type == "eros":
             missing_module = importlib.import_module('src.primary.apps.eros.missing')
             upgrade_module = importlib.import_module('src.primary.apps.eros.upgrade')
-            process_missing = getattr(missing_module, 'process_missing_items')
-            process_upgrades = getattr(upgrade_module, 'process_cutoff_upgrades')
+            process_missing = missing_module.process_missing_items
+            process_upgrades = upgrade_module.process_cutoff_upgrades
             hunt_missing_setting = "hunt_missing_items"
             hunt_upgrade_setting = "hunt_upgrade_items"
         else:
@@ -379,9 +380,11 @@ def app_specific_loop(app_type: str) -> None:
                 if not 'process_stalled_downloads' in locals():
                     try:
                         # Import directly from handler module to avoid circular imports
-                        from src.primary.apps.swaparr.handler import process_stalled_downloads
+                        from src.primary.apps.swaparr.handler import (
+                            process_stalled_downloads,
+                        )
                         swaparr_logger = get_logger("swaparr")
-                        swaparr_logger.debug(f"Successfully imported Swaparr module")
+                        swaparr_logger.debug("Successfully imported Swaparr module")
                     except (ImportError, AttributeError) as e:
                         app_logger.debug(f"Swaparr module not available or missing functions: {e}")
                         process_stalled_downloads = None
@@ -508,7 +511,7 @@ def start_app_threads():
              logger.warning(f"{app_type} is no longer configured. Thread will likely stop after failing connection checks.")
         # else: # App not configured and no thread running - do nothing
             # logger.debug(f"{app_type} is not configured. No thread started.")
-        pass # Corrected indentation
+        # Corrected indentation
 
 def check_and_restart_threads():
     """Check if any threads have died and restart them if the app is still configured."""

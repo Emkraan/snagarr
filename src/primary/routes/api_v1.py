@@ -14,10 +14,10 @@ envelope: {"ok": bool, "data": ..., "error": {"code","message"} | null}.
 import os
 from functools import wraps
 
-from flask import Blueprint, request, jsonify, session, g
+from flask import Blueprint, g, jsonify, request, session
 
-from src.primary import settings_manager, api_keys, oidc_config
-from src.primary.auth import verify_session, SESSION_COOKIE_NAME
+from src.primary import api_keys, oidc_config, settings_manager
+from src.primary.auth import SESSION_COOKIE_NAME, verify_session
 from src.primary.utils.logger import get_logger
 
 logger = get_logger("api_v1")

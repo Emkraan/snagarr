@@ -1,5 +1,6 @@
 import logging
 
+
 class SensitiveInfoFilter(logging.Filter):
     """Filter out sensitive information from logs"""
     def filter(self, record):

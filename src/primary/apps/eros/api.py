@@ -6,16 +6,14 @@ Handles all communication with the Eros API
 Exclusively uses the Eros API v3
 """
 
-import requests
 import json
-import time
-import datetime
-import traceback
-import sys
-from typing import List, Dict, Any, Optional, Union
-from src.primary.utils.logger import get_logger
+from typing import Any
+
+import requests
+
 from src.primary import __version__ as _SNAGARR_VERSION
 from src.primary.settings_manager import get_ssl_verify_setting
+from src.primary.utils.logger import get_logger
 
 # Get logger for the Eros app
 eros_logger = get_logger("eros")
@@ -23,7 +21,7 @@ eros_logger = get_logger("eros")
 # Use a session for better performance
 session = requests.Session()
 
-def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, method: str = "GET", data: Dict = None) -> Any:
+def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, method: str = "GET", data: dict = None) -> Any:
     """
     Make a request to the Eros API.
     
@@ -133,7 +131,7 @@ def get_download_queue_size(api_url: str, api_key: str, api_timeout: int) -> int
     else:
         return -1
 
-def get_items_with_missing(api_url: str, api_key: str, api_timeout: int, monitored_only: bool, search_mode: str = "movie") -> List[Dict[str, Any]]:
+def get_items_with_missing(api_url: str, api_key: str, api_timeout: int, monitored_only: bool, search_mode: str = "movie") -> list[dict[str, Any]]:
     """
     Get a list of items with missing files (not downloaded/available).
 
@@ -201,10 +199,10 @@ def get_items_with_missing(api_url: str, api_key: str, api_timeout: int, monitor
         return items
         
     except Exception as e:
-        eros_logger.error(f"Error retrieving missing items: {str(e)}")
+        eros_logger.error(f"Error retrieving missing items: {e!s}")
         return None
 
-def get_cutoff_unmet_items(api_url: str, api_key: str, api_timeout: int, monitored_only: bool) -> List[Dict[str, Any]]:
+def get_cutoff_unmet_items(api_url: str, api_key: str, api_timeout: int, monitored_only: bool) -> list[dict[str, Any]]:
     """
     Get a list of items that don't meet their quality profile cutoff.
 
@@ -218,7 +216,7 @@ def get_cutoff_unmet_items(api_url: str, api_key: str, api_timeout: int, monitor
         A list of item objects that need quality upgrades, or None if the request failed.
     """
     try:
-        eros_logger.debug(f"Retrieving cutoff unmet items...")
+        eros_logger.debug("Retrieving cutoff unmet items...")
         
         # Endpoint
         endpoint = "wanted/cutoff?pageSize=1000&sortKey=airDateUtc&sortDirection=descending"
@@ -245,10 +243,10 @@ def get_cutoff_unmet_items(api_url: str, api_key: str, api_timeout: int, monitor
         return items
         
     except Exception as e:
-        eros_logger.error(f"Error retrieving cutoff unmet items: {str(e)}")
+        eros_logger.error(f"Error retrieving cutoff unmet items: {e!s}")
         return None
 
-def get_quality_upgrades(api_url: str, api_key: str, api_timeout: int, monitored_only: bool, search_mode: str = "movie") -> List[Dict[str, Any]]:
+def get_quality_upgrades(api_url: str, api_key: str, api_timeout: int, monitored_only: bool, search_mode: str = "movie") -> list[dict[str, Any]]:
     """
     Get a list of items that can be upgraded to better quality.
 
@@ -315,7 +313,7 @@ def get_quality_upgrades(api_url: str, api_key: str, api_timeout: int, monitored
         return items
         
     except Exception as e:
-        eros_logger.error(f"Error retrieving quality upgrade items: {str(e)}")
+        eros_logger.error(f"Error retrieving quality upgrade items: {e!s}")
         return None
 
 def refresh_item(api_url: str, api_key: str, api_timeout: int, item_id: int) -> int:
@@ -336,7 +334,7 @@ def refresh_item(api_url: str, api_key: str, api_timeout: int, item_id: int) -> 
     # Return a placeholder command ID to simulate success without actually refreshing
     return 123
 
-def item_search(api_url: str, api_key: str, api_timeout: int, item_ids: List[int]) -> int:
+def item_search(api_url: str, api_key: str, api_timeout: int, item_ids: list[int]) -> int:
     """
     Trigger a search for one or more movies in Whisparr V3.
     
@@ -429,10 +427,10 @@ def item_search(api_url: str, api_key: str, api_timeout: int, item_ids: List[int
         return None
             
     except Exception as e:
-        eros_logger.error(f"Error searching for movies: {str(e)}")
+        eros_logger.error(f"Error searching for movies: {e!s}")
         return None
 
-def get_command_status(api_url: str, api_key: str, api_timeout: int, command_id: int) -> Optional[Dict]:
+def get_command_status(api_url: str, api_key: str, api_timeout: int, command_id: int) -> dict | None:
     """
     Get the status of a specific command.
 
@@ -501,5 +499,5 @@ def check_connection(api_url: str, api_key: str, api_timeout: int) -> bool:
             return False
             
     except Exception as e:
-        eros_logger.error(f"Error checking connection to Whisparr V3 API: {str(e)}")
+        eros_logger.error(f"Error checking connection to Whisparr V3 API: {e!s}")
         return False

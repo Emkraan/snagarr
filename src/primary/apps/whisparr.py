@@ -1,9 +1,11 @@
-from flask import Blueprint, request, jsonify
-import datetime, os, requests
+
+import requests
+from flask import Blueprint, jsonify, request
+
 from primary import keys_manager
-from src.primary.utils.logger import get_logger
+from src.primary.settings_manager import get_ssl_verify_setting
 from src.primary.state import get_state_file_path
-from src.primary.settings_manager import load_settings, get_ssl_verify_setting
+from src.primary.utils.logger import get_logger
 
 whisparr_bp = Blueprint('whisparr', __name__)
 whisparr_logger = get_logger("whisparr")
@@ -104,12 +106,12 @@ def test_connection():
         return jsonify({"success": False, "message": error_msg}), 400
         
     except requests.exceptions.HTTPError as e:
-        error_msg = f"HTTP error: {str(e)}"
+        error_msg = f"HTTP error: {e!s}"
         whisparr_logger.error(error_msg)
         return jsonify({"success": False, "message": error_msg}), 400
         
     except Exception as e:
-        error_msg = f"Unexpected error: {str(e)}"
+        error_msg = f"Unexpected error: {e!s}"
         whisparr_logger.error(error_msg)
         return jsonify({"success": False, "message": error_msg}), 400
 
@@ -126,7 +128,7 @@ def is_configured():
                 
         return False
     except Exception as e:
-        whisparr_logger.error(f"Error checking if Whisparr is configured: {str(e)}")
+        whisparr_logger.error(f"Error checking if Whisparr is configured: {e!s}")
         return False
 
 # Get all valid instances from settings
@@ -160,5 +162,5 @@ def get_configured_instances():
             
         return enabled_instances
     except Exception as e:
-        whisparr_logger.error(f"Error getting configured Whisparr instances: {str(e)}")
+        whisparr_logger.error(f"Error getting configured Whisparr instances: {e!s}")
         return []

@@ -9,7 +9,7 @@ the interactive docs page at /api/docs. Mirrors src/primary/routes/api_v1.py.
 
 import os
 
-from src.primary import settings_manager, api_keys
+from src.primary import api_keys, settings_manager
 
 #: The project's own repository. A self-reference is legitimate OSS identification
 #: and is allowed. No operating-org name, no hostname, no homelab path may appear

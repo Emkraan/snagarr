@@ -6,23 +6,23 @@ Handles searching for items that need quality upgrades in Eros
 Exclusively supports the v3 API.
 """
 
-import time
 import random
-import datetime
-from typing import List, Dict, Any, Set, Callable
-from src.primary.utils.logger import get_logger
+from collections.abc import Callable
+from typing import Any
+
 from src.primary.apps.eros import api as eros_api
-from src.primary.settings_manager import load_settings, get_advanced_setting
-from src.primary.stateful_manager import is_processed, add_processed_id
+from src.primary.settings_manager import get_advanced_setting, load_settings
+from src.primary.state import check_state_reset
+from src.primary.stateful_manager import add_processed_id, is_processed
 from src.primary.stats_manager import increment_stat
 from src.primary.utils.history_utils import log_processed_media
-from src.primary.state import check_state_reset
+from src.primary.utils.logger import get_logger
 
 # Get logger for the app
 eros_logger = get_logger("eros")
 
 def process_cutoff_upgrades(
-    app_settings: Dict[str, Any],
+    app_settings: dict[str, Any],
     stop_check: Callable[[], bool] # Function to check if stop is requested
 ) -> bool:
     """
@@ -78,7 +78,7 @@ def process_cutoff_upgrades(
         return False
 
     # Get items eligible for upgrade
-    eros_logger.info(f"Retrieving items eligible for cutoff upgrade...")
+    eros_logger.info("Retrieving items eligible for cutoff upgrade...")
     upgrade_eligible_data = eros_api.get_quality_upgrades(api_url, api_key, api_timeout, monitored_only, search_mode)
     
     if not upgrade_eligible_data:
@@ -180,7 +180,7 @@ def process_cutoff_upgrades(
             
             # Increment the upgraded statistics for Eros
             increment_stat("eros", "upgraded", 1)
-            eros_logger.debug(f"Incremented eros upgraded statistics by 1")
+            eros_logger.debug("Incremented eros upgraded statistics by 1")
             
             # Log progress
             current_limit = app_settings.get("hunt_upgrade_items", app_settings.get("hunt_upgrade_scenes", 1))

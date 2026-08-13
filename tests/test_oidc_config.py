@@ -8,7 +8,6 @@ sys.modules before importing the app modules, and the OIDC store is redirected
 to a per-test tmp dir so nothing touches /config.
 """
 
-import json
 import logging
 import os
 import stat
@@ -35,12 +34,12 @@ if _sm is None:
     _sm.load_settings = lambda app, use_cache=True: dict(_STORE.get(app, {}))
     _sm.save_settings = lambda app, data: (_STORE.__setitem__(app, data) or True)
     _sm.get_all_settings = lambda: {k: dict(v) for k, v in _STORE.items()}
-    _sm.get_configured_apps = lambda: []
+    _sm.get_configured_apps = list
     _sm.load_default_app_settings = lambda app: {}
     sys.modules["src.primary.settings_manager"] = _sm
 
-from src.primary import oidc_config  # noqa: E402
-from src.primary.routes import api_v1 as api_v1_mod  # noqa: E402
+from src.primary import oidc_config
+from src.primary.routes import api_v1 as api_v1_mod
 
 
 @pytest.fixture

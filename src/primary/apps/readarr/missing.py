@@ -4,22 +4,23 @@ Missing Books Processing for Readarr
 Handles searching for missing books in Readarr
 """
 
-import time
 import random
-from typing import List, Dict, Any, Set, Callable
-from src.primary.utils.logger import get_logger
+from collections.abc import Callable
+from typing import Any
+
 from src.primary.apps.readarr import api as readarr_api
-from src.primary.stats_manager import increment_stat
-from src.primary.stateful_manager import is_processed, add_processed_id
-from src.primary.utils.history_utils import log_processed_media
-from src.primary.settings_manager import load_settings, get_advanced_setting
+from src.primary.settings_manager import get_advanced_setting
 from src.primary.state import check_state_reset
+from src.primary.stateful_manager import add_processed_id, is_processed
+from src.primary.stats_manager import increment_stat
+from src.primary.utils.history_utils import log_processed_media
+from src.primary.utils.logger import get_logger
 
 # Get logger for the app
 readarr_logger = get_logger("readarr")
 
 def process_missing_books(
-    app_settings: Dict[str, Any],
+    app_settings: dict[str, Any],
     stop_check: Callable[[], bool] # Function to check if stop is requested
 ) -> bool:
     """
@@ -66,7 +67,7 @@ def process_missing_books(
     missing_books_data = readarr_api.get_wanted_missing_books(api_url, api_key, api_timeout, monitored_only)
 
     if missing_books_data is None: # Check if None was returned due to an API error
-        readarr_logger.error(f"Failed to retrieve missing books data. Skipping processing.")
+        readarr_logger.error("Failed to retrieve missing books data. Skipping processing.")
         return False
         
     readarr_logger.info(f"Found {len(missing_books_data)} missing books.")
@@ -118,7 +119,7 @@ def process_missing_books(
         # Refresh functionality has been removed as it was identified as a performance bottleneck
 
         # Search for missing books associated with the author
-        readarr_logger.info(f"  - Searching for missing books...")
+        readarr_logger.info("  - Searching for missing books...")
         book_ids_for_author = [book['id'] for book in books_by_author[author_id]] # 'id' is bookId
         
         # Create detailed log with book titles

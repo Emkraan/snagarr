@@ -5,6 +5,7 @@ A unified tool for Sonarr, Radarr, Lidarr, Readarr, and more.
 
 import os as _os
 
+
 def _read_version() -> str:
     try:
         _root = _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))

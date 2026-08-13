@@ -3,15 +3,16 @@
 Sonarr cutoff upgrade processing module for Huntarr
 """
 
-import time
 import random
-from typing import List, Dict, Any, Set, Callable, Union
-from src.primary.utils.logger import get_logger
+import time
+from collections.abc import Callable
+
 from src.primary.apps.sonarr import api as sonarr_api
-from src.primary.stats_manager import increment_stat
-from src.primary.stateful_manager import is_processed, add_processed_id
-from src.primary.utils.history_utils import log_processed_media
 from src.primary.settings_manager import get_advanced_setting
+from src.primary.stateful_manager import add_processed_id, is_processed
+from src.primary.stats_manager import increment_stat
+from src.primary.utils.history_utils import log_processed_media
+from src.primary.utils.logger import get_logger
 
 # Get logger for the Sonarr app
 sonarr_logger = get_logger("sonarr")
@@ -72,7 +73,7 @@ def process_upgrade_episodes_mode(
     skip_episode_history = False
     
     # Always use the efficient random page selection method
-    sonarr_logger.debug(f"Using random selection for cutoff unmet episodes")
+    sonarr_logger.debug("Using random selection for cutoff unmet episodes")
     episodes_to_search = sonarr_api.get_cutoff_unmet_episodes_random_page(
         api_url, api_key, api_timeout, monitored_only, hunt_upgrade_items)
         
@@ -116,7 +117,7 @@ def process_upgrade_episodes_mode(
     
     # Add detailed listing of episodes being upgraded
     if episodes_to_search:
-        sonarr_logger.info(f"Episodes selected for quality upgrades in this cycle:")
+        sonarr_logger.info("Episodes selected for quality upgrades in this cycle:")
         for idx, episode in enumerate(episodes_to_search):
             series_title = episode.get('series', {}).get('title', 'Unknown Series')
             episode_title = episode.get('title', 'Unknown Episode')
@@ -125,7 +126,7 @@ def process_upgrade_episodes_mode(
             
             # Get quality information
             quality_name = "Unknown"
-            if "quality" in episode and episode["quality"]:
+            if episode.get("quality"):
                 quality_name = episode["quality"].get("quality", {}).get("name", "Unknown")
                 
             episode_id = episode.get("id")
@@ -137,8 +138,8 @@ def process_upgrade_episodes_mode(
             sonarr_logger.info(f" {idx+1}. {series_title} - {season_episode} - \"{episode_title}\" - Current quality: {quality_name} (ID: {episode_id})")
     
     # Group episodes by series for potential refresh
-    series_to_process: Dict[int, List[int]] = {}
-    series_titles: Dict[int, str] = {} # Store titles for logging
+    series_to_process: dict[int, list[int]] = {}
+    series_titles: dict[int, str] = {} # Store titles for logging
     for episode in episodes_to_search:
         series_id = episode.get('seriesId')
         if series_id:
@@ -208,7 +209,7 @@ def process_upgrade_episodes_mode(
                                 log_processed_media("sonarr", media_name, episode_id, instance_name, "upgrade")
                             sonarr_logger.debug(f"Logged quality upgrade to history for episode ID {episode_id}")
                     except Exception as e:
-                        sonarr_logger.error(f"Failed to log history for episode ID {episode_id}: {str(e)}")
+                        sonarr_logger.error(f"Failed to log history for episode ID {episode_id}: {e!s}")
             else:
                 sonarr_logger.warning(f"Episode upgrade search command (ID: {search_command_id}) for series {series_id} did not complete successfully or timed out. Episodes will not be marked as processed yet.")
         else:
@@ -242,7 +243,7 @@ def log_season_pack_upgrade(api_url: str, api_key: str, api_timeout: int, series
             log_processed_media("sonarr", media_name, season_id_num, instance_name, "upgrade")
             sonarr_logger.debug(f"Logged season pack upgrade to history for {series_title} Season {season_number}")
     except Exception as e:
-        sonarr_logger.error(f"Failed to log season pack upgrade to history: {str(e)}")
+        sonarr_logger.error(f"Failed to log season pack upgrade to history: {e!s}")
 
 def process_upgrade_seasons_mode(
     api_url: str,
@@ -263,7 +264,7 @@ def process_upgrade_seasons_mode(
     skip_episode_history = True
     
     # Use the efficient random page selection method to get a sample of cutoff unmet episodes
-    sonarr_logger.debug(f"Using random page selection for cutoff unmet episodes")
+    sonarr_logger.debug("Using random page selection for cutoff unmet episodes")
     # Request slightly more episodes than needed to ensure we have enough for a few seasons
     sample_size = hunt_upgrade_items * 10
     cutoff_unmet_episodes = sonarr_api.get_cutoff_unmet_episodes_random_page(
@@ -292,7 +293,7 @@ def process_upgrade_seasons_mode(
         return processed_any
     
     # Group episodes by series and season
-    series_season_episodes: Dict[int, Dict[int, List[Dict]]] = {}
+    series_season_episodes: dict[int, dict[int, list[dict]]] = {}
     for episode in cutoff_unmet_episodes:
         series_id = episode.get('seriesId')
         season_number = episode.get('seasonNumber')
@@ -395,7 +396,7 @@ def process_upgrade_seasons_mode(
                                 log_processed_media("sonarr", media_name, episode_id, instance_name, "upgrade")
                             sonarr_logger.debug(f"Logged quality upgrade to history for episode ID {episode_id}")
                     except Exception as e:
-                        sonarr_logger.error(f"Failed to log history for episode ID {episode_id}: {str(e)}")
+                        sonarr_logger.error(f"Failed to log history for episode ID {episode_id}: {e!s}")
             else:
                 sonarr_logger.warning(f"Season pack search command for {series_title} Season {season_number} did not complete successfully")
         else:
@@ -423,7 +424,7 @@ def process_upgrade_shows_mode(
     skip_episode_history = False
     
     # Use the efficient random page selection method to get a sample of cutoff unmet episodes
-    sonarr_logger.debug(f"Using random page selection for cutoff unmet episodes in shows mode")
+    sonarr_logger.debug("Using random page selection for cutoff unmet episodes in shows mode")
     # Request slightly more episodes than needed to ensure we have enough for a few shows
     sample_size = hunt_upgrade_items * 20  # Use a larger multiplier for shows mode
     cutoff_unmet_sample = sonarr_api.get_cutoff_unmet_episodes_random_page(
@@ -452,7 +453,7 @@ def process_upgrade_shows_mode(
         return processed_any
     
     # Group episodes by series to identify candidate shows
-    series_info: Dict[int, Dict] = {}  # Store series ID -> {title, sample_count}
+    series_info: dict[int, dict] = {}  # Store series ID -> {title, sample_count}
     
     for episode in cutoff_unmet_sample:
         series_id = episode.get('seriesId')
@@ -565,7 +566,7 @@ def process_upgrade_shows_mode(
                                 log_processed_media("sonarr", media_name, episode_id, instance_name, "upgrade")
                             sonarr_logger.debug(f"Logged quality upgrade to history for episode ID {episode_id}")
                     except Exception as e:
-                        sonarr_logger.error(f"Failed to log history for episode ID {episode_id}: {str(e)}")
+                        sonarr_logger.error(f"Failed to log history for episode ID {episode_id}: {e!s}")
             else:
                 sonarr_logger.warning(f"Episode upgrade search command for {series_title} did not complete successfully")
         else:
@@ -578,7 +579,7 @@ def wait_for_command(
     api_url: str,
     api_key: str,
     api_timeout: int,
-    command_id: Union[int, str],
+    command_id: int | str,
     wait_delay: int,
     max_attempts: int,
     command_name: str = "Command",

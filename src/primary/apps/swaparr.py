@@ -3,21 +3,26 @@ Swaparr module for Huntarr
 Handles stalled downloads in Starr apps based on the original Swaparr application
 """
 
-from flask import Blueprint, request, jsonify
-import os
 import json
-from src.primary.utils.logger import get_logger
-from src.primary.settings_manager import load_settings, save_settings
-from src.primary.apps.swaparr.handler import process_stalled_downloads
-from src.primary.apps.radarr import get_configured_instances as get_radarr_instances
-from src.primary.apps.sonarr import get_configured_instances as get_sonarr_instances
+import os
+
+from flask import Blueprint, jsonify, request
+
 from src.primary.apps.lidarr import get_configured_instances as get_lidarr_instances
+from src.primary.apps.radarr import get_configured_instances as get_radarr_instances
 from src.primary.apps.readarr import get_configured_instances as get_readarr_instances
+from src.primary.apps.sonarr import get_configured_instances as get_sonarr_instances
+from src.primary.apps.swaparr.handler import process_stalled_downloads
+from src.primary.settings_manager import load_settings, save_settings
+from src.primary.utils.logger import get_logger
+
 
 def get_configured_instances():
     """Get all configured Starr app instances from their respective settings"""
     try:
-        from src.primary.apps.whisparr import get_configured_instances as get_whisparr_instances
+        from src.primary.apps.whisparr import (
+            get_configured_instances as get_whisparr_instances,
+        )
         whisparr_instances = get_whisparr_instances()
     except ImportError:
         whisparr_instances = []
@@ -74,8 +79,8 @@ def get_status():
                             "currently_striked": striked_items,
                             "removed": removed_items
                         }
-                    except (json.JSONDecodeError, IOError) as e:
-                        swaparr_logger.error(f"Error reading strike data for {app_name}: {str(e)}")
+                    except (OSError, json.JSONDecodeError) as e:
+                        swaparr_logger.error(f"Error reading strike data for {app_name}: {e!s}")
                         statistics[app_name] = {"error": str(e)}
     
     return jsonify({
@@ -140,9 +145,9 @@ def reset_strikes():
                     os.remove(strike_file)
                     swaparr_logger.info(f"Reset strikes for {app_name}")
                     return jsonify({"success": True, "message": f"Strikes reset for {app_name}"})
-                except IOError as e:
-                    swaparr_logger.error(f"Error resetting strikes for {app_name}: {str(e)}")
-                    return jsonify({"success": False, "message": f"Failed to reset strikes for {app_name}: {str(e)}"}), 500
+                except OSError as e:
+                    swaparr_logger.error(f"Error resetting strikes for {app_name}: {e!s}")
+                    return jsonify({"success": False, "message": f"Failed to reset strikes for {app_name}: {e!s}"}), 500
         return jsonify({"success": False, "message": f"No strike data found for {app_name}"}), 404
     else:
         # Reset strikes for all apps
@@ -156,9 +161,9 @@ def reset_strikes():
             
             swaparr_logger.info("Reset all strikes")
             return jsonify({"success": True, "message": "All strikes reset"})
-        except IOError as e:
-            swaparr_logger.error(f"Error resetting all strikes: {str(e)}")
-            return jsonify({"success": False, "message": f"Failed to reset all strikes: {str(e)}"}), 500
+        except OSError as e:
+            swaparr_logger.error(f"Error resetting all strikes: {e!s}")
+            return jsonify({"success": False, "message": f"Failed to reset all strikes: {e!s}"}), 500
 
 def is_configured():
     """Check if Swaparr has any configured Starr app instances"""

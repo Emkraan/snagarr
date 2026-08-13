@@ -6,23 +6,24 @@ Handles searching for missing items in Eros
 Exclusively supports the v3 API.
 """
 
-import time
-import random
 import datetime
-from typing import List, Dict, Any, Set, Callable
-from src.primary.utils.logger import get_logger
+import random
+from collections.abc import Callable
+from typing import Any
+
 from src.primary.apps.eros import api as eros_api
-from src.primary.settings_manager import load_settings, get_advanced_setting
-from src.primary.stateful_manager import is_processed, add_processed_id
+from src.primary.settings_manager import get_advanced_setting, load_settings
+from src.primary.state import check_state_reset
+from src.primary.stateful_manager import add_processed_id, is_processed
 from src.primary.stats_manager import increment_stat
 from src.primary.utils.history_utils import log_processed_media
-from src.primary.state import check_state_reset
+from src.primary.utils.logger import get_logger
 
 # Get logger for the app
 eros_logger = get_logger("eros")
 
 def process_missing_items(
-    app_settings: Dict[str, Any],
+    app_settings: dict[str, Any],
     stop_check: Callable[[], bool] # Function to check if stop is requested
 ) -> bool:
     """
@@ -81,7 +82,7 @@ def process_missing_items(
         return False
     
     # Get missing items
-    eros_logger.info(f"Retrieving items with missing files...")
+    eros_logger.info("Retrieving items with missing files...")
     missing_items = eros_api.get_items_with_missing(api_url, api_key, api_timeout, monitored_only, search_mode) 
     
     if missing_items is None: # API call failed
@@ -200,7 +201,7 @@ def process_missing_items(
             
             # Increment the hunted statistics for Eros
             increment_stat("eros", "hunted", 1)
-            eros_logger.debug(f"Incremented eros hunted statistics by 1")
+            eros_logger.debug("Incremented eros hunted statistics by 1")
 
             # Log progress
             current_limit = app_settings.get("hunt_missing_items", app_settings.get("hunt_missing_scenes", 1))
