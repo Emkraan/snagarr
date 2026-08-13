@@ -29,14 +29,14 @@ def load_oidc(tmp_path):
     # Also clear the submodule attributes on the parent package so Python does
     # not reuse the stale module object via `from src.primary import oidc_config`
     # (Python checks pkg.__dict__ before sys.modules for submodule lookups).
-    import src.primary as _pkg
+    import src.primary as _pkg  # noqa: PLC0415 -- ensure package is loaded
     for _attr in ("auth", "oidc_config"):
         if hasattr(_pkg, _attr):
             delattr(_pkg, _attr)
     sys.modules.pop("src.primary.auth", None)
     sys.modules.pop("src.primary.oidc_config", None)
     sys.modules.pop("src.primary.routes.oidc", None)
-    from src.primary.routes import oidc
+    import src.primary.routes.oidc as oidc
     importlib.reload(oidc)
     return oidc
 
