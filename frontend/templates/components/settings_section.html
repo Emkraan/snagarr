@@ -73,13 +73,27 @@
               {{ ui.select('auth_mode', [
                    {'value': 'login',        'label': 'Login Mode'},
                    {'value': 'local_bypass', 'label': 'Local Bypass Mode'},
+                   {'value': 'proxy_trust',  'label': 'Proxy Trust Header Mode'},
                    {'value': 'no_login',     'label': 'No Login Mode'}
                  ], selected='login', attrs='id="auth_mode"') }}
             {% endcall %}
             {% call ui.banner(tone='info', icon=icons.info(15)) %}
               <strong>Login Mode:</strong> standard login for all connections.<br>
               <strong>Local Bypass Mode:</strong> only local-network connections skip login.<br>
+              <strong>Proxy Trust Header Mode:</strong> trust identity headers from a confirmed reverse proxy (e.g. Authentik forward-auth) and sign the user in with the matching role. Requires <code>TRUST_PROXY_HOPS</code> set to 1 or more.<br>
               <strong>No Login Mode:</strong> disables authentication (only use behind a trusted reverse proxy).
+            {% endcall %}
+            {% call ui.field('Proxy Username Header', hint='Header the trusted proxy sets to the authenticated username (Proxy Trust Header Mode only).') %}
+              {{ ui.input('proxy_username_header', value='X-authentik-username', attrs='id="proxy_username_header"') }}
+            {% endcall %}
+            {% call ui.field('Proxy Groups Header', hint='Header carrying the user\'s groups (Proxy Trust Header Mode only).') %}
+              {{ ui.input('proxy_groups_header', value='X-authentik-groups', attrs='id="proxy_groups_header"') }}
+            {% endcall %}
+            {% call ui.field('Proxy Groups Separator', hint='Separator between group names in the groups header (default is a pipe).') %}
+              {{ ui.input('proxy_groups_separator', value='|', attrs='id="proxy_groups_separator"') }}
+            {% endcall %}
+            {% call ui.field('Proxy Admin Groups', hint='Comma-separated groups that map to the admin role. Everyone else authenticated via header is a read-only member. Empty grants nobody admin (fails closed).') %}
+              {{ ui.input('proxy_admin_groups', value='', attrs='id="proxy_admin_groups" placeholder="snagarr-admins, infra-admins"') }}
             {% endcall %}
             {% call ui.field('Enable SSL Verify', hint='Disable only when using self-signed certificates on a private network.') %}
               {{ ui.switch('ssl_verify', attrs='id="ssl_verify"') }}

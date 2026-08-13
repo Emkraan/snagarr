@@ -163,13 +163,23 @@ SSO is normally configured in the UI (see [Authentication](#authentication)). Th
 
 ## Authentication
 
-Snagarr's auth mode is chosen in **Settings > General** and persisted to `general.json`. It is a preset over two flags (`local_access_bypass`, `proxy_auth_bypass`):
+Snagarr's auth mode is chosen in **Settings > General** and persisted to `general.json`. It is a preset over three flags (`local_access_bypass`, `proxy_auth_bypass`, `proxy_trust_auth`):
 
 - **Login (local account).** The default. On first run, `/setup` creates a username and password (hashed with bcrypt), with optional TOTP two-factor from the account page. Recommended for a directly reachable instance.
 - **Local access bypass.** Requests from private (RFC1918) or loopback addresses skip the login prompt; remote requests still authenticate. Useful on a trusted LAN. The first `X-Forwarded-For` address is honored behind a proxy.
+- **Proxy trust header.** Snagarr trusts identity headers set by a confirmed reverse proxy (e.g. an Authentik forward-auth on Traefik) that has already authenticated the user, and logs them in automatically with the matching role. No second login prompt. See below.
 - **Trusted proxy / no-login.** Snagarr performs no authentication of its own and trusts an upstream reverse proxy or SSO gateway to gate every request.
 
 Single sign-on runs alongside login mode. The login page always renders the local username and password form plus one button per enabled provider, so a misconfigured provider can never lock you out of local login.
+
+### Proxy trust header mode
+
+When Snagarr sits behind a reverse proxy that authenticates the user itself (a forward-auth gateway such as Authentik on Traefik), that proxy forwards the authenticated identity as request headers. Proxy trust header mode reads those headers and signs the user in without a second Snagarr login, mapping them to the correct role.
+
+- **Requires `TRUST_PROXY_HOPS` set to `1` or more.** This is the operator's confirmation that a trusted proxy is actually in front. Header trust is fail-closed: with `TRUST_PROXY_HOPS=0` the mode authenticates no one (the headers are otherwise attacker-controlled and could be forged by any direct caller), and any request that arrives without the username header falls through to the normal login page.
+- **The proxy must already gate access.** This mode trusts the headers; it does not itself verify the user. Only enable it when the proxy authenticates every request and strips these headers from untrusted client input. Never expose a proxy-trust instance directly.
+- **Configurable headers** (Settings > General): the username header (default `X-authentik-username`), the groups header (default `X-authentik-groups`), the groups separator (default `|`), and the admin groups list. An optional `X-authentik-email` header is used for the display profile if present.
+- **Role assignment.** If the user's forwarded groups intersect the configured **Proxy Admin Groups**, they are `admin`; otherwise they are a read-only `member`. Empty admin groups grants nobody admin (fails closed), exactly like SSO.
 
 ### Single sign-on (configured in the UI)
 
@@ -201,7 +211,7 @@ Snagarr has two roles:
 | **Admin** | Everything: change any setting, add and edit connections, manage schedules, trigger resets, manage SSO providers, and mint or revoke API keys. |
 | **Member** | Read-only. View the dashboard, logs, history, and connection status. Every write is rejected, and any API key / client secret returned by a settings read is masked to a last-4 hint. |
 
-**How the role is assigned.** Local login and both bypass modes are always `admin`. For SSO users, the role comes from the provider's **Admin groups**: if a signed-in user's groups intersect that list they are `admin`, otherwise `member`. If **Admin groups** is empty, nobody gets admin via SSO (fails closed) until you configure it - the local username/password account is unaffected. A separate **Allowed groups** list, when set, gates who may sign in at all.
+**How the role is assigned.** Local login and both bypass modes are always `admin`. For SSO users, the role comes from the provider's **Admin groups**: if a signed-in user's groups intersect that list they are `admin`, otherwise `member`. If **Admin groups** is empty, nobody gets admin via SSO (fails closed) until you configure it - the local username/password account is unaffected. A separate **Allowed groups** list, when set, gates who may sign in at all. Proxy trust header mode assigns roles the same way, from its own **Proxy Admin Groups** list against the forwarded groups header.
 
 **Enforcement is server-side.** A central `before_request` check rejects every mutating request (`POST`, `PUT`, `PATCH`, `DELETE`) from a member session with `403`, so members are read-only even if they craft requests directly; the UI additionally hides admin navigation and controls for them. API keys inherit the caller's authority: an admin session maps to the `admin` scope, a member session to `read`.
 

@@ -5,7 +5,20 @@ All notable changes to Snagarr are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] - 2026-08-10
+## [Unreleased]
+
+### Added
+
+- **Proxy trust header auth mode:** A new authentication mode (Settings > General)
+  for deployments behind a forward-auth reverse proxy (e.g. Authentik on Traefik).
+  Snagarr trusts the proxy-supplied identity headers (`X-authentik-username` and a
+  pipe-separated `X-authentik-groups` by default, all configurable) and signs the
+  user in automatically with the matching RBAC role, removing the redundant second
+  login. Header trust is fail-closed: it requires `TRUST_PROXY_HOPS >= 1` (the
+  operator's confirmation that a trusted proxy is in front) and authenticates no one
+  when the username header is absent. Admin role is granted only when the forwarded
+  groups intersect the configured Proxy Admin Groups (empty grants nobody admin),
+  mirroring the SSO group model.
 
 Five-pillar compliance pass, full Cobalt Elevated v3 UI rebuild, and GitOps hardening.
 
