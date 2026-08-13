@@ -47,9 +47,18 @@
     }
 
     var authMode = settings.auth_mode ||
-      (settings.proxy_auth_bypass ? "no_login" : (settings.local_access_bypass ? "local_bypass" : "login"));
+      (settings.proxy_auth_bypass ? "no_login" :
+        (settings.proxy_trust_auth ? "proxy_trust" :
+          (settings.local_access_bypass ? "local_bypass" : "login")));
     var authSel = el("auth_mode");
     if (authSel) authSel.value = authMode;
+
+    // Proxy Trust Header settings.
+    setValue("proxy_username_header", firstDefined(settings.proxy_username_header, "X-authentik-username"));
+    setValue("proxy_groups_header", firstDefined(settings.proxy_groups_header, "X-authentik-groups"));
+    setValue("proxy_groups_separator", firstDefined(settings.proxy_groups_separator, "|"));
+    var adminGroups = settings.proxy_admin_groups;
+    setValue("proxy_admin_groups", Array.isArray(adminGroups) ? adminGroups.join(", ") : firstDefined(adminGroups, ""));
   }
 
   function install() {

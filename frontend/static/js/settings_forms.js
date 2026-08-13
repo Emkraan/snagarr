@@ -1068,22 +1068,43 @@ const SettingsForms = {
             // Save the auth_mode value directly
             settings.auth_mode = authMode;
             
-            // Set the appropriate flags based on the selected auth mode
+            // Set the appropriate flags based on the selected auth mode. The four
+            // modes are mutually exclusive presets over three flags; selecting
+            // one clears the others.
             switch (authMode) {
                 case 'local_bypass':
                     settings.local_access_bypass = true;
                     settings.proxy_auth_bypass = false;
+                    settings.proxy_trust_auth = false;
                     break;
                 case 'no_login':
                     settings.local_access_bypass = false;
                     settings.proxy_auth_bypass = true;
+                    settings.proxy_trust_auth = false;
+                    break;
+                case 'proxy_trust':
+                    settings.local_access_bypass = false;
+                    settings.proxy_auth_bypass = false;
+                    settings.proxy_trust_auth = true;
                     break;
                 case 'login':
                 default:
                     settings.local_access_bypass = false;
                     settings.proxy_auth_bypass = false;
+                    settings.proxy_trust_auth = false;
                     break;
             }
+
+            // Proxy Trust Header settings (always persisted so they survive a
+            // mode switch and are ready when the mode is re-enabled).
+            settings.proxy_username_header = getInputValue('#proxy_username_header', 'X-authentik-username');
+            settings.proxy_groups_header = getInputValue('#proxy_groups_header', 'X-authentik-groups');
+            settings.proxy_groups_separator = getInputValue('#proxy_groups_separator', '|');
+            const adminGroupsRaw = getInputValue('#proxy_admin_groups', '');
+            settings.proxy_admin_groups = (adminGroupsRaw || '')
+                .split(',')
+                .map(function (s) { return s.trim(); })
+                .filter(function (s) { return s.length > 0; });
         }
         
         // For other app types, collect settings
@@ -1273,16 +1294,38 @@ const SettingsForms = {
                 <div class="setting-item">
                     <label for="auth_mode"><span class="info-icon" title="Controls how users authenticate (forms, basic auth, or disabled)"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Authentication Mode:</label>
                     <select id="auth_mode" name="auth_mode" style="width: 300px; padding: 8px 12px; border-radius: 6px; cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.1); background-color: var(--bg-input); color: var(--text-secondary); background-image: url('data:image/svg+xml;utf8,<svg fill=\'white\' height=\'24\' viewBox=\'0 0 24 24\' width=\'24\' xmlns=\'http://www.w3.org/2000/svg\'><path d=\'M7 10l5 5 5-5z\'/><path d=\'M0 0h24v24H0z\' fill=\'none\'/></svg>'); background-repeat: no-repeat; background-position: right 8px center; -webkit-appearance: none; -moz-appearance: none; appearance: none;">
-                        <option value="login" ${(settings.auth_mode === 'login' || (!settings.auth_mode && !settings.local_access_bypass && !settings.proxy_auth_bypass)) ? 'selected' : ''}>Login Mode</option>
-                        <option value="local_bypass" ${(settings.auth_mode === 'local_bypass' || (!settings.auth_mode && settings.local_access_bypass === true && !settings.proxy_auth_bypass)) ? 'selected' : ''}>Local Bypass Mode</option>
+                        <option value="login" ${(settings.auth_mode === 'login' || (!settings.auth_mode && !settings.local_access_bypass && !settings.proxy_auth_bypass && !settings.proxy_trust_auth)) ? 'selected' : ''}>Login Mode</option>
+                        <option value="local_bypass" ${(settings.auth_mode === 'local_bypass' || (!settings.auth_mode && settings.local_access_bypass === true && !settings.proxy_auth_bypass && !settings.proxy_trust_auth)) ? 'selected' : ''}>Local Bypass Mode</option>
+                        <option value="proxy_trust" ${(settings.auth_mode === 'proxy_trust' || (!settings.auth_mode && settings.proxy_trust_auth === true)) ? 'selected' : ''}>Proxy Trust Header Mode</option>
                         <option value="no_login" ${(settings.auth_mode === 'no_login' || (!settings.auth_mode && settings.proxy_auth_bypass === true)) ? 'selected' : ''}>No Login Mode</option>
                     </select>
                     <p class="setting-help" style="margin-left: -3ch !important;">
                         <strong>Login Mode:</strong> Standard login required for all connections<br>
                         <strong>Local Bypass Mode:</strong> Only local network connections (192.168.x.x, 10.x.x.x) bypass login<br>
+                        <strong>Proxy Trust Header Mode:</strong> Trust identity headers from a confirmed reverse proxy (e.g. Authentik forward-auth) and log the user in automatically with the matching role<br>
                         <strong>No Login Mode:</strong> Completely disable authentication when running behind your own reverse proxy
                     </p>
-                    <p class="setting-help warning" style="color: var(--danger-hover); margin-left: -3ch !important;"><strong>Warning:</strong> Only use No Login Mode if your reverse proxy (e.g., Cloudflare, Nginx) is properly securing access!</p>
+                    <p class="setting-help warning" style="color: var(--danger-hover); margin-left: -3ch !important;"><strong>Warning:</strong> Only use No Login or Proxy Trust Header Mode if your reverse proxy (e.g., Cloudflare, Nginx, Authentik) is properly securing access! Proxy Trust Header Mode also requires <code>TRUST_PROXY_HOPS</code> to be set to 1 or more.</p>
+                </div>
+                <div class="setting-item">
+                    <label for="proxy_username_header"><span class="info-icon" title="Request header the trusted proxy sets to the authenticated username"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Proxy Username Header:</label>
+                    <input type="text" id="proxy_username_header" value="${settings.proxy_username_header || 'X-authentik-username'}" placeholder="X-authentik-username">
+                    <p class="setting-help" style="margin-left: -3ch !important;">Header carrying the authenticated username (Proxy Trust Header Mode only).</p>
+                </div>
+                <div class="setting-item">
+                    <label for="proxy_groups_header"><span class="info-icon" title="Request header the trusted proxy sets to the user's group list"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Proxy Groups Header:</label>
+                    <input type="text" id="proxy_groups_header" value="${settings.proxy_groups_header || 'X-authentik-groups'}" placeholder="X-authentik-groups">
+                    <p class="setting-help" style="margin-left: -3ch !important;">Header carrying the user's groups (Proxy Trust Header Mode only).</p>
+                </div>
+                <div class="setting-item">
+                    <label for="proxy_groups_separator"><span class="info-icon" title="Character the proxy uses to separate groups in the groups header"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Proxy Groups Separator:</label>
+                    <input type="text" id="proxy_groups_separator" value="${settings.proxy_groups_separator || '|'}" placeholder="|">
+                    <p class="setting-help" style="margin-left: -3ch !important;">Separator between group names in the groups header (default <code>|</code>).</p>
+                </div>
+                <div class="setting-item">
+                    <label for="proxy_admin_groups"><span class="info-icon" title="Groups that map to the admin role; everyone else authenticated via header is read-only"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Proxy Admin Groups:</label>
+                    <input type="text" id="proxy_admin_groups" value="${Array.isArray(settings.proxy_admin_groups) ? settings.proxy_admin_groups.join(', ') : (settings.proxy_admin_groups || '')}" placeholder="snagarr-admins, infra-admins">
+                    <p class="setting-help" style="margin-left: -3ch !important;">Comma-separated groups that get the admin role. Everyone else authenticated via header is a read-only member. Leave empty and all header users are members (fails closed).</p>
                 </div>
                 <div class="setting-item">
                     <label for="ssl_verify"><span class="info-icon" title="Verify SSL certificates when connecting to *arr instances"><i class="fas fa-info-circle"></i></span>&nbsp;&nbsp;&nbsp;Enable SSL Verify:</label>

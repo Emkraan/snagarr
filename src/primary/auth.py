@@ -18,7 +18,7 @@ from typing import Any
 import bcrypt
 import pyotp  # Ensure pyotp is imported
 import qrcode
-from flask import jsonify, redirect, request, session
+from flask import g, jsonify, redirect, request, session
 
 from .utils.logger import logger  # Ensure logger is imported
 
@@ -333,7 +333,18 @@ def get_profile_from_session(session_id: str) -> dict:
 _RBAC_METHOD_EXEMPT = {"GET", "HEAD", "OPTIONS"}
 
 def session_role() -> str | None:
-    """Role of the current request's session cookie, or None if not a session."""
+    """Role of the current request, or None if not a session.
+
+    Trusted-proxy header auth (see authenticate_request) logs the user in on the
+    FIRST request before the raw session cookie exists, so prefer the role it
+    stashed on the request-scoped `g` when present; otherwise fall back to the
+    session cookie."""
+    try:
+        proxy_role = g.get("snagarr_proxy_role")
+    except RuntimeError:
+        proxy_role = None
+    if proxy_role:
+        return proxy_role
     sid = request.cookies.get(SESSION_COOKIE_NAME)
     if sid and verify_session(sid):
         return get_role_from_session(sid) or "member"
@@ -358,6 +369,51 @@ def enforce_rbac():
     return jsonify({"success": False, "error": "This account is read-only. Admin access is required."}), 403
 
 _proxy_bypass_cache = {"value": None, "expires": 0}
+
+
+def _proxy_trust_identity() -> tuple[str | None, str | None, dict | None]:
+    """Derive an identity from trusted reverse-proxy headers, or (None, None, None).
+
+    Used by authenticate_request when proxy_trust_auth is enabled AND the operator
+    has confirmed a trusted proxy is in front (TRUST_PROXY_HOPS > 0). The proxy
+    (e.g. an Authentik forward-auth on Traefik) has already authenticated the user
+    and forwards their identity as headers. We map those to the same in-memory
+    session / RBAC role the local login and SSO use.
+
+    Fail-closed: this is only ever called under the TRUST_PROXY_HOPS gate in
+    authenticate_request. If the username header is empty or missing (a request
+    that did not traverse the trusted proxy), it returns (None, None, None) so the
+    caller falls through to the normal /login redirect. Role is derived from the
+    groups header intersected with proxy_admin_groups, mirroring oidc._is_admin:
+    an empty proxy_admin_groups grants nobody admin (everyone becomes 'member')."""
+    try:
+        from src.primary.settings_manager import load_settings
+        general_settings = load_settings("general")
+    except Exception as e:
+        logger.error(f"Error loading general settings for proxy trust auth: {e}", exc_info=True)
+        return None, None, None
+
+    username_header = general_settings.get("proxy_username_header") or "X-authentik-username"
+    groups_header = general_settings.get("proxy_groups_header") or "X-authentik-groups"
+    separator = general_settings.get("proxy_groups_separator") or "|"
+    admin_groups = general_settings.get("proxy_admin_groups") or []
+
+    username = (request.headers.get(username_header) or "").strip()
+    if not username:
+        # No trusted-proxy identity on this request -> do not authenticate.
+        return None, None, None
+
+    raw_groups = request.headers.get(groups_header) or ""
+    groups = [g_.strip() for g_ in raw_groups.split(separator) if g_.strip()]
+    role = "admin" if (set(groups) & set(admin_groups)) else "member"
+
+    profile = {"name": username}
+    email = (request.headers.get("X-authentik-email") or "").strip()
+    if email:
+        profile["email"] = email
+
+    return username, role, profile
+
 
 def authenticate_request():
     """Flask before_request handler to check if user is authenticated"""
@@ -481,7 +537,35 @@ def authenticate_request():
     session_id = session.get(SESSION_COOKIE_NAME)
     if session_id and verify_session(session_id):
         return None
-    
+
+    # Trusted-proxy header auth. Enabled only when the operator opts in
+    # (proxy_trust_auth) AND confirms a trusted proxy is in front
+    # (TRUST_PROXY_HOPS > 0). This is the same fail-closed gate the local-network
+    # bypass uses for X-Forwarded-For above: without it these headers are
+    # attacker-controlled and could be forged by any direct caller. When enabled,
+    # an upstream reverse proxy (e.g. Authentik forward-auth) has already
+    # authenticated the user and forwards their identity; we trust it and create
+    # the same in-memory session the local login / SSO create.
+    proxy_trust_auth = False
+    try:
+        proxy_trust_auth = bool(general_settings.get("proxy_trust_auth", False))
+    except Exception:
+        proxy_trust_auth = False
+    if proxy_trust_auth and TRUST_PROXY_HOPS > 0:
+        username, role, profile = _proxy_trust_identity()
+        if username:
+            token = create_session(username, role=role, profile=profile)
+            session[SESSION_COOKIE_NAME] = token
+            # Stash for this request so session_role()/enforce_rbac see the role
+            # before the raw cookie exists, and so an after_request handler can
+            # set the raw cookie (see web_server._proxy_trust_set_cookie).
+            g.snagarr_proxy_token = token
+            g.snagarr_proxy_role = role
+            logger.info(f"Trusted-proxy header sign-in for '{username}' role={role}.")
+            return None
+        # proxy_trust_auth is on but no trusted-proxy identity was present:
+        # fail closed and fall through to the /login redirect below.
+
     # No valid session.
     script_root = request.script_root
     api_path = f"{script_root}/api/"

@@ -50,6 +50,7 @@ from src.primary.apps.blueprints import (
     whisparr_bp,
 )
 from src.primary.auth import (
+    SESSION_COOKIE_NAME,
     authenticate_request,
     enforce_rbac,
     get_or_create_secret_key,
@@ -186,6 +187,26 @@ app.register_blueprint(admin_bp)
 app.before_request(authenticate_request)
 # RBAC: after auth, block writes from read-only (member) SSO sessions.
 app.before_request(enforce_rbac)
+
+
+@app.after_request
+def _proxy_trust_set_cookie(resp):
+    """Persist the raw session cookie minted by trusted-proxy header auth.
+
+    Trusted-proxy auth (auth.authenticate_request) logs the user in on the FIRST
+    request, before any raw cookie exists, and stashes the token on `g`. Mirror
+    what OIDC's callback does: set the raw cookie so the next request's cookie
+    fast path and enforce_rbac (which reads the raw cookie) both work, matching
+    the OIDC cookie flags exactly."""
+    from flask import g
+    token = None
+    try:
+        token = g.get("snagarr_proxy_token")
+    except Exception:
+        token = None
+    if token:
+        resp.set_cookie(SESSION_COOKIE_NAME, token, httponly=True, samesite="Lax", path="/", secure=request.is_secure)
+    return resp
 
 # Removed MAIN_PID and signal-related code
 
@@ -510,17 +531,26 @@ def save_general_settings():
     # Ensure auth_mode and bypass flags are consistent
     auth_mode = data.get('auth_mode')
     
-    # If auth_mode is explicitly set, ensure the bypass flags match it
+    # If auth_mode is explicitly set, ensure the bypass flags match it. The four
+    # modes are mutually exclusive presets over three flags (local_access_bypass,
+    # proxy_auth_bypass, proxy_trust_auth); selecting one clears the others.
     if auth_mode:
         if auth_mode == 'local_bypass':
             data['local_access_bypass'] = True
             data['proxy_auth_bypass'] = False
+            data['proxy_trust_auth'] = False
         elif auth_mode == 'no_login':
             data['local_access_bypass'] = False
             data['proxy_auth_bypass'] = True
+            data['proxy_trust_auth'] = False
+        elif auth_mode == 'proxy_trust':
+            data['local_access_bypass'] = False
+            data['proxy_auth_bypass'] = False
+            data['proxy_trust_auth'] = True
         elif auth_mode == 'login':
             data['local_access_bypass'] = False
             data['proxy_auth_bypass'] = False
+            data['proxy_trust_auth'] = False
 
     # SSO providers are managed by the dedicated /api/sso/* endpoints and live in
     # their own 0600 store. Never let the masked mirror round-trip back into the
