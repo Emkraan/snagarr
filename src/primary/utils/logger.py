@@ -5,10 +5,9 @@ Supports separate log files for each application type
 """
 
 import logging
-import sys
 import os
 import pathlib
-from typing import Dict, Optional
+import sys
 
 # Create log directory
 LOG_DIR = pathlib.Path(os.getenv("SNAGARR_CONFIG_DIR", "/config")) / "logs"
@@ -29,8 +28,8 @@ APP_LOG_FILES = {
 }
 
 # Global logger instances
-logger: Optional[logging.Logger] = None
-app_loggers: Dict[str, logging.Logger] = {}
+logger: logging.Logger | None = None
+app_loggers: dict[str, logging.Logger] = {}
 
 def setup_main_logger(debug_mode=None):
     """Set up the main Huntarr logger."""
@@ -200,7 +199,7 @@ def update_logging_levels(debug_mode=None):
     
     return debug_mode
 
-def debug_log(message: str, data: object = None, app_type: Optional[str] = None) -> None:
+def debug_log(message: str, data: object = None, app_type: str | None = None) -> None:
     """
     Log debug messages with optional data.
     

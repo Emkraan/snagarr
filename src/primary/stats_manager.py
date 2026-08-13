@@ -5,14 +5,13 @@ Handles tracking, storing, and retrieving statistics about hunted and upgraded m
 and monitoring hourly API usage for rate limiting
 """
 
-import os
-import json
-import time
 import datetime
+import json
+import os
 import threading
-from typing import Dict, Any, Optional
+from typing import Any
+
 from src.primary.utils.logger import get_logger
-from src.primary.settings_manager import get_advanced_setting
 
 logger = get_logger("stats")
 
@@ -38,7 +37,7 @@ def find_writable_stats_dir():
             os.remove(test_file)
             logger.info(f"Using stats directory: {dir_path}")
             return dir_path
-        except (IOError, OSError) as e:
+        except OSError as e:
             logger.warning(f"Directory {dir_path} is not writable: {e}")
             continue
     
@@ -84,7 +83,7 @@ def ensure_stats_dir():
         logger.error(f"Failed to create stats directory: {e}")
         return False
 
-def load_stats() -> Dict[str, Dict[str, int]]:
+def load_stats() -> dict[str, dict[str, int]]:
     """
     Load statistics from the stats file
     
@@ -117,7 +116,7 @@ def load_stats() -> Dict[str, Dict[str, int]]:
         logger.error(f"Error loading stats from {STATS_FILE}: {e}")
         return default_stats
 
-def get_default_stats() -> Dict[str, Dict[str, int]]:
+def get_default_stats() -> dict[str, dict[str, int]]:
     """Get the default stats structure"""
     return {
         "sonarr": {"hunted": 0, "upgraded": 0},
@@ -129,7 +128,7 @@ def get_default_stats() -> Dict[str, Dict[str, int]]:
         "swaparr": {"hunted": 0, "upgraded": 0}
     }
 
-def get_default_hourly_caps() -> Dict[str, Dict[str, int]]:
+def get_default_hourly_caps() -> dict[str, dict[str, int]]:
     """Get the default hourly caps structure"""
     return {
         "sonarr": {"api_hits": 0},
@@ -140,7 +139,7 @@ def get_default_hourly_caps() -> Dict[str, Dict[str, int]]:
         "eros": {"api_hits": 0}
     }
 
-def load_hourly_caps() -> Dict[str, Dict[str, int]]:
+def load_hourly_caps() -> dict[str, dict[str, int]]:
     """
     Load hourly API caps from the caps file
     
@@ -173,7 +172,7 @@ def load_hourly_caps() -> Dict[str, Dict[str, int]]:
         logger.error(f"Error loading hourly caps from {HOURLY_CAP_FILE}: {e}")
         return default_caps
 
-def save_hourly_caps(caps: Dict[str, Dict[str, int]]) -> bool:
+def save_hourly_caps(caps: dict[str, dict[str, int]]) -> bool:
     """
     Save hourly API caps to the caps file
     
@@ -299,7 +298,7 @@ def increment_hourly_cap(app_type: str, count: int = 1) -> bool:
             
         return True
 
-def get_hourly_cap_status(app_type: str) -> Dict[str, Any]:
+def get_hourly_cap_status(app_type: str) -> dict[str, Any]:
     """
     Get current API usage status for an app
     
@@ -344,7 +343,7 @@ def check_hourly_cap_exceeded(app_type: str) -> bool:
     status = get_hourly_cap_status(app_type)
     return status.get("exceeded", False)
 
-def save_stats(stats: Dict[str, Dict[str, int]]) -> bool:
+def save_stats(stats: dict[str, dict[str, int]]) -> bool:
     """
     Save statistics to the stats file
     
@@ -422,7 +421,7 @@ def increment_stat(app_type: str, stat_type: str, count: int = 1) -> bool:
         logger.info(f"Successfully incremented and verified {app_type} {stat_type}")
         return True
 
-def get_stats() -> Dict[str, Dict[str, int]]:
+def get_stats() -> dict[str, dict[str, int]]:
     """
     Get the current statistics
     
@@ -434,7 +433,7 @@ def get_stats() -> Dict[str, Dict[str, int]]:
         logger.debug(f"Retrieved stats: {stats}")
         return stats
 
-def reset_stats(app_type: Optional[str] = None) -> bool:
+def reset_stats(app_type: str | None = None) -> bool:
     """
     Reset statistics for a specific app or all apps
     

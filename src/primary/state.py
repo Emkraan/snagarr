@@ -4,11 +4,10 @@ State management module for Huntarr
 Handles all persistence of program state
 """
 
-import os
 import datetime
-import time
 import json
-from typing import List, Dict, Any, Optional
+import os
+
 from src.primary import settings_manager
 
 # Define the config directory - typically /config in Docker environment
@@ -16,6 +15,7 @@ CONFIG_DIR = os.environ.get('CONFIG_DIR', '/config')
 
 # Get the logger at module level
 from src.primary.utils.logger import get_logger
+
 logger = get_logger("snagarr")
 
 def get_state_file_path(app_type, state_name):
@@ -122,7 +122,7 @@ def check_state_reset(app_type: str = None) -> bool:
     
     if hours_passed >= reset_interval:
         logger.warning(f"State files for {current_app_type} will be reset after {hours_passed:.1f} hours (interval: {reset_interval}h)")
-        logger.warning(f"This will cause all previously processed media to be eligible for processing again")
+        logger.warning("This will cause all previously processed media to be eligible for processing again")
         
         # Add additional safeguard - only reset if more than double the interval has passed
         # This helps prevent accidental resets due to clock issues or other anomalies
@@ -207,7 +207,7 @@ def calculate_reset_time(app_type: str = None) -> str:
         days = hours / 24
         return f"Next reset: in {int(days)} days"
 
-def load_processed_ids(filepath: str) -> List[int]:
+def load_processed_ids(filepath: str) -> list[int]:
     """
     Load processed IDs from a file.
     
@@ -234,7 +234,7 @@ def load_processed_ids(filepath: str) -> List[int]:
         logger.error(f"Error loading processed IDs from {filepath}: {e}")
         return []
 
-def save_processed_ids(filepath: str, ids: List[int]) -> None:
+def save_processed_ids(filepath: str, ids: list[int]) -> None:
     """
     Save processed IDs to a file.
     

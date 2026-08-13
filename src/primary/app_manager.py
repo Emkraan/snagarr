@@ -1,8 +1,7 @@
 # If this file doesn't exist, we'll create it
 
-import os
-from src.primary.utils.logger import get_logger
 from src.primary.settings_manager import load_settings
+from src.primary.utils.logger import get_logger
 
 logger = get_logger("app_manager")
 

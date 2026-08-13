@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
-from flask import Blueprint, request, jsonify
-import datetime, os, requests
-from src.primary import keys_manager
-from src.primary.state import get_state_file_path, reset_state_file
-from src.primary.utils.logger import get_logger
-from src.primary.settings_manager import get_ssl_verify_setting
-import traceback
 import socket
 from urllib.parse import urlparse
+
+import requests
+from flask import Blueprint, jsonify, request
+
+from src.primary.settings_manager import get_ssl_verify_setting
+from src.primary.state import get_state_file_path
+from src.primary.utils.logger import get_logger
 
 sonarr_bp = Blueprint('sonarr', __name__)
 sonarr_logger = get_logger("sonarr")
@@ -59,7 +59,7 @@ def test_connection():
         return jsonify({"success": False, "message": error_msg}), 404
     except Exception as e:
         # Log the socket testing error but continue with the full request
-        sonarr_logger.debug(f"Socket test error, continuing with full request: {str(e)}")
+        sonarr_logger.debug(f"Socket test error, continuing with full request: {e!s}")
         
     # Create the test URL and set headers
     test_url = f"{api_url.rstrip('/')}/api/v3/system/status"
@@ -121,7 +121,7 @@ def test_connection():
 
     except requests.exceptions.Timeout as e:
         error_msg = f"Connection timed out after {api_timeout} seconds"
-        sonarr_logger.error(f"{error_msg}: {str(e)}")
+        sonarr_logger.error(f"{error_msg}: {e!s}")
         return jsonify({"success": False, "message": error_msg}), 504
         
     except requests.exceptions.ConnectionError as e:
@@ -138,6 +138,6 @@ def test_connection():
         return jsonify({"success": False, "message": error_msg}), 404
         
     except requests.exceptions.RequestException as e:
-        error_msg = f"Connection test failed: {str(e)}"
+        error_msg = f"Connection test failed: {e!s}"
         sonarr_logger.error(error_msg)
         return jsonify({"success": False, "message": error_msg}), 500

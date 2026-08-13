@@ -4,29 +4,32 @@ Arr API Helper Functions
 Handles all communication with the Arr API
 """
 
-import requests
 import time
-from typing import List, Dict, Any, Optional, Union
-from primary.utils.logger import logger, debug_log
-from primary.config import API_KEY, API_URL, API_TIMEOUT, COMMAND_WAIT_DELAY, COMMAND_WAIT_ATTEMPTS, APP_TYPE
-from src.primary.stats_manager import get_stats, reset_stats
+
+import requests
+
+from primary.config import (
+    API_KEY,
+    API_TIMEOUT,
+    API_URL,
+    APP_TYPE,
+    COMMAND_WAIT_ATTEMPTS,
+    COMMAND_WAIT_DELAY,
+)
+from primary.utils.logger import debug_log, logger
 
 # Create a session for reuse
 session = requests.Session()
 
-def arr_request(endpoint: str, method: str = "GET", data: Dict = None) -> Optional[Union[Dict, List]]:
+def arr_request(endpoint: str, method: str = "GET", data: dict = None) -> dict | list | None:
     """
     Make a request to the Arr API.
     `endpoint` should be something like 'series', 'command', 'wanted/cutoff', etc.
     """
     # Determine the API version based on app type
-    if APP_TYPE == "sonarr":
+    if APP_TYPE == "sonarr" or APP_TYPE == "radarr":
         api_base = "api/v3"
-    elif APP_TYPE == "radarr":
-        api_base = "api/v3"
-    elif APP_TYPE == "lidarr":
-        api_base = "api/v1"
-    elif APP_TYPE == "readarr":
+    elif APP_TYPE == "lidarr" or APP_TYPE == "readarr":
         api_base = "api/v1"
     else:
         # Default to v3 for unknown app types
@@ -91,13 +94,9 @@ def check_connection(app_type: str = None) -> bool:
         endpoint = "system/status"
             
         # Determine the API version based on app type
-        if current_app_type == "sonarr":
+        if current_app_type == "sonarr" or current_app_type == "radarr":
             api_base = "api/v3"
-        elif current_app_type == "radarr":
-            api_base = "api/v3"
-        elif current_app_type == "lidarr":
-            api_base = "api/v1"
-        elif current_app_type == "readarr":
+        elif current_app_type == "lidarr" or current_app_type == "readarr":
             api_base = "api/v1"
         else:
             # Default to v3 for unknown app types
@@ -149,7 +148,7 @@ def wait_for_command(command_id: int):
     return response['status'].lower() in ['complete', 'completed']
 
 # Sonarr-specific functions
-def get_series() -> List[Dict]:
+def get_series() -> list[dict]:
     """Get all series from Sonarr."""
     if APP_TYPE != "sonarr":
         logger.error("get_series() called but APP_TYPE is not sonarr")
@@ -181,7 +180,7 @@ def refresh_series(series_id: int) -> bool:
         return False
     return wait_for_command(response['id'])
 
-def episode_search_episodes(episode_ids: List[int]) -> bool:
+def episode_search_episodes(episode_ids: list[int]) -> bool:
     """
     POST /api/v5/command
     {
@@ -219,7 +218,7 @@ def get_download_queue_size() -> int:
 
     return total_records
 
-def get_cutoff_unmet(page: int = 1) -> Optional[Dict]:
+def get_cutoff_unmet(page: int = 1) -> dict | None:
     """
     GET /api/v5/wanted/cutoff?sortKey=airDateUtc&sortDirection=descending&includeSeriesInformation=true
         &page=<page>&pageSize=200
@@ -257,7 +256,7 @@ def get_cutoff_unmet_total_pages() -> int:
     total_pages = (total_records + 200 - 1) // 200
     return max(total_pages, 1)
 
-def get_episodes_for_series(series_id: int) -> Optional[List[Dict]]:
+def get_episodes_for_series(series_id: int) -> list[dict] | None:
     """Get all episodes for a specific series"""
     if APP_TYPE != "sonarr":
         logger.error("get_episodes_for_series() called but APP_TYPE is not sonarr")
@@ -265,7 +264,7 @@ def get_episodes_for_series(series_id: int) -> Optional[List[Dict]]:
     
     return arr_request(f"episode?seriesId={series_id}", method="GET")
 
-def get_missing_episodes(pageSize: int = 1000) -> Optional[Dict]:
+def get_missing_episodes(pageSize: int = 1000) -> dict | None:
     """
     GET /api/v5/wanted/missing?pageSize=<pageSize>&includeSeriesInformation=true
     Returns JSON with a "records" array of missing episodes and "totalRecords".
@@ -287,7 +286,7 @@ def get_missing_episodes(pageSize: int = 1000) -> Optional[Dict]:
     
     return result
 
-def get_series_with_missing_episodes() -> List[Dict]:
+def get_series_with_missing_episodes() -> list[dict]:
     """
     Fetch all shows that have missing episodes using the wanted/missing endpoint.
     Returns a list of series objects with an additional 'missingEpisodes' field 
@@ -357,33 +356,5 @@ def get_series_with_missing_episodes() -> List[Dict]:
     logger.debug(f"Processed missing episodes data into {len(result)} series with missing episodes")
     return result
 
-def get_media_stats():
-    """Get statistics for hunted and upgraded media"""
-    try:
-        stats = get_stats()
-        return jsonify({
-            "success": True,
-            "stats": stats
-        })
-    except Exception as e:
-        logger.error(f"Error retrieving media statistics: {e}")
-        return jsonify({
-            "success": False,
-            "message": "Error retrieving media statistics."
-        }), 500
-        
-def reset_media_stats():
-    """Reset statistics for hunted and upgraded media"""
-    try:
-        app_type = request.json.get('app_type') if request.json else None
-        reset_stats(app_type)
-        return jsonify({
-            "success": True,
-            "message": f"Successfully reset statistics for {'all apps' if app_type is None else app_type}."
-        })
-    except Exception as e:
-        logger.error(f"Error resetting media statistics: {e}")
-        return jsonify({
-            "success": False,
-            "message": "Error resetting media statistics."
-        }), 500
+# Stats route handlers live in src/primary/routes/common.py (/api/stats,
+# /api/stats/reset). The Flask-specific jsonify/request are not imported here.

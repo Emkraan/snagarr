@@ -4,63 +4,85 @@ Web server for Huntarr
 Provides a web interface to view logs in real-time, manage settings, and includes authentication
 """
 
-import os
 import datetime
-import time
-from threading import Lock
-from primary.utils.logger import LOG_DIR, APP_LOG_FILES, MAIN_LOG_FILE # Import log constants
-from primary import settings_manager # Import settings_manager
-from src.primary.stateful_manager import update_lock_expiration # Import stateful update function
+import importlib  # Added import
 
 # import socket # No longer used
-import json
-# import signal # No longer used for reload
-import sys
-import qrcode
-import pyotp
-import base64
-import io
 # import requests # No longer used
 import logging
+import os
+
+# import signal # No longer used for reload
+import sys
 import threading
-import importlib # Added import
-from flask import Flask, render_template, request, jsonify, Response, send_from_directory, redirect, url_for, session, stream_with_context # Added stream_with_context
+import time
+from threading import Lock
+
+from flask import (  # Added stream_with_context
+    Flask,
+    Response,
+    jsonify,
+    render_template,
+    request,
+    stream_with_context,
+)
+
+from primary import settings_manager  # Import settings_manager
+from primary.utils.logger import (  # Import log constants
+    APP_LOG_FILES,
+    LOG_DIR,
+    MAIN_LOG_FILE,
+)
+
 # from src.primary.config import API_URL # No longer needed directly
 # Use only settings_manager
-from src.primary import settings_manager
-from src.primary.utils.logger import setup_main_logger, get_logger, LOG_DIR, update_logging_levels # Import get_logger, LOG_DIR, and update_logging_levels
-from src.primary.auth import (
-    authenticate_request, enforce_rbac, user_exists, create_user, verify_user, create_session,
-    logout, SESSION_COOKIE_NAME, is_2fa_enabled, generate_2fa_secret,
-    verify_2fa_code, disable_2fa, change_username, change_password,
-    get_or_create_secret_key, session_role
-)
-# Import blueprint for common routes
-from src.primary.routes.common import common_bp
-# Import in-app OIDC (Entra) sign-in
-from src.primary.routes import oidc as oidc_routes
-from src.primary.routes.oidc import oidc_bp, init_oidc
-from src.primary import oidc_config
-# Import the versioned programmatic config API
-from src.primary.routes.api_v1 import api_v1, _mask
+# Import background module to trigger manual cycle resets
+from src.primary import oidc_config, settings_manager
 
 # Import blueprints for each app from the centralized blueprints module
-from src.primary.apps.blueprints import sonarr_bp, radarr_bp, lidarr_bp, readarr_bp, whisparr_bp, swaparr_bp, eros_bp
+from src.primary.apps.blueprints import (
+    eros_bp,
+    lidarr_bp,
+    radarr_bp,
+    readarr_bp,
+    sonarr_bp,
+    swaparr_bp,
+    whisparr_bp,
+)
+from src.primary.auth import (
+    authenticate_request,
+    enforce_rbac,
+    get_or_create_secret_key,
+    session_role,
+)
 
-# Import stateful blueprint
-from src.primary.stateful_routes import stateful_api
-
-# Import history blueprint
-from src.primary.routes.history_routes import history_blueprint
-
-# Import scheduler blueprint
-from src.primary.routes.scheduler_routes import scheduler_api
-
+# Import in-app OIDC (Entra) sign-in
 # Import admin hub blueprint
 from src.primary.routes.admin_routes import admin_bp
 
-# Import background module to trigger manual cycle resets
-from src.primary import background
+# Import the versioned programmatic config API
+from src.primary.routes.api_v1 import _mask, api_v1
+
+# Import blueprint for common routes
+from src.primary.routes.common import common_bp
+
+# Import history blueprint
+from src.primary.routes.history_routes import history_blueprint
+from src.primary.routes.oidc import init_oidc, oidc_bp
+
+# Import scheduler blueprint
+from src.primary.routes.scheduler_routes import scheduler_api
+from src.primary.stateful_manager import (
+    update_lock_expiration,  # Import stateful update function
+)
+
+# Import stateful blueprint
+from src.primary.stateful_routes import stateful_api
+from src.primary.utils.logger import (  # Import get_logger, LOG_DIR, and update_logging_levels
+    LOG_DIR,
+    get_logger,
+    update_logging_levels,
+)
 
 # Disable Flask default logging
 log = logging.getLogger('werkzeug')
@@ -223,9 +245,6 @@ def logs_stream():
     # Import needed modules
     import time
     from pathlib import Path
-    import threading
-    import datetime # Added datetime import
-    import time  # Add time module import
 
     # Use a client identifier to track connections
     # Use request.remote_addr directly for client_id
@@ -277,7 +296,7 @@ def logs_stream():
             if app_type == 'all':
                 # Follow all log files for 'all' type
                 log_files_to_follow = list(KNOWN_LOG_FILES.items())
-                web_logger.debug(f"Following all log files for 'all' type")
+                web_logger.debug("Following all log files for 'all' type")
             elif app_type == 'system':
                 # For system, only follow main log
                 system_log = KNOWN_LOG_FILES.get('system')
@@ -406,11 +425,11 @@ def logs_stream():
                             positions[name] = -1
                         except Exception as e:
                             web_logger.error(f"Error reading {path}: {e}")
-                            yield f"data: ERROR: Problem reading log: {str(e)}\n\n"
+                            yield f"data: ERROR: Problem reading log: {e!s}\n\n"
                     
                     except Exception as e:
                         web_logger.error(f"Error processing {name}: {e}")
-                        yield f"data: ERROR: Unexpected issue with log.\n\n"
+                        yield "data: ERROR: Unexpected issue with log.\n\n"
 
                 # Keep-alive or sleep
                 if not had_content:
@@ -429,7 +448,7 @@ def logs_stream():
             web_logger.error(f"Unhandled error in log stream generator for {app_type} (Client: {client_ip}): {e}", exc_info=True)
             try:
                 # Ensure error message is properly formatted for SSE
-                yield f"event: error\ndata: ERROR: Log streaming failed unexpectedly: {str(e)}\n\n"
+                yield f"event: error\ndata: ERROR: Log streaming failed unexpectedly: {e!s}\n\n"
             except Exception as yield_err:
                  web_logger.error(f"Error yielding final error message to client {client_id}: {yield_err}")
         finally:
@@ -563,10 +582,10 @@ def handle_app_settings(app_name):
         # Clean URLs in the data before saving
         if 'instances' in data and isinstance(data['instances'], list):
             for instance in data['instances']:
-                if 'api_url' in instance and instance['api_url']:
+                if instance.get('api_url'):
                     # Remove trailing slashes and special characters
                     instance['api_url'] = instance['api_url'].strip().rstrip('/').rstrip('\\')
-        elif 'api_url' in data and data['api_url']:
+        elif data.get('api_url'):
             # For apps that don't use instances array
             data['api_url'] = data['api_url'].strip().rstrip('/').rstrip('\\')
         
@@ -668,7 +687,7 @@ def api_app_status(app_name):
                 api_module = importlib.import_module(f'{module_name}.api')
                 
                 if hasattr(instances_module, 'get_configured_instances'):
-                    get_instances_func = getattr(instances_module, 'get_configured_instances')
+                    get_instances_func = instances_module.get_configured_instances
                     instances = get_instances_func()
                     total_configured = len(instances)
                     api_timeout = settings_manager.get_setting(app_name, "api_timeout", 10) # Get global timeout
@@ -676,7 +695,7 @@ def api_app_status(app_name):
                     if total_configured > 0:
                         web_logger.debug(f"Checking connection for {total_configured} {app_name.capitalize()} instances...")
                         if hasattr(api_module, 'check_connection'):
-                            check_connection_func = getattr(api_module, 'check_connection')
+                            check_connection_func = api_module.check_connection
                             for instance in instances:
                                 inst_url = instance.get("api_url")
                                 inst_key = instance.get("api_key")
@@ -689,7 +708,7 @@ def api_app_status(app_name):
                                     else:
                                         web_logger.debug(f"{app_name.capitalize()} instance '{inst_name}' connection check failed.")
                                 except Exception as e:
-                                    web_logger.error(f"Error checking connection for {app_name.capitalize()} instance '{inst_name}': {str(e)}")
+                                    web_logger.error(f"Error checking connection for {app_name.capitalize()} instance '{inst_name}': {e!s}")
                         else:
                             web_logger.warning(f"check_connection function not found in {app_name} API module")
                     else:
@@ -705,7 +724,7 @@ def api_app_status(app_name):
                     is_configured = bool(api_url and api_key)
                     is_connected = False
                     if is_configured and hasattr(api_module, 'check_connection'):
-                        check_connection_func = getattr(api_module, 'check_connection')
+                        check_connection_func = api_module.check_connection
                         is_connected = check_connection_func(api_url, api_key, min(api_timeout, 5))
                     response_data = {"total_configured": 1 if is_configured else 0, "connected_count": 1 if is_connected else 0}
                                 
@@ -732,7 +751,7 @@ def api_app_status(app_name):
                     api_module = importlib.import_module(module_path)
                     
                     if hasattr(api_module, 'check_connection'):
-                        check_connection_func = getattr(api_module, 'check_connection')
+                        check_connection_func = api_module.check_connection
                         # Use a short timeout to prevent long waits
                         is_connected = check_connection_func(api_url, api_key, min(api_timeout, 5))
                     else:
@@ -741,7 +760,7 @@ def api_app_status(app_name):
                     web_logger.error(f"Could not import API module for {app_name}")
                     is_connected = False # Ensure connection is false on import error
                 except Exception as e:
-                    web_logger.error(f"Error checking connection for {app_name}: {str(e)}")
+                    web_logger.error(f"Error checking connection for {app_name}: {e!s}")
                     is_connected = False # Ensure connection is false on check error
             
             # Prepare legacy response format
@@ -750,7 +769,7 @@ def api_app_status(app_name):
         return jsonify(response_data), status_code
     
     except Exception as e:
-        web_logger.error(f"Unexpected error in status check for {app_name}: {str(e)}", exc_info=True)
+        web_logger.error(f"Unexpected error in status check for {app_name}: {e!s}", exc_info=True)
         # Return a valid response even on error to prevent UI issues
         return jsonify({"configured": False, "connected": False, "error": "Internal error"}), 200
 
@@ -828,7 +847,7 @@ def api_get_stats():
         return jsonify({"success": True, "stats": stats})
     except Exception as e:
         web_logger = get_logger("web_server")
-        web_logger.error(f"Error fetching statistics: {str(e)}")
+        web_logger.error(f"Error fetching statistics: {e!s}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/stats/reset', methods=['POST'])
@@ -858,7 +877,7 @@ def api_reset_stats():
         
     except Exception as e:
         web_logger = get_logger("web_server")
-        web_logger.error(f"Error resetting statistics: {str(e)}")
+        web_logger.error(f"Error resetting statistics: {e!s}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/hourly-caps', methods=['GET'])
@@ -866,8 +885,8 @@ def api_get_hourly_caps():
     """Get hourly API usage caps for each app"""
     try:
         # Import necessary functions
-        from src.primary.stats_manager import load_hourly_caps
         from src.primary.settings_manager import load_settings
+        from src.primary.stats_manager import load_hourly_caps
         
         # Get the logger
         web_logger = get_logger("web_server")
@@ -924,7 +943,7 @@ def api_reset_stats_public():
         
     except Exception as e:
         web_logger = get_logger("web_server")
-        web_logger.error(f"Error resetting statistics (public): {str(e)}")
+        web_logger.error(f"Error resetting statistics (public): {e!s}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/version')
@@ -1034,6 +1053,20 @@ def health_check():
     logger = get_logger("system")
     logger.debug("Health check endpoint accessed")
     return jsonify({"status": "OK"})
+
+
+@app.route('/api/health', methods=['GET'])
+def api_health():
+    """Liveness probe. Auth-exempt (listed in authenticate_request allow-list).
+    Returns app name, status, and version so load balancers / monitors get a
+    richer signal than /ping alone. Mirrors the /api/v1/health shape."""
+    try:
+        root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+        vf = os.path.join(root, 'VERSION')
+        version = open(vf).read().strip() if os.path.exists(vf) else '0.0.0'  # noqa: SIM115
+    except Exception:
+        version = '0.0.0'
+    return jsonify({"status": "ok", "app": "snagarr", "version": version})
 
 # Start the web server in debug or production mode
 def start_web_server():

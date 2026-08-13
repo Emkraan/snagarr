@@ -13,10 +13,12 @@ All endpoints require an authenticated admin session. Members receive 403.
 """
 
 import pathlib
+
 from flask import Blueprint, jsonify, render_template, request
+
+from .. import api_keys, oidc_config, settings_manager
 from ..auth import SESSION_COOKIE_NAME, get_role_from_session, verify_session
 from ..utils.logger import logger
-from .. import oidc_config, api_keys, settings_manager
 
 admin_bp = Blueprint("admin", __name__)
 

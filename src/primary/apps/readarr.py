@@ -1,9 +1,10 @@
-from flask import Blueprint, request, jsonify
-import datetime, os, requests
-from primary import keys_manager
-from src.primary.utils.logger import get_logger
+
+import requests
+from flask import Blueprint, jsonify, request
+
+from src.primary.settings_manager import get_ssl_verify_setting, load_settings
 from src.primary.state import get_state_file_path
-from src.primary.settings_manager import load_settings, get_ssl_verify_setting
+from src.primary.utils.logger import get_logger
 
 readarr_bp = Blueprint('readarr', __name__)
 readarr_logger = get_logger("readarr")
@@ -75,7 +76,7 @@ def test_connection():
 
     except requests.exceptions.Timeout as e:
         error_msg = f"Connection timed out after {api_timeout} seconds"
-        readarr_logger.error(f"{error_msg}: {str(e)}")
+        readarr_logger.error(f"{error_msg}: {e!s}")
         return jsonify({"success": False, "message": error_msg}), 504
         
     except requests.exceptions.ConnectionError as e:
@@ -92,7 +93,7 @@ def test_connection():
         return jsonify({"success": False, "message": f"{error_msg}: {details}"}), 502
         
     except requests.exceptions.RequestException as e:
-        error_message = f"Connection failed: {str(e)}"
+        error_message = f"Connection failed: {e!s}"
         
         if hasattr(e, 'response') and e.response is not None:
             status_code = e.response.status_code
@@ -119,7 +120,7 @@ def test_connection():
         return jsonify({"success": False, "message": error_message}), 500
         
     except Exception as e:
-        error_msg = f"An unexpected error occurred: {str(e)}"
+        error_msg = f"An unexpected error occurred: {e!s}"
         readarr_logger.error(error_msg)
         return jsonify({"success": False, "message": error_msg}), 500
 

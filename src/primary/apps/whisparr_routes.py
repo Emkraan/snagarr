@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 
-from flask import Blueprint, request, jsonify
-import datetime, os, requests
-from src.primary import keys_manager
-from src.primary.state import get_state_file_path, reset_state_file
-from src.primary.utils.logger import get_logger, APP_LOG_FILES
-from src.primary.settings_manager import get_ssl_verify_setting
-import traceback
+import os
 import socket
+import traceback
 from urllib.parse import urlparse
+
+import requests
+from flask import Blueprint, jsonify, request
+
+from src.primary import keys_manager
 from src.primary.apps.whisparr import api as whisparr_api
+from src.primary.settings_manager import get_ssl_verify_setting
+from src.primary.state import get_state_file_path, reset_state_file
+from src.primary.utils.logger import APP_LOG_FILES, get_logger
 
 whisparr_bp = Blueprint('whisparr', __name__)
 whisparr_logger = get_logger("whisparr")
@@ -44,7 +47,7 @@ def get_status():
             "total_configured": total_configured
         })
     except Exception as e:
-        whisparr_logger.error(f"Error getting Whisparr status: {str(e)}")
+        whisparr_logger.error(f"Error getting Whisparr status: {e!s}")
         return jsonify({
             "configured": False,
             "connected": False,
@@ -92,7 +95,7 @@ def test_connection():
         return jsonify({"success": False, "message": error_msg}), 404
     except Exception as e:
         # Log the socket testing error but continue with the full request
-        whisparr_logger.debug(f"Socket test error, continuing with full request: {str(e)}")
+        whisparr_logger.debug(f"Socket test error, continuing with full request: {e!s}")
     
     # First try standard API endpoint (Whisparr v2)
     api_paths = [
@@ -198,11 +201,11 @@ def test_connection():
         whisparr_logger.error(error_msg)
         return jsonify({"success": False, "message": error_msg}), 404
     except requests.exceptions.Timeout:
-        error_msg = f"Connection timed out - Whisparr took too long to respond"
+        error_msg = "Connection timed out - Whisparr took too long to respond"
         whisparr_logger.error(error_msg)
         return jsonify({"success": False, "message": error_msg}), 504
     except requests.exceptions.RequestException as e:
-        error_msg = f"Connection test failed: {str(e)}"
+        error_msg = f"Connection test failed: {e!s}"
         whisparr_logger.error(error_msg)
         return jsonify({"success": False, "message": error_msg}), 500
 
@@ -292,12 +295,12 @@ def get_versions():
                 results.append({
                     "name": instance_name,
                     "success": False,
-                    "message": f"Connection error: {str(e)}"
+                    "message": f"Connection error: {e!s}"
                 })
                 
         return jsonify({"success": True, "results": results})
     except Exception as e:
-        whisparr_logger.error(f"Error getting Whisparr versions: {str(e)}")
+        whisparr_logger.error(f"Error getting Whisparr versions: {e!s}")
         return jsonify({"success": False, "message": str(e)}), 500
 
 @whisparr_bp.route('/logs', methods=['GET'])
@@ -317,7 +320,7 @@ def get_logs():
             
         return jsonify({"success": True, "logs": log_content})
     except Exception as e:
-        error_message = f"Error fetching Whisparr logs: {str(e)}"
+        error_message = f"Error fetching Whisparr logs: {e!s}"
         whisparr_logger.error(error_message)
         traceback.print_exc()
         return jsonify({"success": False, "message": error_message}), 500
@@ -339,6 +342,6 @@ def clear_processed():
             "message": "Successfully cleared Whisparr processed state"
         })
     except Exception as e:
-        error_message = f"Error clearing Whisparr processed state: {str(e)}"
+        error_message = f"Error clearing Whisparr processed state: {e!s}"
         whisparr_logger.error(error_message)
         return jsonify({"success": False, "message": error_message}), 500

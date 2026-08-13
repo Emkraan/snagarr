@@ -6,16 +6,14 @@ Handles all communication with the Whisparr API
 Exclusively uses the Whisparr V2 API
 """
 
-import requests
 import json
-import time
-import datetime
-import traceback
-import sys
-from typing import List, Dict, Any, Optional, Union, Callable
-from src.primary.utils.logger import get_logger
+from typing import Any
+
+import requests
+
 from src.primary import __version__ as _SNAGARR_VERSION
 from src.primary.settings_manager import get_ssl_verify_setting
+from src.primary.utils.logger import get_logger
 
 # Get logger for the Whisparr app
 whisparr_logger = get_logger("whisparr")
@@ -23,7 +21,7 @@ whisparr_logger = get_logger("whisparr")
 # Use a session for better performance
 session = requests.Session()
 
-def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, method: str = "GET", data: Dict = None) -> Any:
+def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, method: str = "GET", data: dict = None) -> Any:
     """
     Make a request to the Whisparr API.
     
@@ -149,7 +147,7 @@ def get_download_queue_size(api_url: str, api_key: str, api_timeout: int) -> int
     else:
         return -1
 
-def get_items_with_missing(api_url: str, api_key: str, api_timeout: int, monitored_only: bool) -> List[Dict[str, Any]]:
+def get_items_with_missing(api_url: str, api_key: str, api_timeout: int, monitored_only: bool) -> list[dict[str, Any]]:
     """
     Get a list of items with missing files (not downloaded/available).
 
@@ -163,7 +161,7 @@ def get_items_with_missing(api_url: str, api_key: str, api_timeout: int, monitor
         A list of item objects with missing files, or None if the request failed.
     """
     try:
-        whisparr_logger.debug(f"Retrieving missing items...")
+        whisparr_logger.debug("Retrieving missing items...")
         
         # Endpoint parameters - always use v2 format
         endpoint = "wanted/missing?pageSize=1000&sortKey=airDateUtc&sortDirection=descending"
@@ -186,10 +184,10 @@ def get_items_with_missing(api_url: str, api_key: str, api_timeout: int, monitor
         return items
         
     except Exception as e:
-        whisparr_logger.error(f"Error retrieving missing items: {str(e)}")
+        whisparr_logger.error(f"Error retrieving missing items: {e!s}")
         return None
 
-def get_cutoff_unmet_items(api_url: str, api_key: str, api_timeout: int, monitored_only: bool) -> List[Dict[str, Any]]:
+def get_cutoff_unmet_items(api_url: str, api_key: str, api_timeout: int, monitored_only: bool) -> list[dict[str, Any]]:
     """
     Get a list of items that don't meet their quality profile cutoff.
 
@@ -203,7 +201,7 @@ def get_cutoff_unmet_items(api_url: str, api_key: str, api_timeout: int, monitor
         A list of item objects that need quality upgrades, or None if the request failed.
     """
     try:
-        whisparr_logger.debug(f"Retrieving cutoff unmet items...")
+        whisparr_logger.debug("Retrieving cutoff unmet items...")
         
         # Endpoint - always use v2 format
         endpoint = "wanted/cutoff?pageSize=1000&sortKey=airDateUtc&sortDirection=descending"
@@ -228,7 +226,7 @@ def get_cutoff_unmet_items(api_url: str, api_key: str, api_timeout: int, monitor
         return items
         
     except Exception as e:
-        whisparr_logger.error(f"Error retrieving cutoff unmet items: {str(e)}")
+        whisparr_logger.error(f"Error retrieving cutoff unmet items: {e!s}")
         return None
 
 def refresh_item(api_url: str, api_key: str, api_timeout: int, item_id: int) -> int:
@@ -249,7 +247,7 @@ def refresh_item(api_url: str, api_key: str, api_timeout: int, item_id: int) -> 
     # Return a placeholder command ID to simulate success without actually refreshing
     return 123
 
-def item_search(api_url: str, api_key: str, api_timeout: int, item_ids: List[int]) -> int:
+def item_search(api_url: str, api_key: str, api_timeout: int, item_ids: list[int]) -> int:
     """
     Trigger a search for one or more items.
     
@@ -309,10 +307,10 @@ def item_search(api_url: str, api_key: str, api_timeout: int, item_ids: List[int
             return None
         
     except Exception as e:
-        whisparr_logger.error(f"Error searching for items: {str(e)}")
+        whisparr_logger.error(f"Error searching for items: {e!s}")
         return None
 
-def get_command_status(api_url: str, api_key: str, api_timeout: int, command_id: int) -> Optional[Dict]:
+def get_command_status(api_url: str, api_key: str, api_timeout: int, command_id: int) -> dict | None:
     """
     Get the status of a specific command.
 
@@ -398,7 +396,7 @@ def check_connection(api_url: str, api_key: str, api_timeout: int) -> bool:
                 resp.raise_for_status()
                 response = resp.json()
             except Exception as e:
-                whisparr_logger.debug(f"V3 API path also failed: {str(e)}")
+                whisparr_logger.debug(f"V3 API path also failed: {e!s}")
                 return False
         
         if response is not None:
@@ -417,5 +415,5 @@ def check_connection(api_url: str, api_key: str, api_timeout: int) -> bool:
             return False
             
     except Exception as e:
-        whisparr_logger.error(f"Error checking connection to Whisparr V2 API: {str(e)}")
+        whisparr_logger.error(f"Error checking connection to Whisparr V2 API: {e!s}")
         return False

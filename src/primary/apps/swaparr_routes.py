@@ -2,12 +2,13 @@
 Route definitions for Swaparr API endpoints.
 """
 
-from flask import Blueprint, request, jsonify
-import os
 import json
-from src.primary.utils.logger import get_logger
+import os
+
+from flask import Blueprint, jsonify, request
+
 from src.primary.settings_manager import load_settings, save_settings
-from src.primary.apps.swaparr.handler import process_stalled_downloads
+from src.primary.utils.logger import get_logger
 
 # Create the blueprint directly in this file
 swaparr_bp = Blueprint('swaparr', __name__)
@@ -43,8 +44,8 @@ def get_status():
                             "currently_striked": striked_items,
                             "removed": removed_items
                         }
-                    except (json.JSONDecodeError, IOError) as e:
-                        swaparr_logger.error(f"Error reading strike data for {app_name}: {str(e)}")
+                    except (OSError, json.JSONDecodeError) as e:
+                        swaparr_logger.error(f"Error reading strike data for {app_name}: {e!s}")
                         statistics[app_name] = {"error": str(e)}
     
     return jsonify({
@@ -109,9 +110,9 @@ def reset_strikes():
                     os.remove(strike_file)
                     swaparr_logger.info(f"Reset strikes for {app_name}")
                     return jsonify({"success": True, "message": f"Strikes reset for {app_name}"})
-                except IOError as e:
-                    swaparr_logger.error(f"Error resetting strikes for {app_name}: {str(e)}")
-                    return jsonify({"success": False, "message": f"Failed to reset strikes for {app_name}: {str(e)}"}), 500
+                except OSError as e:
+                    swaparr_logger.error(f"Error resetting strikes for {app_name}: {e!s}")
+                    return jsonify({"success": False, "message": f"Failed to reset strikes for {app_name}: {e!s}"}), 500
         return jsonify({"success": False, "message": f"No strike data found for {app_name}"}), 404
     else:
         # Reset strikes for all apps
@@ -125,9 +126,9 @@ def reset_strikes():
             
             swaparr_logger.info("Reset all strikes")
             return jsonify({"success": True, "message": "All strikes reset"})
-        except IOError as e:
-            swaparr_logger.error(f"Error resetting all strikes: {str(e)}")
-            return jsonify({"success": False, "message": f"Failed to reset all strikes: {str(e)}"}), 500
+        except OSError as e:
+            swaparr_logger.error(f"Error resetting all strikes: {e!s}")
+            return jsonify({"success": False, "message": f"Failed to reset all strikes: {e!s}"}), 500
 
 def register_routes(app):
     """Register Swaparr routes with the Flask app."""

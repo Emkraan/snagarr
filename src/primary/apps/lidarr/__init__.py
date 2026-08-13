@@ -88,4 +88,4 @@ def get_configured_instances():
     lidarr_logger.debug(f"Found {len(instances)} configured and enabled Lidarr instances")
     return instances
 
-__all__ = ["process_missing_albums", "process_cutoff_upgrades", "get_configured_instances"]
+__all__ = ["get_configured_instances", "process_cutoff_upgrades", "process_missing_albums"]

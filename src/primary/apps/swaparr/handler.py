@@ -3,16 +3,15 @@ Implementation of the swaparr functionality to detect and remove stalled downloa
 Based on the functionality provided by https://github.com/ThijmenGThN/swaparr
 """
 
-import os
-import json
-import time
 import hashlib
+import json
+import os
 from datetime import datetime, timedelta
+
 import requests
 
-from src.primary.utils.logger import get_logger
 from src.primary.settings_manager import load_settings
-from src.primary.state import get_state_file_path
+from src.primary.utils.logger import get_logger
 
 # Create logger
 swaparr_logger = get_logger("swaparr")
@@ -39,8 +38,8 @@ def load_strike_data(app_name):
     try:
         with open(strike_file, 'r') as f:
             return json.load(f)
-    except (json.JSONDecodeError, IOError) as e:
-        swaparr_logger.error(f"Error loading strike data for {app_name}: {str(e)}")
+    except (OSError, json.JSONDecodeError) as e:
+        swaparr_logger.error(f"Error loading strike data for {app_name}: {e!s}")
         return {}
 
 def save_strike_data(app_name, strike_data):
@@ -51,8 +50,8 @@ def save_strike_data(app_name, strike_data):
     try:
         with open(strike_file, 'w') as f:
             json.dump(strike_data, f, indent=2)
-    except IOError as e:
-        swaparr_logger.error(f"Error saving strike data for {app_name}: {str(e)}")
+    except OSError as e:
+        swaparr_logger.error(f"Error saving strike data for {app_name}: {e!s}")
 
 def load_removed_items(app_name):
     """Load list of permanently removed items"""
@@ -65,8 +64,8 @@ def load_removed_items(app_name):
     try:
         with open(removed_file, 'r') as f:
             return json.load(f)
-    except (json.JSONDecodeError, IOError) as e:
-        swaparr_logger.error(f"Error loading removed items for {app_name}: {str(e)}")
+    except (OSError, json.JSONDecodeError) as e:
+        swaparr_logger.error(f"Error loading removed items for {app_name}: {e!s}")
         return {}
 
 def save_removed_items(app_name, removed_items):
@@ -77,8 +76,8 @@ def save_removed_items(app_name, removed_items):
     try:
         with open(removed_file, 'w') as f:
             json.dump(removed_items, f, indent=2)
-    except IOError as e:
-        swaparr_logger.error(f"Error saving removed items for {app_name}: {str(e)}")
+    except OSError as e:
+        swaparr_logger.error(f"Error saving removed items for {app_name}: {e!s}")
 
 def generate_item_hash(item):
     """Generate a unique hash for an item based on its name and size.
@@ -186,7 +185,7 @@ def get_queue_items(app_name, api_url, api_key, api_timeout=120):
             page += 1
             
         except requests.exceptions.RequestException as e:
-            swaparr_logger.error(f"Error fetching queue for {app_name} (page {page}): {str(e)}")
+            swaparr_logger.error(f"Error fetching queue for {app_name} (page {page}): {e!s}")
             break
     
     swaparr_logger.info(f"Fetched {len(all_records)} queue items for {app_name}")
@@ -272,7 +271,7 @@ def delete_download(app_name, api_url, api_key, download_id, remove_from_client=
         swaparr_logger.info(f"Successfully removed download {download_id} from {app_name}")
         return True
     except requests.exceptions.RequestException as e:
-        swaparr_logger.error(f"Error removing download {download_id} from {app_name}: {str(e)}")
+        swaparr_logger.error(f"Error removing download {download_id} from {app_name}: {e!s}")
         return False
 
 def process_stalled_downloads(app_name, app_settings, swaparr_settings=None):

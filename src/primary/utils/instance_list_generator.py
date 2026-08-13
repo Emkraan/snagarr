@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Generate a consolidated list of app instances for the scheduler
 This script scans all app configuration files and generates a unified list.json
 for use by the scheduling UI
 """
 
-import os
 import json
 import logging
+import os
 from pathlib import Path
 
 # Set up logging
@@ -112,7 +111,7 @@ def generate_instance_list():
                     }
                 ]
         except Exception as e:
-            logger.error(f"Error processing {app_type}.json: {str(e)}")
+            logger.error(f"Error processing {app_type}.json: {e!s}")
             # Add a default instance on error
             instances[app_type] = [
                 {

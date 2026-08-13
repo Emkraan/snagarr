@@ -5,14 +5,13 @@ Handles loading, saving, and providing settings from individual JSON files per a
 Supports default configurations for different Arr applications
 """
 
-import os
 import json
-import pathlib
 import logging
+import os
+import pathlib
 import shutil
-import subprocess
 import time
-from typing import Dict, Any, Optional, List
+from typing import Any
 
 # Create a simple logger for settings_manager
 logging.basicConfig(level=logging.INFO)
@@ -55,7 +54,7 @@ def get_default_config_path(app_name: str) -> pathlib.Path:
     return pathlib.Path(DEFAULT_CONFIGS_DIR) / f"{app_name}.json"
 
 # Helper function to load default settings for a specific app
-def load_default_app_settings(app_name: str) -> Dict[str, Any]:
+def load_default_app_settings(app_name: str) -> dict[str, Any]:
     """Load default settings for a specific app from its JSON file."""
     default_file = get_default_config_path(app_name)
     if default_file.exists():
@@ -167,7 +166,7 @@ def load_settings(app_type, use_cache=True):
         return {} # Return empty dict on other errors
 
 
-def save_settings(app_name: str, settings_data: Dict[str, Any]) -> bool:
+def save_settings(app_name: str, settings_data: dict[str, Any]) -> bool:
     """Save settings for a specific app."""
     if app_name not in KNOWN_APP_TYPES:
          settings_logger.error(f"Attempted to save settings for unknown app type: {app_name}")
@@ -191,16 +190,16 @@ def save_settings(app_name: str, settings_data: Dict[str, Any]) -> bool:
         settings_logger.error(f"Error saving settings for {app_name} to {settings_file}: {e}")
         return False
 
-def get_setting(app_name: str, key: str, default: Optional[Any] = None) -> Any:
+def get_setting(app_name: str, key: str, default: Any | None = None) -> Any:
     """Get a specific setting value for an app."""
     settings = load_settings(app_name)
     return settings.get(key, default)
 
-def get_api_url(app_name: str) -> Optional[str]:
+def get_api_url(app_name: str) -> str | None:
     """Get the API URL for a specific app."""
     return get_setting(app_name, "api_url", "")
 
-def get_api_key(app_name: str) -> Optional[str]:
+def get_api_key(app_name: str) -> str | None:
     """Get the API Key for a specific app."""
     return get_setting(app_name, "api_key", "")
 
@@ -215,7 +214,7 @@ def redact_secrets(value: Any) -> Any:
         return [redact_secrets(v) for v in value]
     return value
 
-def get_all_settings() -> Dict[str, Dict[str, Any]]:
+def get_all_settings() -> dict[str, dict[str, Any]]:
     """Load settings for all known apps."""
     all_settings = {}
     for app_name in KNOWN_APP_TYPES:
@@ -226,7 +225,7 @@ def get_all_settings() -> Dict[str, Dict[str, Any]]:
              all_settings[app_name] = settings
     return all_settings
 
-def get_configured_apps() -> List[str]:
+def get_configured_apps() -> list[str]:
     """Return a list of app names that have basic configuration (API URL and Key)."""
     configured = []
     for app_name in KNOWN_APP_TYPES:
@@ -280,7 +279,7 @@ def apply_timezone(timezone: str) -> bool:
             settings_logger.error(f"Timezone file not found: {zoneinfo_path}")
             return False
     except Exception as e:
-        settings_logger.error(f"Error setting timezone: {str(e)}")
+        settings_logger.error(f"Error setting timezone: {e!s}")
         return False
 
 # Add a list of known advanced settings for clarity and documentation

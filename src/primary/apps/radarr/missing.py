@@ -4,22 +4,23 @@ Missing Movies Processing for Radarr
 Handles searching for missing movies in Radarr
 """
 
-import time
-import random
 import datetime
-from typing import List, Dict, Any, Set, Callable
-from src.primary.utils.logger import get_logger
+import random
+from collections.abc import Callable
+from typing import Any
+
 from src.primary.apps.radarr import api as radarr_api
+from src.primary.settings_manager import get_advanced_setting
+from src.primary.stateful_manager import add_processed_id, is_processed
 from src.primary.stats_manager import increment_stat
-from src.primary.stateful_manager import is_processed, add_processed_id
 from src.primary.utils.history_utils import log_processed_media
-from src.primary.settings_manager import load_settings, get_advanced_setting
+from src.primary.utils.logger import get_logger
 
 # Get logger for the app
 radarr_logger = get_logger("radarr")
 
 def process_missing_movies(
-    app_settings: Dict[str, Any],
+    app_settings: dict[str, Any],
     stop_check: Callable[[], bool] # Function to check if stop is requested
 ) -> bool:
     """
@@ -141,7 +142,7 @@ def process_missing_movies(
         return False
     
     # Always use random selection for missing movies
-    radarr_logger.info(f"Using random selection for missing movies")
+    radarr_logger.info("Using random selection for missing movies")
     if len(unprocessed_movies) > hunt_missing_movies:
         movies_to_process = random.sample(unprocessed_movies, hunt_missing_movies)
     else:
@@ -151,7 +152,7 @@ def process_missing_movies(
     
     # Add detailed logging for selected movies
     if movies_to_process:
-        radarr_logger.info(f"Movies selected for processing in this cycle:")
+        radarr_logger.info("Movies selected for processing in this cycle:")
         for idx, movie in enumerate(movies_to_process):
             movie_id = movie.get("id")
             movie_title = movie.get("title", "Unknown Title")

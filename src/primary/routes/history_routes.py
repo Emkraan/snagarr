@@ -1,7 +1,8 @@
-from flask import Blueprint, request, jsonify, current_app
 import logging
 
-from src.primary.history_manager import get_history, clear_history, add_history_entry
+from flask import Blueprint, jsonify, request
+
+from src.primary.history_manager import clear_history, get_history
 
 logger = logging.getLogger("snagarr")
 history_blueprint = Blueprint('history', __name__)
@@ -28,7 +29,7 @@ def get_app_history(app_type):
         return jsonify(result), 200
     
     except Exception as e:
-        logger.error(f"Error getting history for {app_type}: {str(e)}")
+        logger.error(f"Error getting history for {app_type}: {e!s}")
         return jsonify({"error": str(e)}), 500
 
 @history_blueprint.route('/<app_type>', methods=['DELETE'])
@@ -47,5 +48,5 @@ def clear_app_history(app_type):
             return jsonify({"error": f"Failed to clear history for {app_type}"}), 500
     
     except Exception as e:
-        logger.error(f"Error clearing history for {app_type}: {str(e)}")
+        logger.error(f"Error clearing history for {app_type}: {e!s}")
         return jsonify({"error": str(e)}), 500

@@ -4,6 +4,14 @@
 # require no admin consent and no Microsoft Graph application permissions, so
 # none are declared here. Emitting the group membership claim lets the app gate
 # access on Entra security group membership.
+#
+# Access control groups (created outside this module; referenced as data sources):
+#   sec-snagarr-admin   OID: 76e31f1d-1bcb-4584-b305-138bd858d7c9
+#     -> maps to role=admin in Snagarr OIDC provider admin_groups
+#
+# Wire the OID in the Snagarr admin UI:
+#   Settings > Single sign-on > Edit Microsoft provider
+#   Admin Groups: 76e31f1d-1bcb-4584-b305-138bd858d7c9
 
 resource "azuread_application" "snagarr" {
   display_name            = var.app_display_name

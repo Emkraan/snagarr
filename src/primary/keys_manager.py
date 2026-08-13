@@ -4,11 +4,9 @@ Keys manager for Huntarr
 Handles storage and retrieval of API keys and URLs from huntarr.json
 """
 
-import os
-import json
-import pathlib
 import logging
-from typing import Dict, Any, Optional, Tuple
+import os
+import pathlib
 
 # Create a simple logger
 logging.basicConfig(level=logging.INFO)

@@ -1,9 +1,13 @@
-from flask import Blueprint, request, jsonify
-import datetime, os, requests
-from primary import keys_manager
-from src.primary.utils.logger import get_logger
+
+import requests
+from flask import Blueprint, jsonify, request
+
+from src.primary.settings_manager import (
+    get_ssl_verify_setting,
+    load_settings,
+)
 from src.primary.state import get_state_file_path
-from src.primary.settings_manager import load_settings, settings_manager, get_ssl_verify_setting
+from src.primary.utils.logger import get_logger
 
 eros_bp = Blueprint('eros', __name__)
 eros_logger = get_logger("eros")
@@ -93,10 +97,10 @@ def test_connection():
         return jsonify({"success": False, "message": "Failed to connect. Check that the URL is correct and that Eros is running."}), 503
         
     except requests.exceptions.HTTPError as e:
-        return jsonify({"success": False, "message": f"HTTP error: {str(e)}"}), 500
+        return jsonify({"success": False, "message": f"HTTP error: {e!s}"}), 500
         
     except Exception as e:
-        return jsonify({"success": False, "message": f"Unexpected error: {str(e)}"}), 500
+        return jsonify({"success": False, "message": f"Unexpected error: {e!s}"}), 500
 
 # Function to check if Eros is configured
 def is_configured():
@@ -111,7 +115,7 @@ def is_configured():
                 
         return False
     except Exception as e:
-        eros_logger.error(f"Error checking if Eros is configured: {str(e)}")
+        eros_logger.error(f"Error checking if Eros is configured: {e!s}")
         return False
 
 # Get all valid instances from settings
@@ -145,5 +149,5 @@ def get_configured_instances():
             
         return enabled_instances
     except Exception as e:
-        eros_logger.error(f"Error getting configured Eros instances: {str(e)}")
+        eros_logger.error(f"Error getting configured Eros instances: {e!s}")
         return []

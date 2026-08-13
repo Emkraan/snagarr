@@ -4,17 +4,19 @@ Sonarr-specific API functions
 Handles all communication with the Sonarr API
 """
 
-import requests
 import json
 import sys
 import time
-import datetime
 import traceback
-from typing import List, Dict, Any, Optional, Union, Callable
-# Correct the import path
-from src.primary.utils.logger import get_logger
+from typing import Any
+
+import requests
+
 from src.primary import __version__ as _SNAGARR_VERSION
 from src.primary.settings_manager import get_ssl_verify_setting
+
+# Correct the import path
+from src.primary.utils.logger import get_logger
 
 # Get logger for the Sonarr app
 sonarr_logger = get_logger("sonarr")
@@ -22,7 +24,7 @@ sonarr_logger = get_logger("sonarr")
 # Use a session for better performance
 session = requests.Session()
 
-def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, method: str = "GET", data: Dict = None) -> Any:
+def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, method: str = "GET", data: dict = None) -> Any:
     """
     Make a request to the Sonarr API.
     
@@ -90,7 +92,7 @@ def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, met
                     return response.json()
                 except json.JSONDecodeError as jde:
                     # Log detailed information about the malformed response
-                    sonarr_logger.error(f"Error decoding JSON response from {endpoint}: {str(jde)}")
+                    sonarr_logger.error(f"Error decoding JSON response from {endpoint}: {jde!s}")
                     sonarr_logger.error(f"Response status code: {response.status_code}")
                     sonarr_logger.error(f"Response content (first 200 chars): {response.content[:200]}")
                     return None
@@ -110,7 +112,7 @@ def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, met
             return None
     except Exception as e:
         # Catch all exceptions and log them with traceback
-        error_msg = f"CRITICAL ERROR in arr_request: {str(e)}"
+        error_msg = f"CRITICAL ERROR in arr_request: {e!s}"
         sonarr_logger.error(error_msg)
         sonarr_logger.error(f"Full traceback: {traceback.format_exc()}")
         print(error_msg, file=sys.stderr)
@@ -138,12 +140,12 @@ def check_connection(api_url: str, api_key: str, api_timeout: int) -> bool:
              # Log details if the status response was unexpected
              sonarr_logger.warning(f"Connection check for {api_url} returned unexpected status: {str(status)[:200]}")
              return False
-    except Exception as e:
+    except Exception:
         # Error should have been logged by arr_request, just indicate failure
         sonarr_logger.error(f"Connection check failed for {api_url}")
         return False
 
-def get_system_status(api_url: str, api_key: str, api_timeout: int) -> Dict:
+def get_system_status(api_url: str, api_key: str, api_timeout: int) -> dict:
     """
     Get Sonarr system status.
     
@@ -160,7 +162,7 @@ def get_system_status(api_url: str, api_key: str, api_timeout: int) -> Dict:
         return response
     return {}
 
-def get_series(api_url: str, api_key: str, api_timeout: int, series_id: Optional[int] = None) -> Union[List, Dict, None]:
+def get_series(api_url: str, api_key: str, api_timeout: int, series_id: int | None = None) -> list | dict | None:
     """
     Get series information from Sonarr.
     
@@ -180,7 +182,7 @@ def get_series(api_url: str, api_key: str, api_timeout: int, series_id: Optional
     
     return arr_request(api_url, api_key, api_timeout, endpoint)
 
-def get_episode(api_url: str, api_key: str, api_timeout: int, episode_id: int) -> Dict:
+def get_episode(api_url: str, api_key: str, api_timeout: int, episode_id: int) -> dict:
     """
     Get episode information by ID.
     
@@ -198,7 +200,7 @@ def get_episode(api_url: str, api_key: str, api_timeout: int, episode_id: int) -
         return response
     return {}
 
-def get_queue(api_url: str, api_key: str, api_timeout: int) -> List:
+def get_queue(api_url: str, api_key: str, api_timeout: int) -> list:
     """
     Get the current queue from Sonarr.
     
@@ -216,7 +218,7 @@ def get_queue(api_url: str, api_key: str, api_timeout: int) -> List:
     
     return response.get("records", [])
 
-def get_calendar(api_url: str, api_key: str, api_timeout: int, start_date: Optional[str] = None, end_date: Optional[str] = None) -> List:
+def get_calendar(api_url: str, api_key: str, api_timeout: int, start_date: str | None = None, end_date: str | None = None) -> list:
     """
     Get calendar information for a date range.
     
@@ -247,7 +249,7 @@ def get_calendar(api_url: str, api_key: str, api_timeout: int, start_date: Optio
         return response
     return []
 
-def command_status(api_url: str, api_key: str, api_timeout: int, command_id: Union[int, str]) -> Dict:
+def command_status(api_url: str, api_key: str, api_timeout: int, command_id: int | str) -> dict:
     """
     Get the status of a command by ID.
     
@@ -265,7 +267,7 @@ def command_status(api_url: str, api_key: str, api_timeout: int, command_id: Uni
         return response
     return {}
 
-def get_missing_episodes(api_url: str, api_key: str, api_timeout: int, monitored_only: bool, series_id: Optional[int] = None) -> List[Dict[str, Any]]:
+def get_missing_episodes(api_url: str, api_key: str, api_timeout: int, monitored_only: bool, series_id: int | None = None) -> list[dict[str, Any]]:
     """Get missing episodes from Sonarr, handling pagination."""
     endpoint = "wanted/missing"
     page = 1
@@ -383,7 +385,7 @@ def get_missing_episodes(api_url: str, api_key: str, api_timeout: int, monitored
         sonarr_logger.debug(f"Returning {len(all_missing_episodes)} episodes (monitored_only=False)")
         return all_missing_episodes
 
-def get_cutoff_unmet_episodes(api_url: str, api_key: str, api_timeout: int, monitored_only: bool) -> List[Dict[str, Any]]:
+def get_cutoff_unmet_episodes(api_url: str, api_key: str, api_timeout: int, monitored_only: bool) -> list[dict[str, Any]]:
     """Get cutoff unmet episodes from Sonarr, handling pagination."""
     endpoint = "wanted/cutoff"
     page = 1
@@ -524,7 +526,7 @@ def get_cutoff_unmet_episodes(api_url: str, api_key: str, api_timeout: int, moni
         sonarr_logger.debug(f"Returning {len(all_cutoff_unmet)} cutoff unmet episodes (monitored_only=False).")
         return all_cutoff_unmet
 
-def get_cutoff_unmet_episodes_random_page(api_url: str, api_key: str, api_timeout: int, monitored_only: bool, count: int) -> List[Dict[str, Any]]:
+def get_cutoff_unmet_episodes_random_page(api_url: str, api_key: str, api_timeout: int, monitored_only: bool, count: int) -> list[dict[str, Any]]:
     """
     Get a specified number of random cutoff unmet episodes by selecting a random page.
     This is much more efficient for very large libraries.
@@ -607,16 +609,16 @@ def get_cutoff_unmet_episodes_random_page(api_url: str, api_key: str, api_timeou
             return records
             
     except requests.exceptions.RequestException as e:
-        sonarr_logger.error(f"Error getting random cutoff unmet episodes from Sonarr: {str(e)}")
+        sonarr_logger.error(f"Error getting random cutoff unmet episodes from Sonarr: {e!s}")
         return []
     except json.JSONDecodeError as e:
-        sonarr_logger.error(f"Failed to decode JSON response for random cutoff selection: {str(e)}")
+        sonarr_logger.error(f"Failed to decode JSON response for random cutoff selection: {e!s}")
         return []
     except Exception as e:
-        sonarr_logger.error(f"Unexpected error in random cutoff selection: {str(e)}", exc_info=True)
+        sonarr_logger.error(f"Unexpected error in random cutoff selection: {e!s}", exc_info=True)
         return []
 
-def get_missing_episodes_random_page(api_url: str, api_key: str, api_timeout: int, monitored_only: bool, count: int, series_id: Optional[int] = None) -> List[Dict[str, Any]]:
+def get_missing_episodes_random_page(api_url: str, api_key: str, api_timeout: int, monitored_only: bool, count: int, series_id: int | None = None) -> list[dict[str, Any]]:
     """
     Get a specified number of random missing episodes by selecting a random page.
     This is more efficient for very large libraries.
@@ -721,28 +723,28 @@ def get_missing_episodes_random_page(api_url: str, api_key: str, api_timeout: in
                         return records
                         
                 except json.JSONDecodeError as jde:
-                    sonarr_logger.error(f"Failed to decode JSON response for missing episodes page {random_page}: {str(jde)}")
+                    sonarr_logger.error(f"Failed to decode JSON response for missing episodes page {random_page}: {jde!s}")
                     if attempt < retries:
                         time.sleep(retry_delay)
                         continue
                     return []
                     
             except json.JSONDecodeError as jde:
-                sonarr_logger.error(f"Failed to decode JSON response for missing episodes count: {str(jde)}")
+                sonarr_logger.error(f"Failed to decode JSON response for missing episodes count: {jde!s}")
                 if attempt < retries:
                     time.sleep(retry_delay)
                     continue
                 return []
                 
         except requests.exceptions.RequestException as e:
-            sonarr_logger.error(f"Error getting missing episodes from Sonarr (attempt {attempt+1}): {str(e)}")
+            sonarr_logger.error(f"Error getting missing episodes from Sonarr (attempt {attempt+1}): {e!s}")
             if attempt < retries:
                 time.sleep(retry_delay)
                 continue
             return []
             
         except Exception as e:
-            sonarr_logger.error(f"Unexpected error getting missing episodes (attempt {attempt+1}): {str(e)}", exc_info=True)
+            sonarr_logger.error(f"Unexpected error getting missing episodes (attempt {attempt+1}): {e!s}", exc_info=True)
             if attempt < retries:
                 time.sleep(retry_delay)
                 continue
@@ -752,7 +754,7 @@ def get_missing_episodes_random_page(api_url: str, api_key: str, api_timeout: in
     sonarr_logger.error("All attempts to get missing episodes failed")
     return []
 
-def search_episode(api_url: str, api_key: str, api_timeout: int, episode_ids: List[int]) -> Optional[Union[int, str]]:
+def search_episode(api_url: str, api_key: str, api_timeout: int, episode_ids: list[int]) -> int | str | None:
     """Trigger a search for specific episodes in Sonarr."""
     if not episode_ids:
         sonarr_logger.warning("No episode IDs provided for search.")
@@ -775,7 +777,7 @@ def search_episode(api_url: str, api_key: str, api_timeout: int, episode_ids: Li
         sonarr_logger.error(f"An unexpected error occurred while triggering Sonarr search: {e}")
         return None
 
-def get_command_status(api_url: str, api_key: str, api_timeout: int, command_id: Union[int, str]) -> Optional[Dict[str, Any]]:
+def get_command_status(api_url: str, api_key: str, api_timeout: int, command_id: int | str) -> dict[str, Any] | None:
     """Get the status of a Sonarr command."""
     try:
         endpoint = f"{api_url}/api/v3/command/{command_id}"
@@ -839,7 +841,7 @@ def get_download_queue_size(api_url: str, api_key: str, api_timeout: int) -> int
     sonarr_logger.error(f"All {retries+1} attempts to get download queue size failed")
     return -1
 
-def refresh_series(api_url: str, api_key: str, api_timeout: int, series_id: int) -> Optional[Union[int, str]]:
+def refresh_series(api_url: str, api_key: str, api_timeout: int, series_id: int) -> int | str | None:
     """Refresh functionality has been removed as it was a performance bottleneck.
     This function now returns a placeholder success value without making any API calls.
     """
@@ -847,7 +849,7 @@ def refresh_series(api_url: str, api_key: str, api_timeout: int, series_id: int)
     # Return a placeholder command ID (123) to simulate success without actually refreshing
     return 123
 
-def get_series_by_id(api_url: str, api_key: str, api_timeout: int, series_id: int) -> Optional[Dict[str, Any]]:
+def get_series_by_id(api_url: str, api_key: str, api_timeout: int, series_id: int) -> dict[str, Any] | None:
     """Get series details by ID from Sonarr."""
     try:
         endpoint = f"{api_url}/api/v3/series/{series_id}"
@@ -863,7 +865,7 @@ def get_series_by_id(api_url: str, api_key: str, api_timeout: int, series_id: in
         sonarr_logger.error(f"An unexpected error occurred while getting Sonarr series details: {e}")
         return None
 
-def search_season(api_url: str, api_key: str, api_timeout: int, series_id: int, season_number: int) -> Optional[Union[int, str]]:
+def search_season(api_url: str, api_key: str, api_timeout: int, series_id: int, season_number: int) -> int | str | None:
     """Trigger a search for a specific season in Sonarr."""
     try:
         endpoint = f"{api_url}/api/v3/command"
@@ -884,7 +886,7 @@ def search_season(api_url: str, api_key: str, api_timeout: int, series_id: int, 
         sonarr_logger.error(f"An unexpected error occurred while triggering Sonarr season search: {e}")
         return None
 
-def get_cutoff_unmet_episodes_for_series(api_url: str, api_key: str, api_timeout: int, series_id: int, monitored_only: bool = True) -> List[Dict[str, Any]]:
+def get_cutoff_unmet_episodes_for_series(api_url: str, api_key: str, api_timeout: int, series_id: int, monitored_only: bool = True) -> list[dict[str, Any]]:
     """
     Get all cutoff unmet episodes for a specific series, handling pagination.
     
@@ -1020,7 +1022,7 @@ def get_cutoff_unmet_episodes_for_series(api_url: str, api_key: str, api_timeout
     else:
         return verified_episodes
 
-def get_series_with_missing_episodes(api_url: str, api_key: str, api_timeout: int, monitored_only: bool = True, limit: int = 50, random_mode: bool = True) -> List[Dict[str, Any]]:
+def get_series_with_missing_episodes(api_url: str, api_key: str, api_timeout: int, monitored_only: bool = True, limit: int = 50, random_mode: bool = True) -> list[dict[str, Any]]:
     """
     Get a list of series that have missing episodes, along with missing episode counts per season.
     This is much more efficient than fetching all missing episodes for large libraries.
@@ -1054,10 +1056,10 @@ def get_series_with_missing_episodes(api_url: str, api_key: str, api_timeout: in
     # Apply random selection if requested
     if random_mode:
         import random
-        sonarr_logger.info(f"Using RANDOM selection mode for missing episodes")
+        sonarr_logger.info("Using RANDOM selection mode for missing episodes")
         random.shuffle(filtered_series)
     else:
-        sonarr_logger.info(f"Using SEQUENTIAL selection mode for missing episodes")
+        sonarr_logger.info("Using SEQUENTIAL selection mode for missing episodes")
         
     # Step 3: For each series, check if it has missing episodes using series/id/episodes endpoint
     # This is much more efficient than using the wanted/missing endpoint
@@ -1121,7 +1123,7 @@ def get_series_with_missing_episodes(api_url: str, api_key: str, api_timeout: in
                 sonarr_logger.debug(f"Found series {series_title} with {len(missing_episodes)} missing episodes across {len(seasons_dict)} seasons")
                 
         except Exception as e:
-            sonarr_logger.error(f"Error checking missing episodes for series {series_title} (ID: {series_id}): {str(e)}")
+            sonarr_logger.error(f"Error checking missing episodes for series {series_title} (ID: {series_id}): {e!s}")
             continue
     
     selection_mode = "RANDOM" if random_mode else "SEQUENTIAL"        

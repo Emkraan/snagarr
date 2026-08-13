@@ -4,12 +4,14 @@ Stateful Management API Routes
 Handles API endpoints for stateful management
 """
 
-from flask import Blueprint, jsonify, request, Response
 import json
+
+from flask import Blueprint, Response, request
+
 from src.primary.stateful_manager import (
     get_stateful_management_info,
     reset_stateful_management,
-    update_lock_expiration
+    update_lock_expiration,
 )
 from src.primary.utils.logger import get_logger
 
@@ -38,7 +40,7 @@ def get_info():
     except Exception as e:
         stateful_logger.error(f"Error getting stateful info: {e}")
         # Return error response with proper headers
-        error_data = {"success": False, "message": f"Error getting stateful info: {str(e)}"}
+        error_data = {"success": False, "message": f"Error getting stateful info: {e!s}"}
         response = Response(json.dumps(error_data), status=500)
         response.headers['Content-Type'] = 'application/json'
         response.headers['Access-Control-Allow-Origin'] = '*'
@@ -109,7 +111,7 @@ def update_expiration():
     except Exception as e:
         stateful_logger.error(f"Error updating expiration: {e}", exc_info=True)
         # Return error response with proper headers
-        error_data = {"success": False, "message": f"Error updating expiration: {str(e)}"}
+        error_data = {"success": False, "message": f"Error updating expiration: {e!s}"}
         response = Response(json.dumps(error_data), status=500)
         response.headers['Content-Type'] = 'application/json'
         response.headers['Access-Control-Allow-Origin'] = '*'

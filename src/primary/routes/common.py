@@ -4,23 +4,40 @@ Common routes blueprint for Huntarr web interface
 """
 
 import os
-import json
-import base64
-import io
-import qrcode
-import pyotp
-import logging
+
 # Add render_template, send_from_directory, session
-from flask import Blueprint, request, jsonify, make_response, redirect, url_for, current_app, render_template, send_from_directory, session
-from ..auth import (
-    verify_user, create_session, get_username_from_session, SESSION_COOKIE_NAME,
-    get_role_from_session, get_profile_from_session,
-    change_username as auth_change_username, change_password as auth_change_password,
-    validate_password_strength, logout, verify_session, disable_2fa_with_password_and_otp,
-    user_exists, create_user, generate_2fa_secret, verify_2fa_code, is_2fa_enabled # Add missing auth imports
+from flask import (
+    Blueprint,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+    session,
+    url_for,
 )
-from ..utils.logger import logger # Ensure logger is imported
-from .. import settings_manager # Import settings_manager
+
+from .. import settings_manager  # Import settings_manager
+from ..auth import (
+    SESSION_COOKIE_NAME,
+    create_session,
+    create_user,
+    disable_2fa_with_password_and_otp,
+    generate_2fa_secret,
+    get_profile_from_session,
+    get_role_from_session,
+    get_username_from_session,
+    is_2fa_enabled,
+    logout,
+    user_exists,  # Add missing auth imports
+    validate_password_strength,
+    verify_2fa_code,
+    verify_session,
+    verify_user,
+)
+from ..auth import change_password as auth_change_password
+from ..auth import change_username as auth_change_username
+from ..utils.logger import logger  # Ensure logger is imported
 
 common_bp = Blueprint('common', __name__)
 
@@ -77,7 +94,7 @@ def login_route():
                 # Authentication failed *because* 2FA was required (or code was invalid)
                 # The specific reason (missing vs invalid code) is logged in verify_user
                 logger.warning(f"Login failed for '{username}': 2FA required or invalid.")
-                logger.debug(f"Returning 2FA required response: {{\"success\": False, \"requires_2fa\": True, \"requiresTwoFactor\": True, \"error\": \"Invalid or missing 2FA code\"}}")
+                logger.debug("Returning 2FA required response: {\"success\": False, \"requires_2fa\": True, \"requiresTwoFactor\": True, \"error\": \"Invalid or missing 2FA code\"}")
                 
                 # Use all common variations of the 2FA flag to ensure compatibility
                 return jsonify({

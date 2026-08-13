@@ -3,23 +3,23 @@
 Handles checking time and resetting hourly API caps at the top of each hour (00 minute mark)
 """
 
+import datetime
+import logging
 import threading
 import time
-import datetime
 import traceback
-import logging
 
 # Try both import patterns to handle different module contexts
 try:
     # When imported from the main app
-    from src.primary.utils.logger import get_logger
     from src.primary.stats_manager import reset_hourly_caps
+    from src.primary.utils.logger import get_logger
     logger = get_logger("hourly_caps")
 except ImportError:
     try:
         # When imported within the package
-        from primary.utils.logger import get_logger
         from primary.stats_manager import reset_hourly_caps
+        from primary.utils.logger import get_logger
         logger = get_logger("hourly_caps")
     except ImportError:
         # Fallback to standard logging in case neither works

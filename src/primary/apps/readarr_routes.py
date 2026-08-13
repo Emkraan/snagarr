@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
-from flask import Blueprint, request, jsonify
-import datetime, os, requests
-from src.primary import keys_manager
-from src.primary.state import get_state_file_path, reset_state_file
-from src.primary.utils.logger import get_logger
-from src.primary.settings_manager import get_ssl_verify_setting
-import traceback
 import socket
 from urllib.parse import urlparse
+
+import requests
+from flask import Blueprint, jsonify, request
+
+from src.primary.settings_manager import get_ssl_verify_setting
+from src.primary.state import get_state_file_path
+from src.primary.utils.logger import get_logger
 
 readarr_bp = Blueprint('readarr', __name__)
 readarr_logger = get_logger("readarr")
@@ -71,7 +71,7 @@ def test_connection():
             return jsonify({"success": False, "message": error_msg}), 404
         except Exception as e:
             # Log the socket testing error but continue with the full request
-            readarr_logger.debug(f"Socket test error, continuing with full request: {str(e)}")
+            readarr_logger.debug(f"Socket test error, continuing with full request: {e!s}")
             
         # Now proceed with the actual API request
         response = requests.get(url, headers=headers, timeout=10, verify=verify_ssl)
@@ -125,10 +125,10 @@ def test_connection():
         readarr_logger.error(error_msg)
         return jsonify({"success": False, "message": error_msg}), 404
     except requests.exceptions.Timeout:
-        error_msg = f"Connection timed out - Readarr took too long to respond"
+        error_msg = "Connection timed out - Readarr took too long to respond"
         readarr_logger.error(error_msg)
         return jsonify({"success": False, "message": error_msg}), 504
     except requests.exceptions.RequestException as e:
-        error_msg = f"Connection test failed: {str(e)}"
+        error_msg = f"Connection test failed: {e!s}"
         readarr_logger.error(error_msg)
         return jsonify({"success": False, "message": error_msg}), 500

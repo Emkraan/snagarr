@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 
-from flask import Blueprint, request, jsonify
-import datetime, os, requests
-from src.primary import keys_manager
-from src.primary.state import get_state_file_path, reset_state_file
-from src.primary.utils.logger import get_logger, APP_LOG_FILES
-from src.primary.settings_manager import load_settings, get_ssl_verify_setting
-import traceback
 import socket
+import traceback
 from urllib.parse import urlparse
-from src.primary.apps.eros import api as eros_api
+
+import requests
+from flask import Blueprint, jsonify, request
+
+from src.primary.settings_manager import get_ssl_verify_setting, load_settings
+from src.primary.state import get_state_file_path, reset_state_file
+from src.primary.utils.logger import get_logger
 
 eros_bp = Blueprint('eros', __name__)
 eros_logger = get_logger("eros")
@@ -53,7 +53,7 @@ def test_connection(url, api_key):
         return {"success": False, "message": error_msg}
     except Exception as e:
         # Log the socket testing error but continue with the full request
-        eros_logger.debug(f"Socket test error, continuing with full request: {str(e)}")
+        eros_logger.debug(f"Socket test error, continuing with full request: {e!s}")
     
     # For Eros, we only use v3 API path
     api_url = f"{url.rstrip('/')}/api/v3/system/status"
@@ -132,12 +132,12 @@ def test_connection(url, api_key):
         return {"success": False, "message": error_msg}
         
     except requests.exceptions.Timeout:
-        error_msg = f"Connection timed out - Eros took too long to respond"
+        error_msg = "Connection timed out - Eros took too long to respond"
         eros_logger.error(error_msg)
         return {"success": False, "message": error_msg}
         
     except Exception as e:
-        error_msg = f"Unexpected error: {str(e)}"
+        error_msg = f"Unexpected error: {e!s}"
         eros_logger.error(f"{error_msg}\n{traceback.format_exc()}")
         return {"success": False, "message": error_msg}
 
@@ -162,7 +162,7 @@ def get_status():
             eros_logger.debug("No Eros instances configured")
             return jsonify({"configured": False, "connected": False})
     except Exception as e:
-        eros_logger.error(f"Error getting Eros status: {str(e)}")
+        eros_logger.error(f"Error getting Eros status: {e!s}")
         return jsonify({"configured": False, "connected": False, "error": str(e)})
 
 @eros_bp.route('/test-connection', methods=['POST'])
@@ -230,6 +230,6 @@ def reset_processed_state():
         eros_logger.info("Successfully reset Eros processed state files")
         return jsonify({"success": True, "message": "Successfully reset processed state"})
     except Exception as e:
-        error_msg = f"Error resetting Eros state: {str(e)}"
+        error_msg = f"Error resetting Eros state: {e!s}"
         eros_logger.error(error_msg)
         return jsonify({"success": False, "message": error_msg}), 500

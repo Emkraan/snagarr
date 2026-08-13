@@ -4,16 +4,16 @@ Radarr-specific API functions
 Handles all communication with the Radarr API
 """
 
-import requests
-import json
-import sys
 import time
-import traceback
-from typing import List, Dict, Any, Optional, Union
-# Correct the import path
-from src.primary.utils.logger import get_logger
+from typing import Any
+
+import requests
+
 from src.primary import __version__ as _SNAGARR_VERSION
 from src.primary.settings_manager import get_ssl_verify_setting
+
+# Correct the import path
+from src.primary.utils.logger import get_logger
 
 # Get logger for the Radarr app
 radarr_logger = get_logger("radarr")
@@ -21,7 +21,7 @@ radarr_logger = get_logger("radarr")
 # Use a session for better performance
 session = requests.Session()
 
-def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, method: str = "GET", data: Dict = None) -> Any:
+def arr_request(api_url: str, api_key: str, api_timeout: int, endpoint: str, method: str = "GET", data: dict = None) -> Any:
     """
     Make a request to the Radarr API.
     
@@ -116,7 +116,7 @@ def get_download_queue_size(api_url: str, api_key: str, api_timeout: int) -> int
         radarr_logger.error(f"An unexpected error occurred while getting Radarr queue size: {e}")
         return -1
 
-def get_movies_with_missing(api_url: str, api_key: str, api_timeout: int, monitored_only: bool) -> Optional[List[Dict]]:
+def get_movies_with_missing(api_url: str, api_key: str, api_timeout: int, monitored_only: bool) -> list[dict] | None:
     """
     Get a list of movies with missing files (not downloaded/available).
 
@@ -146,7 +146,7 @@ def get_movies_with_missing(api_url: str, api_key: str, api_timeout: int, monito
     radarr_logger.debug(f"Found {len(missing_movies)} missing movies (monitored_only={monitored_only}).")
     return missing_movies
 
-def get_cutoff_unmet_movies(api_url: str, api_key: str, api_timeout: int, monitored_only: bool) -> Optional[List[Dict]]:
+def get_cutoff_unmet_movies(api_url: str, api_key: str, api_timeout: int, monitored_only: bool) -> list[dict] | None:
     """
     Get a list of movies that don't meet their quality profile cutoff.
 
@@ -228,7 +228,7 @@ def get_cutoff_unmet_movies(api_url: str, api_key: str, api_timeout: int, monito
     return unmet_movies
 
 def refresh_movie(api_url: str, api_key: str, api_timeout: int, movie_id: int, 
-                 command_wait_delay: int = 1, command_wait_attempts: int = 600) -> Optional[int]:
+                 command_wait_delay: int = 1, command_wait_attempts: int = 600) -> int | None:
     """
     Refresh functionality has been removed as it was a performance bottleneck.
     This function now returns a placeholder success value without making any API calls.
@@ -248,7 +248,7 @@ def refresh_movie(api_url: str, api_key: str, api_timeout: int, movie_id: int,
     # Return a placeholder command ID (123) to simulate success without actually refreshing
     return 123
 
-def movie_search(api_url: str, api_key: str, api_timeout: int, movie_ids: List[int]) -> Optional[int]:
+def movie_search(api_url: str, api_key: str, api_timeout: int, movie_ids: list[int]) -> int | None:
     """
     Trigger a search for one or more movies.
     

@@ -21,11 +21,11 @@ is stashed in the session at login, so no per-provider redirect URI is needed.
 
 import os
 
-from flask import Blueprint, redirect, url_for, session, request, jsonify
 from authlib.integrations.flask_client import OAuth
+from flask import Blueprint, jsonify, redirect, request, session, url_for
 
-from src.primary.auth import create_session, SESSION_COOKIE_NAME
 from src.primary import oidc_config
+from src.primary.auth import SESSION_COOKIE_NAME, create_session
 from src.primary.utils.logger import get_logger
 
 logger = get_logger("oidc")

@@ -42,11 +42,11 @@ sys.modules.setdefault("src.primary.utils.logger", _logmod)
 
 # ---- imports (after env + logger stubs are in place) ----------------------
 
-from flask import Flask  # noqa: E402
+from flask import Flask
 
-import src.primary.auth as _auth  # noqa: E402
-from src.primary.routes.admin_routes import admin_bp  # noqa: E402
-import src.primary.routes.admin_routes as _ar  # noqa: E402
+import src.primary.auth as _auth
+import src.primary.routes.admin_routes as _ar
+from src.primary.routes.admin_routes import admin_bp
 
 # ---- shared test constants -------------------------------------------------
 

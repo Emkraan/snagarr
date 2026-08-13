@@ -4,18 +4,16 @@ Scheduler Engine for Huntarr
 Handles execution of scheduled actions from schedule.json
 """
 
-import os
-import json
-import threading
+import collections
 import datetime
+import json
+import os
+import threading
 import time
 import traceback
-from typing import Dict, List, Any
-import collections
 
 # Import settings_manager to handle cache refreshing
 from src.primary.settings_manager import clear_cache
-
 from src.primary.utils.logger import get_logger
 
 # Initialize logger
@@ -61,7 +59,7 @@ def load_schedule():
                     return schedule_data
             except json.JSONDecodeError as json_err:
                 scheduler_logger.error(f"Invalid JSON in schedule file: {json_err}")
-                scheduler_logger.error(f"Attempting to repair JSON file...")
+                scheduler_logger.error("Attempting to repair JSON file...")
                 
                 # Backup the corrupted file
                 backup_file = f"{SCHEDULE_FILE}.backup.{int(time.time())}"
@@ -72,7 +70,7 @@ def load_schedule():
                 default_schedule = {"global": [], "sonarr": [], "radarr": [], "lidarr": [], "readarr": [], "whisparr": [], "eros": []}
                 with open(SCHEDULE_FILE, 'w') as f:
                     json.dump(default_schedule, f, indent=2)
-                scheduler_logger.info(f"Created new empty schedule file")
+                scheduler_logger.info("Created new empty schedule file")
                 
                 return default_schedule
         else:
@@ -80,7 +78,7 @@ def load_schedule():
             default_schedule = {"global": [], "sonarr": [], "radarr": [], "lidarr": [], "readarr": [], "whisparr": [], "eros": []}
             with open(SCHEDULE_FILE, 'w') as f:
                 json.dump(default_schedule, f, indent=2)
-            scheduler_logger.info(f"Created new schedule file with default structure")
+            scheduler_logger.info("Created new schedule file with default structure")
             return default_schedule
     except Exception as e:
         scheduler_logger.error(f"Error loading schedule: {e}")
@@ -150,7 +148,7 @@ def execute_action(action_entry):
                     scheduler_logger.info(result_message)
                     add_to_history(action_entry, "success", result_message)
                 except Exception as e:
-                    error_message = f"Error disabling all apps: {str(e)}"
+                    error_message = f"Error disabling all apps: {e!s}"
                     scheduler_logger.error(error_message)
                     add_to_history(action_entry, "error", error_message)
                     return False
@@ -177,7 +175,7 @@ def execute_action(action_entry):
                     scheduler_logger.info(result_message)
                     add_to_history(action_entry, "success", result_message)
                 except Exception as e:
-                    error_message = f"Error disabling {app_type}: {str(e)}"
+                    error_message = f"Error disabling {app_type}: {e!s}"
                     scheduler_logger.error(error_message)
                     add_to_history(action_entry, "error", error_message)
                     return False
@@ -210,7 +208,7 @@ def execute_action(action_entry):
                     scheduler_logger.info(result_message)
                     add_to_history(action_entry, "success", result_message)
                 except Exception as e:
-                    error_message = f"Error enabling all apps: {str(e)}"
+                    error_message = f"Error enabling all apps: {e!s}"
                     scheduler_logger.error(error_message)
                     add_to_history(action_entry, "error", error_message)
                     return False
@@ -237,7 +235,7 @@ def execute_action(action_entry):
                     scheduler_logger.info(result_message)
                     add_to_history(action_entry, "success", result_message)
                 except Exception as e:
-                    error_message = f"Error enabling {app_type}: {str(e)}"
+                    error_message = f"Error enabling {app_type}: {e!s}"
                     scheduler_logger.error(error_message)
                     add_to_history(action_entry, "error", error_message)
                     return False
@@ -269,7 +267,7 @@ def execute_action(action_entry):
                         scheduler_logger.info(result_message)
                         add_to_history(action_entry, "success", result_message)
                     except Exception as e:
-                        error_message = f"Error setting global API cap to {api_limit}: {str(e)}"
+                        error_message = f"Error setting global API cap to {api_limit}: {e!s}"
                         scheduler_logger.error(error_message)
                         add_to_history(action_entry, "error", error_message)
                         return False
@@ -288,7 +286,7 @@ def execute_action(action_entry):
                         scheduler_logger.info(result_message)
                         add_to_history(action_entry, "success", result_message)
                     except Exception as e:
-                        error_message = f"Error setting API cap for {app_type} to {api_limit}: {str(e)}"
+                        error_message = f"Error setting API cap for {app_type} to {api_limit}: {e!s}"
                         scheduler_logger.error(error_message)
                         add_to_history(action_entry, "error", error_message)
                         return False

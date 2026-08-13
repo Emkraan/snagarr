@@ -1,8 +1,8 @@
-import logging
 import json
+import logging
 import pathlib
-from datetime import datetime
 import time
+
 
 class WebAddressFilter(logging.Filter):
     """Filter out web interface availability messages"""

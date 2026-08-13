@@ -5,6 +5,7 @@ Readarr module initialization
 # Use src.primary imports
 from src.primary.apps.readarr.missing import process_missing_books
 from src.primary.apps.readarr.upgrade import process_cutoff_upgrades
+
 # Add necessary imports
 from src.primary.settings_manager import load_settings, redact_secrets
 from src.primary.utils.logger import get_logger
@@ -88,4 +89,4 @@ def get_configured_instances():
     readarr_logger.debug(f"Found {len(instances)} configured and enabled Readarr instances")
     return instances
 
-__all__ = ["process_missing_books", "process_cutoff_upgrades", "get_configured_instances"]
+__all__ = ["get_configured_instances", "process_cutoff_upgrades", "process_missing_books"]

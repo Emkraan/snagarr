@@ -4,15 +4,16 @@ Lidarr Blueprint for Huntarr
 Defines Flask routes for interacting with Lidarr
 """
 
-import json
 import traceback
+
 import requests
 from flask import Blueprint, jsonify, request
-from src.primary.utils.logger import get_logger
+
+from src.primary import config
 from src.primary.apps.lidarr import api as lidarr_api
-from src.primary.state import reset_state_file, get_state_file_path
 from src.primary.settings_manager import load_settings
-import src.primary.config as config
+from src.primary.state import get_state_file_path, reset_state_file
+from src.primary.utils.logger import get_logger
 
 # Create a logger for this module
 lidarr_logger = get_logger("lidarr")
@@ -116,7 +117,7 @@ def status():
             }), 200
             
     except Exception as e:
-        error_message = f"Error checking Lidarr status: {str(e)}"
+        error_message = f"Error checking Lidarr status: {e!s}"
         lidarr_logger.error(error_message)
         lidarr_logger.error(traceback.format_exc())
         return jsonify({"connected": False, "message": error_message}), 500
@@ -151,15 +152,15 @@ def test_connection():
             }), 400
             
     except requests.exceptions.RequestException as e:
-        error_message = f"Connection error: {str(e)}"
+        error_message = f"Connection error: {e!s}"
         if hasattr(e, 'response'):
             if e.response is not None:
                 error_message += f" - Status Code: {e.response.status_code}, Response: {e.response.text[:200]}"
         lidarr_logger.error(f"Lidarr connection error: {error_message}")
         return jsonify({"success": False, "message": error_message}), 500
     except Exception as e: # Catch any other unexpected errors
-        lidarr_logger.error(f"An unexpected error occurred during Lidarr connection test: {str(e)}", exc_info=True)
-        return jsonify({"success": False, "message": f"An unexpected error occurred: {str(e)}"}), 500
+        lidarr_logger.error(f"An unexpected error occurred during Lidarr connection test: {e!s}", exc_info=True)
+        return jsonify({"success": False, "message": f"An unexpected error occurred: {e!s}"}), 500
 
 @lidarr_bp.route('/stats', methods=['GET'])
 def get_stats():
@@ -206,7 +207,7 @@ def get_stats():
         }), 200
         
     except Exception as e:
-        error_message = f"Error getting Lidarr stats: {str(e)}"
+        error_message = f"Error getting Lidarr stats: {e!s}"
         lidarr_logger.error(error_message)
         lidarr_logger.error(traceback.format_exc())
         return jsonify({"error": error_message}), 500
@@ -236,7 +237,7 @@ def reset_state():
         }), 200
         
     except Exception as e:
-        error_message = f"Error resetting Lidarr state: {str(e)}"
+        error_message = f"Error resetting Lidarr state: {e!s}"
         lidarr_logger.error(error_message)
         lidarr_logger.error(traceback.format_exc())
         return jsonify({"error": error_message}), 500

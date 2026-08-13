@@ -6,23 +6,23 @@ Handles searching for items that need quality upgrades in Whisparr
 Supports both v2 (legacy) and v3 (Eros) API versions
 """
 
-import time
 import random
-from typing import Dict, Any, List, Callable
-from datetime import datetime, timedelta
-from src.primary.utils.logger import get_logger
+from collections.abc import Callable
+from typing import Any
+
 from src.primary.apps.whisparr import api as whisparr_api
-from src.primary.settings_manager import load_settings, get_advanced_setting
-from src.primary.stateful_manager import is_processed, add_processed_id
+from src.primary.settings_manager import get_advanced_setting
+from src.primary.state import check_state_reset
+from src.primary.stateful_manager import add_processed_id, is_processed
 from src.primary.stats_manager import increment_stat
 from src.primary.utils.history_utils import log_processed_media
-from src.primary.state import check_state_reset
+from src.primary.utils.logger import get_logger
 
 # Get logger for the app
 whisparr_logger = get_logger("whisparr")
 
 def process_cutoff_upgrades(
-    app_settings: Dict[str, Any],
+    app_settings: dict[str, Any],
     stop_check: Callable[[], bool] # Function to check if stop is requested
 ) -> bool:
     """
@@ -73,7 +73,7 @@ def process_cutoff_upgrades(
         return False
 
     # Get items eligible for upgrade
-    whisparr_logger.info(f"Retrieving items eligible for cutoff upgrade...")
+    whisparr_logger.info("Retrieving items eligible for cutoff upgrade...")
     upgrade_eligible_data = whisparr_api.get_cutoff_unmet_items(api_url, api_key, api_timeout, monitored_only)
     
     if not upgrade_eligible_data:
@@ -161,7 +161,7 @@ def process_cutoff_upgrades(
             
             # Increment the upgraded statistics for Whisparr
             increment_stat("whisparr", "upgraded", 1)
-            whisparr_logger.debug(f"Incremented whisparr upgraded statistics by 1")
+            whisparr_logger.debug("Incremented whisparr upgraded statistics by 1")
             
             # Log progress
             current_limit = app_settings.get("hunt_upgrade_items", app_settings.get("hunt_upgrade_scenes", 1))

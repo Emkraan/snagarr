@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
-from flask import Blueprint, request, jsonify
-import datetime, os, requests
-from src.primary import keys_manager
+
+import requests
+from flask import Blueprint, jsonify, request
+
+from src.primary.settings_manager import get_ssl_verify_setting, load_settings
 from src.primary.state import get_state_file_path
-from src.primary.settings_manager import load_settings, get_ssl_verify_setting
-import logging
 from src.primary.utils.logger import get_logger
 
 sonarr_bp = Blueprint('sonarr', __name__)
@@ -77,7 +77,7 @@ def test_connection():
 
     except requests.exceptions.Timeout as e:
         error_msg = f"Connection timed out after {api_timeout} seconds"
-        sonarr_logger.error(f"{error_msg}: {str(e)}")
+        sonarr_logger.error(f"{error_msg}: {e!s}")
         return jsonify({"success": False, "message": error_msg}), 504
         
     except requests.exceptions.ConnectionError as e:
@@ -94,7 +94,7 @@ def test_connection():
         return jsonify({"success": False, "message": f"{error_msg}: {details}"}), 502
         
     except requests.exceptions.RequestException as e:
-        error_message = f"Connection failed: {str(e)}"
+        error_message = f"Connection failed: {e!s}"
         
         if hasattr(e, 'response') and e.response is not None:
             status_code = e.response.status_code
@@ -121,7 +121,7 @@ def test_connection():
         return jsonify({"success": False, "message": error_message}), 500
         
     except Exception as e:
-        error_msg = f"An unexpected error occurred: {str(e)}"
+        error_msg = f"An unexpected error occurred: {e!s}"
         sonarr_logger.error(error_msg)
         return jsonify({"success": False, "message": error_msg}), 500
 

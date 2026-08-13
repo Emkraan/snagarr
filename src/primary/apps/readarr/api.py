@@ -4,17 +4,18 @@ Readarr-specific API functions
 Handles all communication with the Readarr API
 """
 
-import requests
+import importlib
 import json
-import time
-import datetime
-from typing import List, Dict, Any, Optional, Union
-# Correct the import path
-from src.primary.utils.logger import get_logger
+from typing import Any
+
+import requests
+
 # Import load_settings
 from src.primary import __version__ as _SNAGARR_VERSION
-from src.primary.settings_manager import load_settings, get_ssl_verify_setting
-import importlib
+from src.primary.settings_manager import get_ssl_verify_setting
+
+# Correct the import path
+from src.primary.utils.logger import get_logger
 
 # Get app-specific logger
 logger = get_logger("readarr")
@@ -104,9 +105,9 @@ def get_download_queue_size(api_url: str = None, api_key: str = None, timeout: i
         logger.error(f"Error getting download queue size: {e}")
         return 0
 
-def arr_request(endpoint: str, method: str = "GET", data: Dict = None, app_type: str = "readarr",
+def arr_request(endpoint: str, method: str = "GET", data: dict = None, app_type: str = "readarr",
                 api_url: str = None, api_key: str = None, api_timeout: int = None, 
-                params: Dict = None, instance_data: Dict = None) -> Any:
+                params: dict = None, instance_data: dict = None) -> Any:
     """
     Make a request to the Readarr API.
     
@@ -226,7 +227,7 @@ def arr_request(endpoint: str, method: str = "GET", data: Dict = None, app_type:
         logger.error(f"API request failed: {e}")
         return None
 
-def get_books_with_missing_files() -> List[Dict]:
+def get_books_with_missing_files() -> list[dict]:
     """
     Get a list of books with missing files (not downloaded/available).
     
@@ -247,7 +248,7 @@ def get_books_with_missing_files() -> List[Dict]:
     
     return missing_books
 
-def get_cutoff_unmet_books(api_url: Optional[str] = None, api_key: Optional[str] = None, api_timeout: Optional[int] = None) -> List[Dict]:
+def get_cutoff_unmet_books(api_url: str | None = None, api_key: str | None = None, api_timeout: int | None = None) -> list[dict]:
     """
     Get a list of books that don't meet their quality profile cutoff.
     Accepts optional API credentials.
@@ -269,7 +270,7 @@ def get_cutoff_unmet_books(api_url: Optional[str] = None, api_key: Optional[str]
     
     return books.get("records", [])
 
-def get_wanted_missing_books(api_url: str, api_key: str, api_timeout: int, monitored_only: bool = True) -> List[Dict]:
+def get_wanted_missing_books(api_url: str, api_key: str, api_timeout: int, monitored_only: bool = True) -> list[dict]:
     """
     Get wanted/missing books from Readarr, handling pagination.
 
@@ -339,7 +340,7 @@ def get_wanted_missing_books(api_url: str, api_key: str, api_timeout: int, monit
     logger.info(f"Successfully fetched {len(all_missing_books)} missing books from Readarr.")
     return all_missing_books
 
-def refresh_author(author_id: int, api_url: Optional[str] = None, api_key: Optional[str] = None, api_timeout: Optional[int] = None) -> bool:
+def refresh_author(author_id: int, api_url: str | None = None, api_key: str | None = None, api_timeout: int | None = None) -> bool:
     """
     Refresh functionality has been removed as it was a performance bottleneck.
     This function now returns a success value without making any API calls.
@@ -357,7 +358,7 @@ def refresh_author(author_id: int, api_url: Optional[str] = None, api_key: Optio
     # Always return success without making any API calls
     return True
 
-def book_search(book_ids: List[int], api_url: Optional[str] = None, api_key: Optional[str] = None, api_timeout: Optional[int] = None) -> bool:
+def book_search(book_ids: list[int], api_url: str | None = None, api_key: str | None = None, api_timeout: int | None = None) -> bool:
     """
     Trigger a search for one or more books.
     Accepts optional API credentials.
@@ -383,7 +384,7 @@ def book_search(book_ids: List[int], api_url: Optional[str] = None, api_key: Opt
     # The calling function expects the command object now.
     return response 
 
-def get_author_details(api_url: str, api_key: str, author_id: int, api_timeout: int = 120) -> Optional[Dict]:
+def get_author_details(api_url: str, api_key: str, author_id: int, api_timeout: int = 120) -> dict | None:
     """Fetches details for a specific author from the Readarr API."""
     endpoint = f"{api_url}/api/v1/author/{author_id}"
     headers = {'X-Api-Key': api_key}
@@ -400,7 +401,7 @@ def get_author_details(api_url: str, api_key: str, author_id: int, api_timeout: 
         logger.error(f"An unexpected error occurred fetching author details for ID {author_id}: {e}")
         return None
 
-def search_books(api_url: str, api_key: str, book_ids: List[int], api_timeout: int = 120) -> Optional[Dict]:
+def search_books(api_url: str, api_key: str, book_ids: list[int], api_timeout: int = 120) -> dict | None:
     """Triggers a search for specific book IDs in Readarr."""
     endpoint = f"{api_url}/api/v1/command" # This uses the full URL, not arr_request
     headers = {'X-Api-Key': api_key}

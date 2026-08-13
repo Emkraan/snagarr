@@ -7,15 +7,15 @@ is stored (no brute-force risk given the entropy, so no bcrypt needed). Each key
 carries a scope: read < write < admin.
 """
 
-import os
-import json
-import time
-import secrets
 import hashlib
-import tempfile
+import json
+import os
 import pathlib
+import secrets
+import tempfile
 import threading
-from typing import Optional, Dict, Any, List
+import time
+from typing import Any
 
 API_DIR = pathlib.Path(os.getenv("SNAGARR_API_DIR") or os.path.join(os.getenv("SNAGARR_CONFIG_DIR", "/config"), "api"))
 KEYS_FILE = API_DIR / "keys.json"
@@ -44,7 +44,7 @@ def _atomic_write(path: pathlib.Path, obj: Any) -> None:
         raise
 
 
-def _load() -> List[Dict[str, Any]]:
+def _load() -> list[dict[str, Any]]:
     if not KEYS_FILE.exists():
         return []
     try:
@@ -82,7 +82,7 @@ def create_key(label: str, scope: str = "read") -> str:
     return key
 
 
-def list_keys() -> List[Dict[str, Any]]:
+def list_keys() -> list[dict[str, Any]]:
     """Return key metadata (never the hash or plaintext)."""
     with _LOCK:
         return [{k: v for k, v in rec.items() if k != "hash"} for rec in _load()]
@@ -98,7 +98,7 @@ def revoke_key(key_id: str) -> bool:
         return True
 
 
-def verify_key(presented: str) -> Optional[Dict[str, Any]]:
+def verify_key(presented: str) -> dict[str, Any] | None:
     """Return the key record (incl. scope) if the presented token matches, else None."""
     if not presented:
         return None
