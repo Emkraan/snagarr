@@ -62,7 +62,7 @@
 {% endmacro %}
 
 {# ── 5.4 KPI / Stat tile (.hero-num gradient numeral) ─────────────────────── #}
-{% macro kpi_tile(label, value, sub='', tone='accent', icon=None, href='#', hero_a=None, hero_b=None, active=False, i=0) %}
+{% macro kpi_tile(label, value, sub='', tone='accent', icon=None, href='#', hero_a=None, hero_b=None, active=False, i=0, attrs='') %}
 {% set tonevars = {
   'accent':  '--tone-ink:var(--accent);--tone-dim:var(--accent-dim);--tone-border:var(--accent-border);--hero-a:var(--accent-bright);--hero-b:var(--accent-700)',
   'success': '--tone-ink:var(--success);--tone-dim:var(--success-dim);--tone-border:var(--success-border);--hero-a:var(--success);--hero-b:#1B5C30',
@@ -71,7 +71,7 @@
   'info':    '--tone-ink:var(--info);--tone-dim:var(--info-dim);--tone-border:var(--info-border);--hero-a:var(--info);--hero-b:#114B7C'
 } %}
 <a href="{{ href }}" class="kpi-tile rise-in{{ ' active' if active }}" role="button" tabindex="0"
-   style="{{ tonevars[tone] }};animation-delay:{{ i*60 }}ms;">
+   style="{{ tonevars[tone] }};animation-delay:{{ i*60 }}ms;" {{ attrs|safe }}>
   <span class="kpi-rail"></span><span class="kpi-glow"></span>
   <div class="kpi-head">
     <span class="kpi-label">{{ label }}</span>
