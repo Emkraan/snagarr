@@ -211,6 +211,10 @@ body.dark-theme {
    3. Reset + base shell
    ========================================================================= */
 *{box-sizing:border-box;}
+/* The HTML `hidden` attribute must always win over component `display` rules
+   (.modal-backdrop, .banner, etc. set display:flex, which otherwise beats the
+   UA [hidden] rule by source order and leaves modals/banners stuck visible). */
+[hidden]{display:none !important;}
 html,body{margin:0;padding:0;height:100%;}
 body{
   background:var(--bg-primary); color:var(--text-primary); font-family:var(--font-sans);
